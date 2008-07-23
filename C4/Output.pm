@@ -350,6 +350,7 @@ sub pagination_bar {
 
 =item output_with_http_headers
 
+
    &output_with_http_headers($query, $cookie, $data, $content_type[, $status])
 
 Outputs $data with the appropriate HTTP headers,
