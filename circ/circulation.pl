@@ -174,6 +174,7 @@ if($duedatespec_allow){
     $datedue = $globalduedate if ($globalduedate);
 }
 
+
 my $todaysdate = C4::Dates->new->output('iso');
 
 # check and see if we should print
@@ -233,6 +234,7 @@ my $borrower;
 if ($borrowernumber) {
     $borrower = GetMemberDetails( $borrowernumber, 0 );
     my ( $od, $issue, $fines ) = GetMemberIssuesAndFines( $borrowernumber );
+    my $expired = IsMemberExpired( $borrower );
 
     # Warningdate is the date that the warning starts appearing
     my (  $today_year,   $today_month,   $today_day) = Today();
@@ -254,6 +256,13 @@ if ($borrowernumber) {
             expired     => format_date($borrower->{dateexpiry}),
             renewaldate => format_date("$renew_year-$renew_month-$renew_day")
         );
+    } elsif ( $expired eq 'soon' ) {
+        # borrower card soon to expire warn librarian
+        $template->param("warndeparture" => format_date($borrower->{dateexpiry}),
+            flagged       => "1",);
+        if ( C4::Context->preference('ReturnBeforeExpiry')){
+            $template->param("returnbeforeexpiry" => 1);
+        }
     }
     # check for NotifyBorrowerDeparture
     elsif ( C4::Context->preference('NotifyBorrowerDeparture') &&
@@ -267,6 +276,7 @@ if ($borrowernumber) {
             $template->param("returnbeforeexpiry" => 1);
         }
     }
+
     $template->param(
         overduecount => $od,
         issuecount   => $issue,

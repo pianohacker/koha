@@ -23,6 +23,7 @@ C4::Service - functions for JSON webservices.
 
 =head1 SYNOPSIS
 
+<<<<<<< HEAD:C4/Service.pm
 my ( $query, $response) = C4::Service->init( { circulate => 1 } );
 my ( $borrowernumber) = C4::Service->require_params( 'borrowernumber' );
 
@@ -31,6 +32,16 @@ C4::Service->return_error( 'internal', 'Frobnication failed', frobnicator => 'fo
 $response->param( frobnicated => 'You' );
 
 C4::Service->return_success( $response );
+=======
+my ($query, $response) = C4::Service->init({ circulate => 1 });
+my ($borrowernumber) = C4::Service->require_params('borrowernumber');
+
+C4::Service->return_error('internal', 'Frobnication failed', frobnicator => 'foo');
+
+$response->param(frobnicated => 'You');
+
+C4::Service->return_success($response);
+>>>>>>> c94d74d... New checkouts webservice:C4/Service.pm
 
 =head1 DESCRIPTION
 
@@ -86,7 +97,6 @@ sub init {
     our $cookie = $cookie_; # I have no desire to offend the Perl scoping gods
 
     $class->return_error( type => 'auth', message => $status ) if ( $status ne 'ok' );
-
     return ( $query, new C4::Output::JSONStream );
 }
 
@@ -291,3 +301,5 @@ __END__
 Koha Development Team
 
 Jesse Weaver <jesse.weaver@liblime.com>
+
+=cut

@@ -22,7 +22,7 @@ use strict;
 use C4::Context;
 use C4::Dates qw(format_date_in_iso);
 use Digest::MD5 qw(md5_base64);
-use Date::Calc qw/Today Add_Delta_YM/;
+use Date::Calc qw/Today Add_Delta_YM Delta_Days/;
 use C4::Log; # logaction
 use C4::Overdues;
 use C4::Reserves;
@@ -80,6 +80,7 @@ BEGIN {
 		&DeleteMessage
 		&GetMessages
 		&GetMessagesCount
+        &IsMemberExpired
 	);
 
 	#Modify data
@@ -1305,6 +1306,31 @@ sub GetExpiryDate {
     # die "GetExpiryDate: for enrollmentperiod $enrolmentperiod (category '$categorycode') starting $dateenrolled.\n";
     my @date = split /-/,$dateenrolled;
     return sprintf("%04d-%02d-%02d", Add_Delta_YM(@date,0,$enrolmentperiod));
+}
+
+=head2 IsMemberExpired
+
+  $expired = IsMemberExpired ( $borrower );
+
+Given a borrower hash, this checks the expiry date for the borrower. If the syspref 'NotifyBorrowerDeparture'
+is set and the borrower is about to expire, it returns 'soon'. If the borrower is currently expired, it returns
+'expired'; otherwise it returns undef.
+
+=cut
+
+sub IsMemberExpired {
+    my ( $borrower ) = @_;
+
+    my $todaysdate = C4::Dates->new()->output('iso');
+
+    if ( !$borrower->{dateexpiry} || $todaysdate > $borrower->{dateexpiry} ) {
+        return 'expired';
+    }
+
+    if ( C4::Context->preference('NotifyBorrowerDeparture') &&
+      Delta_Days(split('-', $todaysdate), split('-', $borrower->{dateexpiry})) <= C4::Context->preference('NotifyBorrowerDeparture')) {
+        return 'soon';
+    }
 }
 
 =head2 checkuserpassword (OUEST-PROVENCE)

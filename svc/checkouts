@@ -1,0 +1,84 @@
+#!/usr/bin/perl
+#
+# Copyright 2007 LibLime
+#
+# This file is part of Koha.
+#
+# Koha is free software; you can redistribute it and/or modify it under the
+# terms of the GNU General Public License as published by the Free Software
+# Foundation; either version 2 of the License, or (at your option) any later
+# version.
+#
+# Koha is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
+# A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along with
+# Koha; if not, write to the Free Software Foundation, Inc., 59 Temple Place,
+# Suite 330, Boston, MA  02111-1307 USA
+#
+
+use strict;
+use C4::Context;
+use C4::Service;
+use C4::Members;
+use C4::Circulation;
+use JSON;
+
+sub format_error {
+    my ( $error ) = @_;
+
+    my @errors;
+    my @flags;
+
+    while ( my ( $error, $value ) = each %$error ) {
+        $error = lc $error;
+        push @errors, $error;
+
+        push @flags, ( $error => $value ) if ( $value != 1 );
+    }
+
+    return join( '|', @errors ), @flags;
+}
+
+my ($query, $response) = C4::Service->init( { circulate => 1 } );
+my ($branch, $borrowernumber, $barcode) = C4::Service->require_params( 'branch', 'borrowernumber', 'barcode' );
+
+my $duedatespec = $query->param( 'duedatespec' );
+my $issueconfirmed = $query->param( 'issueconfirmed' );
+my $debt_confirmed = $query->param( 'debt_confirmed' );
+my $cancelreserve = $query->param( 'cancelreserve' );
+
+if ( !defined( GetMember( $borrowernumber ) ) ) {
+    C4::Service->return_error( 'input', 'borrowernumber' );
+}
+
+my $borrower = GetMemberDetails( $borrowernumber, 0 );
+my $expired = IsMemberExpired( $borrower );
+
+# The last argument is inprocess, and seems to always be 0
+my ( $error, $question ) = CanBookBeIssued( $borrower, $barcode, $duedatespec, 0);
+
+if ( $expired eq 'expired' ) {
+    $error->{'EXPIRED'} = 1;
+}
+
+if ( $debt_confirmed ) {
+    delete $question->{'DEBT'};
+}
+
+if ( keys %$error ) { 
+    my ( $error_string, @flags ) = format_error( $error );
+
+    C4::Service->return_error( 'circ_impossible', $error_string, @flags );
+}
+
+if ( keys %$question && !$issueconfirmed ) {
+    my ( $error_string, @flags ) = format_error( $question );
+
+    C4::Service->return_error( 'confirmation_required', $error_string, @flags );
+}
+
+AddIssue( $borrower, $barcode, ( $duedatespec && C4::Dates->new( $duedatespec ) ), $cancelreserve );
+    
+C4::Service->return_success( $response );

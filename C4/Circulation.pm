@@ -668,7 +668,7 @@ sub CanBookBeIssued {
 	return ( \%issuingimpossible, \%needsconfirmation ) if %issuingimpossible;
 
     #
-    # DUE DATE is OK ? -- should already have checked.
+    # DUE DATE is OK ?
     #
     unless ( $duedate ) {
         my $issuedate = strftime( "%Y-%m-%d", localtime );
@@ -715,7 +715,7 @@ sub CanBookBeIssued {
 
     # DEBTS
     my ($amount) =
-      C4::Members::GetMemberAccountRecords( $borrower->{'borrowernumber'}, '' && $duedate->output('iso') );
+      C4::Members::GetMemberAccountRecords( $borrower->{'borrowernumber'} );
     if ( C4::Context->preference("IssuingInProcess") ) {
         my $amountlimit = C4::Context->preference("noissuescharge");
         if ( $amount > $amountlimit && !$inprocess ) {
