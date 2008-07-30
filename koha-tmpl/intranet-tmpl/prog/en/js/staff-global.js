@@ -88,3 +88,41 @@ function checkEnter(e){ //e is event object passed from function invocation
 		return true;
 	}
 }
+
+function format(message, contents) {
+    var chunk_format = '[0-9]+|[a-zA-Z_][0-9a-zA-Z_]*';
+    var variable_format = chunk_format + '(?:\\.(?:' + chunk_format + '))*';
+
+    if (message == undefined) throw '`message` is required';
+    if (contents == undefined) throw '`contents` is required';
+
+    function lookup (match, escaped, chunk, variable) {
+        if (escaped != '') {
+            return '$';
+        } else if (chunk != '') {
+            if (chunk in contents) return contents[chunk];
+            throw chunk + ' not found in `contents`';
+        } else if (variable != '') {
+            var obj = contents;
+            var chunks = variable.split('.');
+            var chunk = chunks[0];
+
+            for (var i = 0; i < chunks.length; chunk = chunks[++i]) {
+                if (chunk in obj) {
+                    obj = obj[chunk];
+
+                    continue;
+                }
+
+                throw variable + ' not found in `contents`';
+            }
+
+            return obj;
+        }
+    }
+
+    return message.replace(
+        new RegExp('\\$(?:(\\$)|(' + chunk_format + ')|{(' + variable_format + ')})', 'g'),
+        lookup
+    );
+}

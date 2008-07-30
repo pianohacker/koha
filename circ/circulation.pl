@@ -712,6 +712,8 @@ $template->param(
     CGIorganisations  => $CGIorganisations,
 	is_child          => ($borrower->{'category_type'} eq 'C'),
     circview => 1,
+      CircAutocompl            => C4::Context->preference("CircAutocompl"),
+    AjaxCirc                 => C4::Context->preference("AjaxCirc"),  
 );
 
 # save stickyduedate to session

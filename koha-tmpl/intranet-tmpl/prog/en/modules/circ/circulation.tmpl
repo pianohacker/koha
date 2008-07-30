@@ -138,7 +138,7 @@ function refocus(calendar) {
 </script>
 
 <!-- TMPL_INCLUDE NAME="calendar.inc" -->
-<!-- TMPL_IF NAME="ajax_circ" -->
+<!-- TMPL_IF NAME="AjaxCirc" -->
     <script type="text/javascript">
         var circ_impossible_str_tmpl  = new Array(
             stats => "Local Use Recorded" ,
@@ -151,9 +151,19 @@ function refocus(calendar) {
             debarred => "Patron is restricted" ,
             no_more_renewals => "No more renewals possible" ,
             expired => "Patron's card is expired" ,
-            notsamebranch => "This item belongs to _var_ and cannot be issued from this location."
+            notsamebranch => "This item belongs to $homebranch and cannot be issued from this location."
         );
-    </script>
+
+        var confirm_str_tmpl = new Array(
+            debt_str => "The patron has a debt of $debt" ,
+            renew_issue_str => "Item is currently checked out to this patron.  Renew?" ,
+            reserve_waiting_str => "Item is consigned for " ,
+            reserved => "Item is on reserve for " ,
+            issued_to_another_str => "Item checked out to $issued_to_another.  Check in and check out?" ,
+            too_many_str =>  "Too many checked out (already checked out / max : $too_many)"
+        );
+
+	</script>
     <!-- /TMPL_IF -->
 </head>
 <body>

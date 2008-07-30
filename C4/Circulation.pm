@@ -77,6 +77,8 @@ BEGIN {
         &GetBranchBorrowerCircRule
         &GetBranchItemRule
 		&GetBiblioIssues
+        &GetIssue
+		&GetIssueFromId
 		&AnonymiseIssueHistory
 	);
 
@@ -888,6 +890,7 @@ AddIssue does the following things :
 sub AddIssue {
     my ( $borrower, $barcode, $datedue, $cancelreserve, $issuedate, $sipmode) = @_;
     my $dbh = C4::Context->dbh;
+    my ( $dateduef, $issueid );
 	my $barcodecheck=CheckValidBarcode($barcode);
 
     # $issuedate defaults to today.
@@ -1962,6 +1965,63 @@ sub GetBiblioIssues {
         push @issues, $data;
     }
     return \@issues;
+}
+
+=head2 GetIssue
+
+=over 4
+
+my $issue = GetIssue($issueid);
+
+=back
+
+Look up the issue information for a given issueid. If the given issueid does not exist, returns undef.
+
+=cut
+
+sub GetIssue($) {
+    my ( $issueid ) = @_;
+
+    my $dbh = C4::Context->dbh;
+
+    my $sth = $dbh->prepare( '
+        SELECT *
+        FROM issues
+            LEFT JOIN items ON ( items.itemnumber = issues.itemnumber )
+        WHERE issueid = ?
+    ' );
+    $sth->execute( $issueid );
+
+    return $sth->fetchrow_hashref;
+}
+
+=head2 GetIssueFromId
+
+=over 4
+
+my ($borrowernumber, $itemnumber) = GetIssueFromId($issueid);
+
+=back
+
+Look up the borrowernumber and itemnumber for a given issueid, for subs that have not been converted to use issueid. If the given issueid does not exist, returns (undef, undef).
+
+=cut
+
+sub GetIssueFromId($) {
+    my ( $issueid ) = @_;
+
+    my $dbh = C4::Context->dbh;
+
+    my $sth = $dbh->prepare( '
+        SELECT borrowernumber, itemnumber
+        FROM issues
+        WHERE issueid = ?
+    ' );
+    $sth->execute( $issueid );
+
+    my @row = $sth->fetchrow_array;
+
+    return @row ? @row : ( undef, undef );
 }
 
 =head2 GetUpcomingDueIssues

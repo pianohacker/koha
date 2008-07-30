@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 #
-# Copyright 2007 LibLime
+# Copyright 2008 LibLime
 #
 # This file is part of Koha.
 #
@@ -19,11 +19,15 @@
 #
 
 use strict;
-use C4::Context;
 use C4::Service;
+use C4::Context;
+use C4::Dates;
 use C4::Members;
 use C4::Circulation;
+use C4::Biblio;
 use JSON;
+
+our @biblio_removed_keys = ( 'marc', 'marcxml' );
 
 sub format_error {
     my ( $error ) = @_;
@@ -41,44 +45,141 @@ sub format_error {
     return join( '|', @errors ), @flags;
 }
 
-my ($query, $response) = C4::Service->init( { circulate => 1 } );
-my ($branch, $borrowernumber, $barcode) = C4::Service->require_params( 'branch', 'borrowernumber', 'barcode' );
+our ($query, $response) = C4::Service->init( { circulate => 1 } );
 
-my $duedatespec = $query->param( 'duedatespec' );
-my $issueconfirmed = $query->param( 'issueconfirmed' );
-my $debt_confirmed = $query->param( 'debt_confirmed' );
-my $cancelreserve = $query->param( 'cancelreserve' );
+sub new_checkout {
+    my ($borrowernumber, $barcode) = C4::Service->require_params( 'borrowernumber', 'barcode' );
 
-if ( !defined( GetMember( $borrowernumber ) ) ) {
-    C4::Service->return_error( 'input', 'borrowernumber' );
-}
+    my $branch = C4::Context->userenv->{'branch'};
+    my $duedatespec = $query->param( 'duedatespec' );
+    my $issueconfirmed = $query->param( 'issueconfirmed' );
+    my $debt_confirmed = $query->param( 'debt_confirmed' );
+    my $cancelreserve = $query->param( 'cancelreserve' );
 
-my $borrower = GetMemberDetails( $borrowernumber, 0 );
-my $expired = IsMemberExpired( $borrower );
+    if ( !defined( GetMember( $borrowernumber ) ) ) {
+        C4::Service->return_error( 'input', 'not_found', field => 'borrowernumber' );
+    }
 
-# The last argument is inprocess, and seems to always be 0
-my ( $error, $question ) = CanBookBeIssued( $borrower, $barcode, $duedatespec, 0);
+    my $borrower = GetMemberDetails( $borrowernumber, 0 );
+    my $expired = IsMemberExpired( $borrower );
 
-if ( $expired eq 'expired' ) {
-    $error->{'EXPIRED'} = 1;
-}
+    # The last argument is inprocess, and seems to always be 0
+    my ( $error, $question ) = CanBookBeIssued( $borrower, $barcode, $duedatespec, 0);
 
-if ( $debt_confirmed ) {
-    delete $question->{'DEBT'};
-}
+    if ( $expired eq 'expired' ) {
+        $error->{'EXPIRED'} = 1;
+    }
 
-if ( keys %$error ) { 
-    my ( $error_string, @flags ) = format_error( $error );
+    if ( $debt_confirmed ) {
+        delete $question->{'DEBT'};
+    }
 
-    C4::Service->return_error( 'circ_impossible', $error_string, @flags );
-}
+    if ( keys %$error ) { 
+        my ( $error_string, @flags ) = format_error( $error );
 
-if ( keys %$question && !$issueconfirmed ) {
-    my ( $error_string, @flags ) = format_error( $question );
+        C4::Service->return_error( 'impossible', $error_string, @flags );
+    }
 
-    C4::Service->return_error( 'confirmation_required', $error_string, @flags );
-}
+    if ( keys %$question && !$issueconfirmed ) {
+        my ( $error_string, @flags ) = format_error( $question );
 
-AddIssue( $borrower, $barcode, ( $duedatespec && C4::Dates->new( $duedatespec ) ), $cancelreserve );
+        C4::Service->return_error( 'need_confirmation', $error_string, @flags );
+    }
+
+       my ($issueid, $date_due) = AddIssue( $borrower, $barcode, ( $duedatespec && C4::Dates->new( $duedatespec ) ), $cancelreserve );
+    $response->param( issueid => $issueid, date_due => $date_due );
+
+    my $biblio = GetBiblioFromItemNumber( undef, $barcode );
+    foreach my $key (@biblio_removed_keys) {
+        delete $biblio->{$key};
+    }
     
-C4::Service->return_success( $response );
+    $response->param( biblio => $biblio );
+
+    C4::Service->return_success( $response );
+}
+
+sub get_checkout {
+    my ( $issueid ) = @_;
+
+    my ( $borrowernumber, $itemnumber ) = GetIssueFromId( $issueid );
+
+    C4::Service->return_error( 'input', 'not_found', field => 'issueid' ) if ( !defined( $borrowernumber ) );
+
+    $response->param( borrowernumber => $borrowernumber, itemnumber => $itemnumber );
+
+    C4::Service->return_success( $response );
+}
+
+sub renew_checkout {
+    my ( $issueid_entry ) = @_;
+
+    my $branch = C4::Context->userenv->{'branch'};
+    my @issueids = split( '\\|', $issueid_entry );
+    my @errors;
+
+    my $duedatespec = $query->param( 'date_due' );
+    C4::Service->return_error( 'input', 'bad_format', field => 'date_due' ) if ( $duedatespec && $duedatespec !~ C4::Dates->regexp( 'syspref' ) );
+    my $datedue = C4::Dates->new( $duedatespec ) if ( $duedatespec );
+
+    foreach my $issueid (@issueids) {
+        my ( $borrowernumber, $itemnumber ) = GetIssueFromId( $issueid );
+
+        if ( !defined( $borrowernumber ) ) {
+            push @errors, [ 'input', 'not_found', field => 'issueid', issueid => $issueid ];
+            next;
+        }
+
+        my ( $renewok, $renew_error ) = CanBookBeRenewed( $borrowernumber, $itemnumber );
+
+        if ( !$renewok ) {
+             push @errors, [ 'impossible', $renew_error, issueid => $issueid ];
+             next;
+        }
+
+        AddRenewal( $borrowernumber, $itemnumber, $branch, $datedue );
+    }
+
+    C4::Service->return_multi( \@errors );
+}
+
+sub return_checkout {
+    my ( $issueid_entry ) = @_;
+
+    my $branch = C4::Context->userenv->{'branch'};
+    my @issueids = split( '\\|', $issueid_entry );
+    my @errors;
+    my $exemptfine = $query->param( 'exemptfine' );
+    my $dropboxmode = $query->param( 'dropboxmode' );
+
+    foreach my $issueid (@issueids) {
+		my $issue = GetIssue( $issueid );
+
+        if ( !defined( $issue ) ) {
+            push @errors, [ 'input', 'not_found', field => 'issueid', issueid => $issueid ];
+            next;
+        }
+
+		my ( $returned, $messages, undef, $borrower ) =
+			AddReturn( $issue->{barcode}, $branch, $exemptfine, $dropboxmode);
+
+		if ( !$returned ) {
+			my ( $error_string, @flags ) = format_error( $messages );
+
+			push @errors, [ 'impossible', $error_string, @flags ];
+		} elsif ( %{$messages} ) {
+			my ( $error_string, @flags ) = format_error( $messages );
+
+			push @errors, { 'warning' => $error_string, @flags };
+		}
+	}
+
+	C4::Service->return_multi( \@errors );
+}
+
+C4::Service->dispatch(
+    ['POST /', [], \&new_checkout],
+    ['GET /(\\d+)', [], \&get_checkout],
+    ['POST /(\\d+(?:\\|\\d+)*)', ['renewed'], \&renew_checkout],
+    ['POST /(\\d+)', ['returned'], \&return_checkout],
+);
