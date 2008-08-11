@@ -23,13 +23,13 @@ var need_confirmation_error_tmpl = {
 };
 
 var checkin_error_tmpl = {
-	notissued: 'not checked out',
-	badbarcode: 'barcode not found: $badbarcode',
-	waslost: 'was lost, now is found',
-	wthdrawn: 'is withdrawn',
-	ispermanent: 'needs to be returned to $ispermanent',
-	wastransfered: 'was transferred to its home branch',
-	wrongbranch: 'must be returned to its home branch',
+	notissued: _( 'not checked out' ),
+	badbarcode: _( 'barcode not found: $badbarcode' ),
+	waslost: _( 'was lost, now is found' ),
+	wthdrawn: _( 'is withdrawn' ),
+	ispermanent: _( 'needs to be returned to $ispermanent' ),
+	wastransfered: _( 'was transferred to its home branch' ),
+	wrongbranch: _( 'must be returned to its home branch' ),
 };
 
 // These are displayed to the user, but still result in the checkin being removed.
@@ -43,6 +43,16 @@ var checkin_show_dialog_errors = [
 	'needstransfer',
 	'resfound',
 ];
+
+var renew_error_tmpl = {
+	too_many: _( 'has been renewed too many times already' ),
+	on_reserve: _( 'is on hold for someone else' )
+};
+
+var renew_status_tmpl = {
+	too_many: _( 'Too Many Renewals' ),
+	on_reserve: _( 'On Hold' )
+};
 
 var circulation = {
 	checkout: function () {
@@ -73,6 +83,34 @@ var circulation = {
 
 		return false;
 	},
+	
+	renew: function () {
+		var issueids = [];
+
+		if ( this.name == 'renew_checked' ) {
+			$( '#renew-form input[name="items[]"]:checked' ).parent().parent().each( function ( i, row ) {
+				issueids.push( row.id.split( '-' )[1] ); // Extract issueid
+			} );
+
+			if ( issueids.length == 0 ) {
+				humanMsg.displayAlert( 'Nothing was selected' );
+				return false;
+			}
+		} else {
+			$.each( circulation.issues, function ( issueid ) { issueids.push( issueid.toString() ) } );
+		}
+
+		circulation.renew.mark_running();
+		$.ajax( {
+			url: '/cgi-bin/koha/svc/checkouts/' + issueids.join( '|' ),
+			dataType: 'json',
+			data: { 'renewed': 1 },
+			type: 'POST',
+			complete: circulation.renew.finished
+		} );
+
+		return false;
+	},
 }
 
 $.extend(circulation.checkout, {
@@ -80,7 +118,7 @@ $.extend(circulation.checkout, {
 		circulation.checkout.end();
 		$( '#mainform-container:hidden' ).show( 'slow' );
 
-		entry = {date_due: data.date_due}
+		entry = {date_due: data.date_due};
 
 		$.each(
 			['biblionumber', 'itemnumber', 'title', 'author', 'itemcallnumber', 'itemtype', 'itemtype_description', 'itemtype_image', 'itemnotes', 'barcode'],
@@ -104,11 +142,16 @@ $.extend(circulation.checkout, {
 			row.push( '</td><td>', entry.itemtype_description );
 		}
 
-		row.push( '</td><td>', entry.itemcallnumber,
-			'</td><td>', entry.barcode,
-        	'</td><td>', '<input type="checkbox" name="all_items[]" value="', entry.itemnumber, '" checked="checked" style="display: none;" />',
-        	'<input type="checkbox" name="items[]" value="', entry.itemnumber, '" />',
-			'</td><td><a id="returnlink-', data.issueid, '" href="/cgi-bin/koha/circ/returns.pl?barcode=', entry.barcode, '">Check In</a>',
+		row.push( '</td><td>', entry.itemcallnumber, '</td><td>', entry.barcode, '</td><td>' );
+
+		if ( data.no_renewals ) {
+			row.push( renew_status_tmpl[data.no_renewals] );
+		} else {
+			row.push( '<input type="checkbox" name="all_items[]" value="', entry.itemnumber, '" checked="checked" style="display: none;" />',
+	        	'<input type="checkbox" name="items[]" value="', entry.itemnumber, '" />' );
+		}
+
+		row.push( '</td><td><a id="returnlink-', data.issueid, '" href="/cgi-bin/koha/circ/returns.pl?barcode=', entry.barcode, '">Check In</a>',
 			'</td></tr>' );
 
 		issues_row = $( row.join( '' ) );
@@ -119,7 +162,7 @@ $.extend(circulation.checkout, {
 
 		if ( $( '#issuerow-' + data.issueid ).get(0) ) {
 			$( '#issuerow-' + data.issueid ).replaceWith( issues_row );
-			issues_row.animate({backgroundColor: '#FFC'}, 750).animate({backgroundColor: 'white'}, 750);
+			issues_row.animate({backgroundColor: '#FF8'}, 750).animate({backgroundColor: 'white'}, 750);
 		} else {
 			$( '#todaysissues_last' ).before( issues_row );
 			issues_row.fadeIn();
@@ -293,7 +336,7 @@ $.extend( circulation.checkin, {
 		};
 
 		if ( !is_empty( errors ) ) {
-			show_dialog( _( 'Cannot Check In' ), errors );
+			show_dialog( _( "Can't Check In Some Items" ), errors );
 		} else if ( !is_empty( warnings ) ) {
 			show_dialog( _( 'Warning' ), warnings );
 		}
@@ -311,8 +354,8 @@ $.extend( circulation.checkin, {
 		circulation.issuecount -= 1;
 		$( '#issuecount' ).text( circulation.issuecount );
 		if ( circulation.issuecount == 0 ) {
-			$( '#renew-form' ).hide()();
-			$( '#noissues' ).show()();
+			$( '#renew-form' ).hide();
+			$( '#noissues' ).show();
 		}
 	},
 
@@ -335,6 +378,70 @@ $.extend( circulation.checkin, {
 	},
 });
 
+$.extend( circulation.renew, { 
+	finished: function( xhr, status ) {
+		if ( xhr.getResponseHeader( 'content-type' ) != 'application/json' ) {
+			// Something really failed
+			humanMsg.displayAlert( _( 'Internal Server Error' ) );
+			setTimeout( window.location.reload, 500 );
+			return;
+		}
+
+		var status_ = xhr.status;
+		var data = eval( '(' + xhr.responseText + ')' );
+
+		if ( status_ == 400 && data.type == 'auth' ) {
+			humanMsg.displayMsg( _( 'Session has expired' ) );
+			setTimeout( window.location.reload, 500 );
+			return;
+		}
+
+		var errors = {}, successful = {};
+
+		$.each( data.responses, function ( i, response ) {
+			if ( response.is_error ) {
+				errors[response.issueid] = response;
+			} else {
+				successful[response.issueid] = response;
+			}
+		} );
+
+		if ( !is_empty( errors ) ) {
+			var dialog = ['<h3>', _( "Can't Renew Some Items" ), '</h3>'];
+
+			$.each( errors, function ( issueid, response ) {
+				dialog.push( '<p><strong>', circulation.issues[issueid].title, '</strong> ', format( renew_error_tmpl[response.message], response ), '</p>');
+			} );
+
+			humanMsg.displayMsg( dialog.join( '' ) );
+		} 
+
+		$.each( successful, function (issueid, response) {
+			$( '#issuerow-' + issueid + ' td:eq(0)' )
+				.text( format_date( response.date_due ) )
+				.animate( {backgroundColor: '#FF8'}, 750 ).animate( {backgroundColor: 'white'}, 750 );
+		} );
+
+		circulation.renew.mark_done();
+	},
+
+	mark_running: function ( ) {
+		$( '#renew-form button' )
+			.text( 'Renewing' )
+			.prepend( '<img src="http://staff-jpw.dev.kohalibrary.com/intranet-tmpl/prog/img/spinner-small.gif" alt="" class="spinner" />' )
+			.attr( 'disabled', 'disabled' )
+			.addClass( 'running' );
+	},
+	
+	mark_done: function () {
+		$( '#renew-form button.running' )
+			.removeClass( 'running' )
+			.removeAttr( 'disabled' )
+			.find( 'img' ).remove().end()
+			.each( function ( i ) { $( this ).text(['Renew Checked Items', 'Renew All'][i]) } );
+	},
+});
+
 $( function () {
 	$( '#mainform' ).submit( circulation.checkout );
 
@@ -345,4 +452,6 @@ $( function () {
 	$.each( circulation.issues, function ( issueid ) {
 		$( '#returnlink-' + issueid ).click( function () { circulation.checkin ( issueid ); return false; } );
 	});
+
+	$( '#renew_checked, #renew_all' ).click( circulation.renew );
 });

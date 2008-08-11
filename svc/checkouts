@@ -42,13 +42,13 @@ sub format_error {
         $error = lc $error;
         push @errors, $error;
 
-        push @flags, ( $error => $value ) if ( $value != 1 );
+        push @flags, ( $error => $value ) if ( $value ne '1' );
     }
 
     return join( '|', @errors ), @flags;
 }
 
-our ($query, $response) = C4::Service->init( { circulate => 1 } );
+our ($query, $response) = C4::Service->init( circulate => 1 );
 
 sub new_checkout {
     my ($borrowernumber, $barcode) = C4::Service->require_params( 'borrowernumber', 'barcode' );
@@ -101,6 +101,8 @@ sub new_checkout {
     my $itemtypeinfo = getitemtypeinfo($biblio->{'itemtype'});
     $biblio->{'itemtype_description'} = $itemtypeinfo->{description};
 	$biblio->{'itemtype_image'} = $itemtypeinfo->{imageurl};
+
+	$response->param( no_renewals => ( CanBookBeRenewed( $borrower->{'borrowernumber'}, $biblio->{'itemnumber'} ) )[1] );
     
     $response->param( biblio => $biblio );
 
@@ -145,7 +147,9 @@ sub renew_checkout {
              next;
         }
 
-        AddRenewal( $borrowernumber, $itemnumber, $branch, $datedue );
+        my $date_due = AddRenewal( $borrowernumber, $itemnumber, $branch, $datedue );
+
+		push @errors, { 'date_due' => $date_due->output( 'iso' ), issueid => $issueid };
     }
 
     C4::Service->return_multi( \@errors );
