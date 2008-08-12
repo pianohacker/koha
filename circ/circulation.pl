@@ -444,9 +444,9 @@ if ($borrower) {
         my $itemtypeinfo = getitemtypeinfo( (C4::Context->preference('item-level_itypes')) ? $it->{'itype'} : $it->{'itemtype'} );
         # set itemtype per item-level_itype syspref - FIXME this is an ugly hack
         $it->{'itemtype'} = ( C4::Context->preference( 'item-level_itypes' ) ) ? $it->{'itype'} : $it->{'itemtype'};
-		my $itemtypeinfo = getitemtypeinfo($it->{'itemtype'});
-		$it->{'itemtype_description'} = $itemtypeinfo->{description};
-		$it->{'itemtype_image'}       = $itemtypeinfo->{imageurl} unless ( C4::Context->preference( 'noItemTypeImages' ) );
+        my $itemtypeinfo = getitemtypeinfo($it->{'itemtype'});
+        $it->{'itemtype_description'} = $itemtypeinfo->{description};
+        $it->{'itemtype_image'}       = $itemtypeinfo->{imageurl} unless ( C4::Context->preference( 'noItemTypeImages' ) );
 
         ($it->{'charge'}, $it->{'itemtype_charge'}) = GetIssuingCharges(
             $it->{'itemnumber'}, $borrower->{'borrowernumber'}
@@ -710,7 +710,7 @@ $template->param(
     totaldue        => sprintf("%.2f", $total),
     todayissues       => \@todaysissues,
     previssues        => \@previousissues,
-	allissues         => [@todaysissues, @previousissues],
+    allissues         => [@todaysissues, @previousissues],
     inprocess         => $inprocess,
     memberofinstution => $member_of_institution,
     CGIorganisations  => $CGIorganisations,

@@ -192,7 +192,7 @@ Print out the information in the C<C4::Output::JSONStream> C<$response>, then
 exit with HTTP status 200.
 
 =cut
- 
+
 sub return_success {
     my ( $class, $response ) = @_;
 

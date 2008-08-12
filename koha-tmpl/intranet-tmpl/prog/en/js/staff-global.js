@@ -10,7 +10,7 @@ function _(s) { return s } // dummy function for gettext
 	if($("#header_search #circ_search").length > 0){ $(document).bind('keydown','Alt+u',function (){ $("#header_search > ul").tabs("select","#circ_search"); $("#findborrower").focus(); }); } else { $(document).bind('keydown','Alt+u',function(){ location.href="/cgi-bin/koha/circ/circulation.pl"; }); }
 	if($("#header_search #catalog_search").length > 0){ $(document).bind('keydown','Alt+q',function (){ $("#header_search > ul").tabs("select","#catalog_search"); $("#search-form").focus(); }); } else { $(document).bind('keydown','Alt+q',function(){ location.href="/cgi-bin/koha/catalogue/search.pl"; }); }
  });
- 
+
              YAHOO.util.Event.onContentReady("header", function () {
 				var oMoremenu = new YAHOO.widget.Menu("moremenu", { zindex: 2 });
 
@@ -128,23 +128,23 @@ function format(message, contents) {
 }
 
 function format_date (date_, format) {
-	function zeropad (n) { return n.toString().length == 2 ? n : '0' + parseInt(n); }
+    function zeropad (n) { return n.toString().length == 2 ? n : '0' + parseInt(n); }
 
-	if (format === undefined) {
-		format = koha.dateformat;
-	}
+    if (format === undefined) {
+        format = koha.dateformat;
+    }
 
-	var datearr = date_.split( /-|\// );
+    var datearr = date_.split( /-|\// );
 
-	switch (format) {
-		case 'iso': return date_;
-		case 'us': return [zeropad(datearr[1]), zeropad(datearr[2]), datearr[0]].join( '/' );
-		case 'metric': return [zeropad(datearr[2]), zeropad(datearr[1]), datearr[0]].join( '/' );
-	}
+    switch (format) {
+        case 'iso': return date_;
+        case 'us': return [zeropad(datearr[1]), zeropad(datearr[2]), datearr[0]].join( '/' );
+        case 'metric': return [zeropad(datearr[2]), zeropad(datearr[1]), datearr[0]].join( '/' );
+    }
 }
 
 function is_empty( obj ) {
-	for ( var i in obj ) { return false; }
-	return true;
+    for ( var i in obj ) { return false; }
+    return true;
 }
 

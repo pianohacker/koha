@@ -344,7 +344,7 @@ sub TooMany {
 	# Get which branchcode we need
 	$branch = _GetCircControlBranch($item,$borrower);
 	my $type = (C4::Context->preference('item-level_itypes')) 
-  			? $item->{'itype'}         # item-level
+			? $item->{'itype'}         # item-level
 			: $item->{'itemtype'};     # biblio-level
  
     # given branch, patron category, and item type, determine
@@ -689,7 +689,7 @@ sub CanBookBeIssued {
     # BORROWER STATUS
     #
     if ( $borrower->{'category_type'} eq 'X' && (  $item->{barcode}  )) { 
-    	# stats only borrower -- add entry to statistics table, and return issuingimpossible{STATS} = 1  .
+		# stats only borrower -- add entry to statistics table, and return issuingimpossible{STATS} = 1  .
         &UpdateStats(C4::Context->userenv->{'branch'},'localuse','','',$item->{'itemnumber'},$item->{'itemtype'},$borrower->{'borrowernumber'});
         return( { STATS => 1 }, {});
     }
@@ -2124,13 +2124,13 @@ sub CanBookBeRenewed {
             $renewokay = 1;
         }
         else {
-			$error="too_many";
-		}
+            $error="too_many";
+        }
         $sth2->finish;
         my ( $resfound, $resrec ) = C4::Reserves::CheckReserves($itemnumber);
         if ($resfound) {
             $renewokay = 0;
-			$error="on_reserve"
+            $error="on_reserve"
         }
 
     }
@@ -2239,7 +2239,7 @@ sub AddRenewal {
     }
     # Log the renewal
     UpdateStats( $branch, 'renew', $charge, '', $itemnumber, $item->{itype}, $borrowernumber);
-	return $datedue;
+    return $datedue;
 }
 
 sub GetRenewCount {
@@ -2539,11 +2539,11 @@ sub updateWrongTransfer {
 	my $dbh = C4::Context->dbh;	
 # first step validate the actual line of transfert .
 	my $sth =
-        	$dbh->prepare(
+			$dbh->prepare(
 			"update branchtransfers set datearrived = now(),tobranch=?,comments='wrongtransfer' where itemnumber= ? AND datearrived IS NULL"
-          	);
-        	$sth->execute($FromLibrary,$itemNumber);
-        	$sth->finish;
+			);
+			$sth->execute($FromLibrary,$itemNumber);
+			$sth->finish;
 
 # second step create a new line of branchtransfer to the right location .
 	ModItemTransfer($itemNumber, $FromLibrary, $waitingAtLibrary);
@@ -2682,12 +2682,12 @@ sub CheckSpecialHolidays{
 my ($years,$month,$day,$itemnumber,$branchcode) = @_;
 my $dbh = C4::Context->dbh;
 my $query=qq|SELECT count(*) 
-	     FROM `special_holidays`
-	     WHERE year=?
-	     AND month=?
-	     AND day=?
+		 FROM `special_holidays`
+		 WHERE year=?
+		 AND month=?
+		 AND day=?
              AND branchcode=?
-	    |;
+		|;
 my $sth = $dbh->prepare($query);
 $sth->execute($years,$month,$day,$branchcode);
 my $countspecial=$sth->fetchrow ;
@@ -2710,11 +2710,11 @@ sub CheckRepeatableSpecialHolidays{
 my ($month,$day,$itemnumber,$branchcode) = @_;
 my $dbh = C4::Context->dbh;
 my $query=qq|SELECT count(*) 
-	     FROM `repeatable_holidays`
-	     WHERE month=?
-	     AND day=?
+		 FROM `repeatable_holidays`
+		 WHERE month=?
+		 AND day=?
              AND branchcode=?
-	    |;
+		|;
 my $sth = $dbh->prepare($query);
 $sth->execute($month,$day,$branchcode);
 my $countspecial=$sth->fetchrow ;
@@ -2728,9 +2728,9 @@ sub CheckValidBarcode{
 my ($barcode) = @_;
 my $dbh = C4::Context->dbh;
 my $query=qq|SELECT count(*) 
-	     FROM items 
+		 FROM items 
              WHERE barcode=?
-	    |;
+		|;
 my $sth = $dbh->prepare($query);
 $sth->execute($barcode);
 my $exist=$sth->fetchrow ;

@@ -142,31 +142,31 @@ function refocus(calendar) {
 <!-- TMPL_IF NAME="AjaxCirc" -->
 <script type="text/javascript" src="<!-- TMPL_VAR name="themelang" -->/lib/jquery/plugins/humanmsg.js"></script>
 <script type="text/javascript" src="<!-- TMPL_VAR name="themelang" -->/lib/jquery/plugins/jquery.color.js"></script>
-	<script type="text/javascript" src="<!-- TMPL_VAR name="themelang" -->/js/pages/circulation-ajax.js"></script>
-	<script type="text/javascript">
-		//<![CDATA[
-		circulation.issues = {
-		<!-- TMPL_LOOP NAME="allissues" -->
-			<!-- TMPL_VAR NAME="issueid" -->: {
-				biblionumber: "<!-- TMPL_VAR NAME="biblionumber" ESCAPE="JS" -->",
-				itemnumber: "<!-- TMPL_VAR NAME="itemnumber" ESCAPE="JS" -->",
-				title: "<!-- TMPL_VAR NAME="title" ESCAPE="JS" -->",
-				author: "<!-- TMPL_VAR NAME="author" ESCAPE="JS" -->",
-				itemcallnumber: "<!-- TMPL_VAR NAME="itemcallnumber" ESCAPE="JS" -->",
-				date_due: "<!-- TMPL_VAR NAME="dd" ESCAPE="JS" -->",
-				itemtype: "<!-- TMPL_VAR NAME="itemtype" ESCAPE="JS" -->",
-				itemtype_description: "<!-- TMPL_VAR NAME="itemtype_description" ESCAPE="JS" -->",
-				itemtype_image: "<!-- TMPL_VAR NAME="itemtype_image" ESCAPE="JS" -->",
-				itemnotes: "<!-- TMPL_VAR NAME="itemnotes" ESCAPE="JS" -->",
-				barcode: "<!-- TMPL_VAR NAME="barcode" ESCAPE="JS" -->",
-			},
-		<!-- /TMPL_LOOP -->
-		}
+    <script type="text/javascript" src="<!-- TMPL_VAR name="themelang" -->/js/pages/circulation-ajax.js"></script>
+    <script type="text/javascript">
+        //<![CDATA[
+        circulation.issues = {
+        <!-- TMPL_LOOP NAME="allissues" -->
+            <!-- TMPL_VAR NAME="issueid" -->: {
+                biblionumber: "<!-- TMPL_VAR NAME="biblionumber" ESCAPE="JS" -->",
+                itemnumber: "<!-- TMPL_VAR NAME="itemnumber" ESCAPE="JS" -->",
+                title: "<!-- TMPL_VAR NAME="title" ESCAPE="JS" -->",
+                author: "<!-- TMPL_VAR NAME="author" ESCAPE="JS" -->",
+                itemcallnumber: "<!-- TMPL_VAR NAME="itemcallnumber" ESCAPE="JS" -->",
+                date_due: "<!-- TMPL_VAR NAME="dd" ESCAPE="JS" -->",
+                itemtype: "<!-- TMPL_VAR NAME="itemtype" ESCAPE="JS" -->",
+                itemtype_description: "<!-- TMPL_VAR NAME="itemtype_description" ESCAPE="JS" -->",
+                itemtype_image: "<!-- TMPL_VAR NAME="itemtype_image" ESCAPE="JS" -->",
+                itemnotes: "<!-- TMPL_VAR NAME="itemnotes" ESCAPE="JS" -->",
+                barcode: "<!-- TMPL_VAR NAME="barcode" ESCAPE="JS" -->",
+            },
+        <!-- /TMPL_LOOP -->
+        }
         <!-- TMPL_UNLESS NAME="noItemTypeImages" -->koha.item_type_images = true;<!-- /TMPL_UNLESS -->
-		circulation.issuecount = <!-- TMPL_VAR NAME="issuecount" -->;
-		circulation.branch = '<!-- TMPL_VAR NAME="branch" -->';
-		//]]>
-	</script>
+        circulation.issuecount = <!-- TMPL_VAR NAME="issuecount" -->;
+        circulation.branch = '<!-- TMPL_VAR NAME="branch" -->';
+        //]]>
+    </script>
     <!-- /TMPL_IF -->
 </head>
 <body>
@@ -754,8 +754,8 @@ No patron matched <span class="ex"><!-- TMPL_VAR name="message" --></span>
     </tr>
     <!-- /TMPL_LOOP --> <!-- /loop todayissues -->
     <!-- /if todayissues --><!-- /TMPL_IF -->
-	<tr id="todaysissues_last" class="hidden_row" colspan="7"></tr>
-	</tbody>
+    <tr id="todaysissues_last" class="hidden_row" colspan="7"></tr>
+    </tbody>
 <!-- TMPL_IF NAME="previssues" -->
 <!-- TMPL_IF NAME="todayissues" --><tr><th colspan="10"><a name="previous" id="previous"></a>Previous checkouts</th></tr><!-- TMPL_ELSE -->
 <tr><th class="{sorter: false}" colspan="10"><a name="previous" id="previous"></a>Previous checkouts</th></tr></thead>
