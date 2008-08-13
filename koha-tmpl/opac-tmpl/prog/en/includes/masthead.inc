@@ -35,9 +35,9 @@
 
 	<select name="idx" id="masthead_search" class="left" style="max-width:10em;width:10em;">
 	<!-- TMPL_IF NAME="ms_kw" -->
-        <option selected="selected" value="">Library Catalog</option>
+        <option selected="selected" value="">Everything</option>
 		<!-- TMPL_ELSE -->
-        <option value="">Library Catalog</option>
+        <option value="">Everything</option>
 		<!-- /TMPL_IF -->
 		<!-- TMPL_IF NAME="ms_ti" -->
         <option selected="selected" value="ti">Title</option>
