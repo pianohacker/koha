@@ -1,0 +1,54 @@
+#!/usr/bin/perl
+#
+# Copyright 2008 LibLime
+#
+# This file is part of Koha.
+#
+# Koha is free software; you can redistribute it and/or modify it under the
+# terms of the GNU General Public License as published by the Free Software
+# Foundation; either version 2 of the License, or (at your option) any later
+# version.
+#
+# Koha is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
+# A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along with
+# Koha; if not, write to the Free Software Foundation, Inc., 59 Temple Place,
+# Suite 330, Boston, MA  02111-1307 USA
+#
+
+use strict;
+use warnings;
+
+use C4::Service;
+use C4::Context;
+use C4::Koha;
+use C4::Debug;
+use List::MoreUtils qw(firstidx);
+use JSON;
+
+our ($query, $response) = C4::Service->init( circulate => 1 );
+our $dbh = C4::Context->dbh;
+
+sub update_issuingrule {
+    my ( $branch, $categorycode, $itemtype ) = @_;
+
+    my @allowed_keys = ( 'fine', 'firstremind', 'chargeperiod', 'maxissueqty', 'issuelength' );
+
+    my ( $key, $value ) = C4::Service->require_params( 'key', 'value' );
+
+    C4::Service->return_error( 'input', 'not_found', field => 'key' ) if ( firstidx( sub { $_ eq $key }, @allowed_keys ) == -1 );
+
+    $dbh->do( "
+        UPDATE issuingrules
+        SET $key = ? 
+        WHERE branchcode = ? AND categorycode = ? AND itemtype = ?;
+    ", {}, $value, $branch, $categorycode, $itemtype );
+
+    C4::Service->return_success( $response );
+}
+
+C4::Service->dispatch(
+    ['POST /(.*);(.*);(.*)', [], \&update_issuingrule],
+);

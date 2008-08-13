@@ -12,6 +12,9 @@ $(document).ready(function() {
 });
 //]]>
 </script>
+<script type="text/javascript" src="<!-- TMPL_VAR name="themelang" -->/js/pages/smart-rules-ajax.js"></script>
+<link rel="stylesheet" type="text/css" href="<!-- TMPL_VAR name="themelang" -->/css/humanmsg.css">
+<script type="text/javascript" src="<!-- TMPL_VAR name="themelang" -->/lib/jquery/plugins/humanmsg.js"></script>
 
 </head>
 <body>
@@ -44,7 +47,8 @@ $(document).ready(function() {
             <li>default library, default patron type, same item type</li>
             <li>default library, default patron type, default item type</li>
         </ul>
-        <p>To modify a rule, create a new one with the same patron type and item type.</p>
+        <p id="noajax-instructions">To modify a rule, create a new one with the same patron type and item type.</p>
+        <p id="ajax-instructions" class="content_hidden">To modify a rule, click on and edit its values.</p>
     </div>
     <div id="bloc100">
         <form method="get" action="/cgi-bin/koha/admin/smart-rules.pl" id="selectlibrary">
@@ -58,7 +62,7 @@ $(document).ready(function() {
         </form>
 		<br />
 		<br />
-        <form method="post" action="/cgi-bin/koha/admin/smart-rules.pl">
+        <form method="post" action="/cgi-bin/koha/admin/smart-rules.pl" id="rules">
             <input type="hidden" name="op" value="add" />
             <table>
             <tr>
@@ -97,7 +101,7 @@ $(document).ready(function() {
                             <!-- TMPL_VAR NAME="maxissueqty" -->
                         <!-- /TMPL_IF -->
                     </td>
-                    <td><!-- TMPL_IF NAME="issuelength" --><!-- TMPL_VAR NAME="issuelength" --> day(s)<!-- /TMPL_IF --></td>
+                    <td class="issuelength-field" title="<!-- TMPL_VAR NAME="issuelength"--"><!-- TMPL_IF NAME="issuelength" --><!-- TMPL_VAR NAME="issuelength" --> day(s)<!-- /TMPL_IF --></td>
                     <td>
                         <a class="button" href="/cgi-bin/koha/admin/smart-rules.pl?op=delete&amp;itemtype=<!-- TMPL_VAR NAME="itemtype" -->&amp;categorycode=<!-- TMPL_VAR NAME="categorycode" -->&amp;branch=<!-- TMPL_VAR NAME="branch" -->">Delete</a>
                     </td>
