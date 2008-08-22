@@ -157,6 +157,17 @@ function refocus(calendar) {
    document.getElementById('barcode').focus();
    calendar.hide();
 };
+
+var fast_add_barcode = ''
+
+function fast_add(barcode) {
+	fast_add_barcode = barcode;
+    window.open('/cgi-bin/koha/tools/fast-add.pl?barcode=' + barcode, 'fastadd','width=700,height=550,toolbar=false,scrollbars=yes');
+}
+function fast_add_success() {
+	humanMsg.displayAlert('Successfully added <strong>' + fast_add_barcode + '</strong>');
+	$('#barcode').val(fast_add_barcode);
+}
 //]]>
 </script>
 [% INCLUDE 'calendar.inc' %]
@@ -343,12 +354,13 @@ function refocus(calendar) {
         [% END %]
 
         [% IF ( UNKNOWN_BARCODE ) %]
-            <li>The barcode was not found [% barcode %]</li>
-	    [% IF ( fast_cataloging ) %]
-	        [% IF ( CAN_user_editcatalogue_fast_cataloging ) %]
+            <li>The barcode was not found.
+	    [% IF ( fast_cataloging && CAN_user_editcatalogue_fast_cataloging ) %]
                     <a href="/cgi-bin/koha/cataloguing/addbiblio.pl?frameworkcode=FA">Fast cataloging</a>
+        [% ELSE %]
+            <a href="#" onclick="fast_add('[% tried_barcode %]')">Fast Add</a>
 		[% END %]
-	    [% END %]
+            </li>
         [% END %]
 
         [% IF ( NOT_FOR_LOAN ) %]

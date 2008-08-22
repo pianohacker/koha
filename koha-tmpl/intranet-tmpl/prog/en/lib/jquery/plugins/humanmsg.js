@@ -32,9 +32,9 @@ var humanMsg = {
 		humanMsg.displayMsg(msg, options, true);
 	},
 
+
 	displayMsg: function(msg, options, is_alert) {
-		if (msg == '')
-			return;
+		if (msg == '') return;
 
 		if (options != undefined) {
 			delay = 'delay' in options ? parseInt(options.delay) * 1000 : 1000
@@ -85,11 +85,13 @@ var humanMsg = {
 			.unbind('keypress', humanMsg.removeMsg)
 
 		// If message is fully transparent, fade it out
-		if (jQuery('#'+humanMsg.msgID).css('opacity') == humanMsg.msgOpacity)
+		if (jQuery('#'+humanMsg.msgID).css('opacity') == humanMsg.msgOpacity) {
 			jQuery('#'+humanMsg.msgID).animate({ opacity: 0 }, 500, function() { jQuery(this).hide() })
+		}
 	}
 };
 
 jQuery(document).ready(function(){
 	humanMsg.setup();
+    window.alert = function (text) { humanMsg.displayMsg(text.split('\n').join('<br />')) };
 })
