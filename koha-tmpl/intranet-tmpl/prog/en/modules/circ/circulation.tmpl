@@ -130,6 +130,17 @@ function refocus(calendar) {
    document.getElementById('barcode').focus();
    calendar.hide();
 };
+
+var fast_add_barcode = ''
+
+function fast_add(barcode) {
+	fast_add_barcode = barcode;
+    window.open('/cgi-bin/koha/tools/fast-add.pl?barcode=' + barcode, 'fastadd','width=700,height=550,toolbar=false,scrollbars=yes');
+}
+function fast_add_success() {
+	humanMsg.displayAlert('Successfully added <strong>' + fast_add_barcode + '</strong>');
+	$('#barcode').val(fast_add_barcode);
+}
 //]]>
 </script>
 
@@ -302,7 +313,7 @@ function refocus(calendar) {
         <!-- /TMPL_IF -->
 
         <!-- TMPL_IF NAME="UNKNOWN_BARCODE" -->
-            <li>The barcode was not found</li>
+            <li>The barcode was not found. <a href="#" onclick="fast_add('<!-- TMPL_VAR NAME="tried_barcode" -->')">Fast Add</a></li>
         <!-- /TMPL_IF -->
 
         <!-- TMPL_IF NAME="NOT_FOR_LOAN" -->
