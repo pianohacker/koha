@@ -1,0 +1,41 @@
+<!-- TMPL_INCLUDE NAME="doc-head-open.inc" -->
+	<title>Koha -- Fast Add</title>
+	<!-- TMPL_INCLUDE NAME="doc-head-close.inc" -->
+
+	<!-- TMPL_IF NAME="bib_created" -->
+	<script type="text/javascript">
+	$(document).ready(function() {
+		window.opener.fast_add_success('<!-- TMPL_VAR NAME="barcode" -->');
+		window.close();
+	});
+	</script>
+	<!-- /TMPL_IF -->
+</head>
+
+<body>
+
+<div id="custom-doc" class="yui-t7">
+   <div id="bd">
+	<div class="yui-g">
+	
+	<h3>Fast Add<!-- TMPL_IF NAME="barcode" -->: <!-- TMPL_VAR NAME="barcode" --><!-- /TMPL_IF --></h3>
+
+	<form action="/cgi-bin/koha/tools/fast-add.pl" method="post" id="mainform" class="mainform">
+		<fieldset legend="Book Information">
+			<legend>Book Information</legend>
+			<!-- TMPL_IF NAME="barcode" -->
+			<input type="hidden" name="barcode" value="<!-- TMPL_VAR NAME="barcode"-->" />
+			<!-- TMPL_ELSE -->
+			<p><label for="barcode">Barcode: </label><input id="barcode" name="barcode" size="15" />
+			<!-- /TMPL_IF -->
+			<p><label for="title">Title: </label><input id="title" name="title" size="15" />
+			<p><label for="author">Author (optional): </label><input id="author" name="author" size="15" />
+			<input type="submit" value="Add" class="submit" />
+		</fieldset>
+	</form>
+	</div>
+   </div>
+</div>
+
+
+<!-- TMPL_INCLUDE NAME="intranet-bottom.inc" -->
