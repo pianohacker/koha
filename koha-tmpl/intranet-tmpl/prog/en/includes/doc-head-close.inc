@@ -1,6 +1,7 @@
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 <link rel="shortcut icon" href="[% IF ( IntranetFavicon ) %][% IntranetFavicon %][% ELSE %][% themelang %]/includes/favicon.ico[% END %]" type="image/x-icon" />
 <link rel="stylesheet" type="text/css" href="[% themelang %]/lib/jquery/plugins/ui.tabs.css" />
+<link rel="stylesheet" type="text/css" href="[% themelang %]/css/humanmsg.css" />
 <link rel="stylesheet" type="text/css" media="print" href="[% themelang %]/css/print.css" />
 [% IF ( intranetstylesheet ) %]
     <link rel="stylesheet" type="text/css" href="[% intranetstylesheet %]" />
@@ -32,18 +33,8 @@
 <script type="text/javascript" src="[% themelang %]/lib/jquery/plugins/jquery.hotkeys.min.js"></script>
 <script type="text/javascript" src="[% themelang %]/lib/jquery/plugins/jquery.cookie.min.js"></script>
 <script type="text/javascript" src="[% themelang %]/lib/jquery/plugins/jquery.highlight-3.js"></script>
+<script type="text/javascript" src="[% themelang %]/lib/jquery/plugins/humanmsg.js"></script>
 
-[% IF ( js_libs ) %]
-    [% FOREACH js_lib IN js_libs %]
-        <script type="text/javascript" src="[% themelang %]/[% js_lib.lib %]"></script>
-    [% END %]
-[% END %]
-[% IF ( js_module ) %]
-    <script type="text/javascript" src="[% themelang %]/js/modules/[% js_module %]"></script>
-[% END %]
-[% IF ( js_page ) %]
-    <script type="text/javascript" src="[% themelang %]/js/pages/[% js_page %]"></script>
-[% END %]
 
 [% IF ( js_widgets ) %]
     [% FOREACH js_widget IN js_widgets %]

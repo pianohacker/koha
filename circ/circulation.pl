@@ -305,7 +305,10 @@ if ($barcode) {
     
     # FIXME If the issue is confirmed, we launch another time GetMemberIssuesAndFines, now display the issue count after issue 
     my ( $od, $issue, $fines ) = GetMemberIssuesAndFines( $borrowernumber );
-    $template->param( issuecount   => $issue );
+    $template->param(
+        issuecount   => $issue,
+        tried_barcode => $barcode,
+    );
 }
 
 # reload the borrower info for the sake of reseting the flags.....

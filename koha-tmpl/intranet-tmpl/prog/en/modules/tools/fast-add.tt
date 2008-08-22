@@ -1,0 +1,41 @@
+[% INCLUDE 'doc-head-open.inc' %]
+	<title>Koha -- Fast Add</title>
+	[% INCLUDE 'doc-head-close.inc' %]
+
+	[% IF ( bib_created ) %]
+	<script type="text/javascript">
+	$(document).ready(function() {
+		window.opener.fast_add_success('[% barcode %]');
+		window.close();
+	});
+	</script>
+	[% END %]
+</head>
+
+<body>
+
+<div id="custom-doc" class="yui-t7">
+   <div id="bd">
+	<div class="yui-g">
+	
+	<h3>Fast Add[% IF ( barcode ) %]: [% barcode %][% END %]</h3>
+
+	<form action="/cgi-bin/koha/tools/fast-add.pl" method="post" id="mainform" class="mainform">
+		<fieldset legend="Book Information">
+			<legend>Book Information</legend>
+			[% IF ( barcode ) %]
+			<input type="hidden" name="barcode" value="[% barcode %]" />
+			[% ELSE %]
+			<p><label for="barcode">Barcode: </label><input id="barcode" name="barcode" size="15" />
+			[% END %]
+			<p><label for="title">Title: </label><input id="title" name="title" size="15" />
+			<p><label for="author">Author (optional): </label><input id="author" name="author" size="15" />
+			<input type="submit" value="Add" class="submit" />
+		</fieldset>
+	</form>
+	</div>
+   </div>
+</div>
+
+
+[% INCLUDE 'intranet-bottom.inc' %]
