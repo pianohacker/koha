@@ -94,6 +94,7 @@ var allcheckboxes = $(".checkboxed");
         $(this).hide();
 		$("#add_message_form").show();
 	 });
+    $( document ).bind( 'keydown', 'Alt+p', function () { printx_window('slip') } );
  });
 function uncheck_sibling(me){
 nodename=me.getAttribute("name");
