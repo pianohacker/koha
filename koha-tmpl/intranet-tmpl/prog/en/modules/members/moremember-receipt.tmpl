@@ -8,13 +8,16 @@
         window.close();
 </script>
 </head>
-<body>
+<body onload="window.print();window.close();">
 
 <div id="receipt">
 
 <h3><!-- TMPL_VAR name="LibraryName" --></h3>
 <!-- TMPL_IF NAME="branchname" --><!-- TMPL_VAR NAME="branchname" --><br /><!-- /TMPL_IF -->
-Checked out to <a href="/cgi-bin/koha/circ/circulation.pl?findborrower=<!-- TMPL_VAR NAME="cardnumber">"><!-- TMPL_VAR NAME="cardnumber" --></a><br />
+<!-- TMPL_IF NAME="branchaddress1" --><!-- TMPL_VAR NAME="branchaddress1" --><br /><!-- /TMPL_IF -->
+<!-- TMPL_IF NAME="branchaddress2" --><!-- TMPL_VAR NAME="branchaddress2" --><br /><!-- /TMPL_IF -->
+<!-- TMPL_IF NAME="branchaddress3" --><!-- TMPL_VAR NAME="branchaddress3" --><br /><!-- /TMPL_IF -->
+<!-- TMPL_IF NAME="branchphone" --><!-- TMPL_VAR NAME="branchphone" --><br /><!-- /TMPL_IF -->
 
 <!-- TMPL_VAR NAME="todaysdate" --><br />
 

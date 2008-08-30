@@ -218,7 +218,10 @@ if ( C4::Context->preference("IndependantBranches") ) {
     $samebranch = 1;
 }
 my $branchdetail = GetBranchDetail( $data->{'branchcode'});
-$data->{'branchname'} = $branchdetail->{branchname};
+$template->param($branchdetail);
+if (C4::Context->preference('LibraryName') == $branchdetail->{'branchname'}) {
+	$template->param(branchname => '');
+}
 
 
 my ( $total, $accts, $numaccts) = GetMemberAccountRecords( $borrowernumber );
