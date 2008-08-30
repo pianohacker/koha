@@ -17,6 +17,11 @@
 
 <h3>[% LibraryName %]</h3>
 [% IF ( branchname ) %][% branchname %]<br />[% END %]
+[% IF ( branchaddress1 ) %][% branchaddress1 %]<br />[% END %]
+[% IF ( branchaddress2 ) %][% branchaddress2 %]<br />[% END %]
+[% IF ( branchaddress3 ) %][% branchaddress3 %]<br />[% END %]
+[% IF ( branchphone ) %][% branchphone %]<br />[% END %]
+
 Checked out to [% firstname %] [% surname %] <br />
 (<a href="/cgi-bin/koha/circ/circulation.pl?findborrower=[% cardnumber %]">[% cardnumber %]</a>)<br />
 
