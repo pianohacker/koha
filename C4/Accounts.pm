@@ -26,11 +26,12 @@ use C4::Members;
 use C4::Items;
 use C4::Circulation qw(MarkIssueReturned);
 
-use vars qw($VERSION @ISA @EXPORT);
+use vars qw($VERSION @ISA @EXPORT $debug);
 
 BEGIN {
 	# set the version for version checking
 	$VERSION = 3.03;
+	$debug = $ENV{DEBUG} || 0;
 	require Exporter;
 	@ISA    = qw(Exporter);
 	@EXPORT = qw(
@@ -271,7 +272,7 @@ sub returnlost{
     my @datearr = localtime(time);
     my $date = ( 1900 + $datearr[5] ) . "-" . ( $datearr[4] + 1 ) . "-" . $datearr[3];
     my $bor = "$borrower->{'firstname'} $borrower->{'surname'} $borrower->{'cardnumber'}";
-    ModItem({ paidfor =>  "Paid for by $bor $date" }, undef, $itemnum);
+    C4::Items::ModItem({ paidfor =>  "Paid for by $bor $date" }, undef, $itemnum);
 }
 
 
@@ -317,7 +318,7 @@ sub chargelostitem{
         # FIXME: Log this ?
         }
         #FIXME : Should probably have a way to distinguish this from an item that really was returned.
-        warn " $issues->{'borrowernumber'}  /  $itemnumber ";
+        warn " $issues->{'borrowernumber'}  /  $itemnumber " if ( $debug );
         C4::Circulation::MarkIssueReturned($issues->{borrowernumber},$itemnumber);
 	#  Shouldn't MarkIssueReturned do this?
         C4::Items::ModItem({ onloan => undef }, undef, $itemnumber);
