@@ -1,0 +1,101 @@
+[% INCLUDE 'doc-head-open.inc' %]
+<title>Koha &rsaquo; Tools &rsaquo; Waiting Print Notices</title>
+[% INCLUDE 'doc-head-close.inc' %]
+[% INCLUDE 'calendar.inc' %]
+<script type="text/javascript" src="[% themelang %]/lib/jquery/plugins/jquery.tablesorter.min.js"></script>
+<script type="text/javascript">//<![CDATA[
+$(document).ready(function() {
+	$("#newst").tablesorter({[% IF ( dateformat == 'metric' ) %]
+		dateFormat: 'uk',[% END %]
+		sortList: [[2,0]],
+		headers: { 0: {sorter:false},6: { sorter: false },7: { sorter: false }}
+	});
+});
+//]]>
+</script>
+</head>
+<body>
+[% INCLUDE 'header.inc' %]
+[% INCLUDE 'cat-search.inc' %]
+
+<div id="breadcrumbs"><a href="/cgi-bin/koha/mainpage.pl">Home</a> &rsaquo; <a href="/cgi-bin/koha/tools/tools-home.pl">Tools</a> &rsaquo; Waiting Print Notices</div>
+
+<div id="doc3" class="yui-t2">
+   <div id="bd">
+	<div id="yui-main">
+	<div class="yui-b">
+
+<div id="toolbar">
+	<script type="text/javascript">
+	//<![CDATA[
+	// prepare DOM for YUI Toolbar
+	 $(document).ready(function() {
+	    yuiToolbar();
+		$( '#select_all' ).click( function () {
+			$( 'input[name=messages]' ).attr( 'checked', this.checked );
+		} );
+	 });
+	// YUI Toolbar Functions
+	function yuiToolbar() {
+	    new YAHOO.widget.Button("printmenuc");
+	}
+	//]]>
+	</script>
+	<ul class="toolbar">
+		<li><a id="printmenuc" href="/cgi-bin/koha/tools/print-queue.pl?op=print&amp;status=[% status %]">Print All</a></li>
+</ul></div>
+
+	<h1>Waiting Print Notices</h1>
+
+	<div style="margin-bottom:5px;">
+	<form name="add_form" method="GET" action="/cgi-bin/koha/tools/print-queue.pl" >
+		<label for="status">Display:</label>
+		[% status_filter %]
+		<input type="submit" class="button" value="Filter" />
+	</form>
+	</div>
+	[% IF ( messages ) %]
+	<form name="mark_done_form" method="post" action="/cgi-bin/koha/tools/print-queue.pl">
+		<table id="newst">
+			<thead>
+				<tr>
+					<th><input type="checkbox" id="select_all" /></th>
+					<th>Borrower</th>
+					<th>Subject</th>
+					<th>Generated On</th>
+				</tr>
+			</thead>
+			<tbody>
+			[% FOREACH message in messages %]
+				<tr>
+					<td>
+						<input type="checkbox" name="messages" value="[% message.message_id %]" />
+					</td>
+					<td><a href="/cgi-bin/koha/members/moremember.pl?borrowernumber=[% message.borrowernumber %]">[% message.surname %], [% message.firstname %]</a></td>
+					<td>[% message.subject %]</td>
+					<td>[% message.date_queued %]</td>
+				</tr>
+			[% END %]
+			</tbody>
+			</table>
+			<fieldset class="action">
+				<input type="hidden" name="op" value="mark" />
+				<input type="hidden" name="status" value="[% status %]" />
+				[% IF ( status == 'pending' ) %]
+				<input type="submit" name="next_status_sent" value="Mark as Sent" />
+				[% ELSIF ( status == 'sent' ) %]
+				<input type="submit" name="next_status_failed" value="Mark as Failed" />
+				[% END %]
+				<input type="submit" name="next_status_deleted" value="Delete" />
+			</fieldset>
+		</form>
+	[% ELSE %]
+		<p>No waiting notices</p>
+	[% END %]
+</div>
+</div>
+<div class="yui-b noprint">
+	[% INCLUDE 'tools-menu.inc' %]
+</div>
+</div>
+[% INCLUDE 'intranet-bottom.inc' %]

@@ -68,6 +68,7 @@ function update_child() {
                     [% UNLESS ( CAN_user_staffaccess ) %], disabled: true[% END %]
                     [% ELSE %][% END %]
                 [% ELSE %], disabled: true[% END %]},
+			{ text: _("Send Bill to Patron"), url: "/cgi-bin/koha/members/boraccount.pl?borrowernumber=[% borrowernumber %]&op=add_bill"[% UNLESS ( CAN_user_tools_print_queue ) %], disabled: true[% END %]},
             { text: _("Delete"), [% IF ( StaffMember ) %][% UNLESS ( CAN_user_staffaccess ) %]disabled: true, [% END %][% ELSE %][% UNLESS ( CAN_user_borrowers ) %]disabled: true, [% END %][% END %] onclick: { fn: confirm_deletion } },
 			{ text: _("Update Child to Adult Patron") , onclick: { fn: update_child }[% UNLESS ( is_child ) %], disabled: true[% END %]}
 		];

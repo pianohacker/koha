@@ -60,6 +60,7 @@ function update_child() {
 		var moremenu = [
 			{ text: _("Renew Patron"),  onclick: { fn: confirm_reregistration } },
 			{ text: _("Set Permissions"), url: "/cgi-bin/koha/members/member-flags.pl?member=[% borrowernumber %]"[% UNLESS ( CAN_user_permissions ) %], disabled: true[% END %]},
+			{ text: _("Send Bill to Patron"), url: "/cgi-bin/koha/members/boraccount.pl?borrowernumber=[% borrowernumber %]&op=add_bill"[% UNLESS ( CAN_user_tools_print_queue ) %], disabled: true[% END %]},
 			{ text: _("Delete"), onclick: { fn: confirm_deletion}[% UNLESS ( CANDELETEUSER ) %], disabled: true[% END %] },
 			{ text: _("Update Child to Adult Patron") , onclick: { fn: update_child }[% UNLESS ( is_child ) %], disabled: true[% END %]}
 		];

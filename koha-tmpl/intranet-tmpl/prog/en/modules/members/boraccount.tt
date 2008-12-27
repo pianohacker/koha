@@ -16,6 +16,15 @@
 [% INCLUDE 'members-toolbar.inc' %]
 <form action="/cgi-bin/koha/members/boraccount.pl" method="get"><input type="hidden" name="borrowernumber" id="borrowernumber" value="[% borrowernumber %]" /></form>
 
+[% IF ( bill ) %]
+<div class="dialog message">
+	[% IF ( bill_sent_both ) %]<p class="problem">Print and email bills prepared and ready to send. Emails are usually automatically sent daily.</p>
+	[% ELSIF ( bill_sent_print ) %]<p class="problem">Print bill prepared and ready to send.</p>
+	[% ELSE %]<p class="problem">No bill was prepared, because this patron has no outstanding fines.</p>
+	[% END %]
+</div>
+[% END %]
+
 <!-- The manual invoice and credit buttons -->
 <div class="toptabs">
 <ul class="ui-tabs-nav">
