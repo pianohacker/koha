@@ -86,6 +86,11 @@
     <dt><a href="/cgi-bin/koha/tools/scheduler.pl">Task scheduler</a></dt>
     <dd>Schedule tasks to run</dd>
     [% END %]
+
+    [% IF ( CAN_user_tools_print_queue ) %]
+    <dt><a href="/cgi-bin/koha/tools/print-queue.pl">Waiting print notices</a></dt>
+    <dd>View and print waiting print notices</dd>
+    [% END %]
 	
 
 </dl>

@@ -26,6 +26,7 @@ use strict;
 use warnings;
 
 use C4::Auth;
+use C4::Accounts qw(AddBill);
 use C4::Output;
 use C4::Dates qw/format_date/;
 use CGI;
@@ -48,6 +49,7 @@ my ($template, $loggedinuser, $cookie)
 my $borrowernumber=$input->param('borrowernumber');
 my $action = $input->param('action') || '';
 
+my $op = $input->param('op');
 #get borrower details
 my $data=GetMember('borrowernumber' => $borrowernumber);
 
@@ -93,6 +95,20 @@ foreach my $accountline ( @{$accts}) {
 }
 
 $template->param( adultborrower => 1 ) if ( $data->{'category_type'} eq 'A' );
+
+if ( $op eq 'add_bill' ) {
+	my @sent_types = AddBill( $borrowernumber );
+
+	$template->param( bill => 1 );
+
+	if ( grep /print/, @sent_types and grep /email/, @sent_types ) {
+		$template->param( bill_sent_both => 1);
+	} elsif ( grep /print/, @sent_types ) {
+		$template->param( bill_sent_print => 1);
+	} else {
+		$template->param( bill_not_sent => 1);
+	}
+}
 
 my ($picture, $dberror) = GetPatronImage($data->{'cardnumber'});
 $template->param( picture => 1 ) if $picture;
