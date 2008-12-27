@@ -25,6 +25,8 @@ use C4::Stats;
 use C4::Members;
 use C4::Items;
 use C4::Circulation qw(MarkIssueReturned);
+use C4::Letters qw();
+use C4::Letters::Print;
 
 use vars qw($VERSION @ISA @EXPORT $debug);
 
@@ -39,6 +41,7 @@ BEGIN {
 		&getnextacctno &reconcileaccount &getcharges &getcredits
 		&getrefunds &chargelostitem
 		&ReversePayment
+		&AddBill
 	); # removed &fixaccounts
 }
 
@@ -132,6 +135,8 @@ sub recordpayment {
     $usth->finish;
     UpdateStats( $branch, 'payment', $data, '', '', '', $borrowernumber, $nextaccntno );
     $sth->finish;
+
+	AddBill( $borrowernumber, 1 );
 }
 
 =head2 makepayment
@@ -207,6 +212,8 @@ sub makepayment {
     if ( $data->{'accounttype'} eq 'Rep' || $data->{'accounttype'} eq 'L' ) {
         returnlost( $borrowernumber, $data->{'itemnumber'} );
     }
+
+	AddBill( $borrowernumber, 1 );
 }
 
 =head2 getnextacctno
@@ -315,6 +322,7 @@ sub chargelostitem{
             "Lost Item $issues->{'title'} $issues->{'barcode'}",
             $issues->{'replacementprice'},$itemnumber);
             $sth2->finish;
+			AddBill( $issues->{'borrowernumber'} );
         # FIXME: Log this ?
         }
         #FIXME : Should probably have a way to distinguish this from an item that really was returned.
@@ -666,6 +674,118 @@ sub ReversePayment {
     $sth = $dbh->prepare('UPDATE accountlines SET amountoutstanding = 0, description = CONCAT( description, " Reversed -" ) WHERE borrowernumber = ? AND accountno = ?');
     $sth->execute( $borrowernumber, $accountno );
   }
+}
+
+sub AddBill($;$) {
+	my ($borrowernumber, $update_only) = @_;
+
+	my $todaysdate = C4::Dates->new();
+	my %shortdescriptions = (
+		L => 'Replacement Cost (forgiven if item is returned)',
+		F => 'Overdue Fee',
+		FU => 'Overdue Fee'
+	);
+
+	our $dbh = C4::Context->dbh;
+	my @letter;
+
+	my $borrower = C4::Members::GetMember($borrowernumber);
+	die unless ($borrower and $borrower->{address});
+
+	push @letter, 'As of today, ' . $todaysdate->output() . ', you have the following fines on your account:', '';
+
+	my $sth = $dbh->prepare('
+	SELECT
+		b.title, b.author,
+		ifnull(i.price, i.replacementprice) as price,
+		i.copynumber,
+		a.itemnumber, a.accounttype,
+		itemlost,
+		accounttype, description, amountoutstanding
+	FROM
+		accountlines a
+		LEFT JOIN items i USING(itemnumber)
+		LEFT JOIN biblio b USING(biblionumber)
+	WHERE borrowernumber = ? AND amount > 0 and amountoutstanding > 0
+	ORDER BY i.itemnumber, a.accounttype');
+	$sth->execute($borrowernumber);
+
+	my $data = $sth->fetchrow_hashref;
+
+	if (!defined($data)) { # This and the do-while loop prevent empty invoices
+		C4::Letters::CancelLetter(
+			borrowernumber => $borrowernumber,
+			message_transport_type => [ 'print', 'email' ],
+			letter_code => 'BILL',
+		);
+
+		return [];
+	}
+
+	my $amountoutstanding_total = 0;
+	my $previtem = -1;
+
+	do {
+		if ($data->{itemnumber} and $data->{itemnumber} != $previtem) {
+			push @letter, (
+				"| $data->{title}" .
+				($data->{author} ? ", by $data->{author}" : '') .
+				($data->{copynumber} ? " ($data->{copynumber})" : '') .
+				" | |"
+			);
+		}
+
+		$amountoutstanding_total += $data->{amountoutstanding};
+
+		push @letter, (
+			'| ' .
+			($data->{itemnumber} ? "\t" : '') .
+			($shortdescriptions{$data->{accounttype}} and $data->{itemnumber} ? $shortdescriptions{$data->{accounttype}} : $data->{description}) .
+			' | ' . sprintf('%0.2f', $data->{amountoutstanding}) . ' |'
+		);
+	} while ($data = $sth->fetchrow_hashref);
+
+	$sth->finish();
+
+	push @letter, '|* Total *|* ' . sprintf('%0.2f', $amountoutstanding_total) . ' *|';
+	push @letter, '', '* You are fined 5 cents for every day a book or audiobook is overdue, and $1.00 a day for everything else, including magazines. The largest overdue fee we will ask you to pay for each item is $5.00.';
+
+	if ($borrower->{email}) {
+		C4::Letters::EnqueueLetter({
+			one_only => 1,
+			update_only => $update_only,
+			borrowernumber => $borrowernumber,
+			message_transport_type => 'email',
+			letter => {
+				code => 'BILL',
+				title => 'You have lost items at the John C. Fremont Library',
+				content => TransformMarkupToHtml(join "\n", @letter),
+				'content-type' => 'text/html'
+			}
+		});
+	}
+
+	unshift @letter, "$borrower->{phone}" if ($borrower->{phone});
+	unshift @letter, (
+		"$borrower->{firstname} $borrower->{surname}",
+		"$borrower->{address}",
+		"$borrower->{city} $borrower->{zipcode}",
+		''
+	);
+
+	C4::Letters::EnqueueLetter({
+		one_only => 1,
+		update_only => $update_only,
+		borrowernumber => $borrowernumber,
+		message_transport_type => 'print',
+		letter => {
+			code => 'BILL',
+			title => 'Patron Bill',
+			content => join("\n", @letter),
+		}
+	});
+
+	return ($borrower->{email}) ? ( 'email', 'print' ) : ( 'print' );
 }
 
 END { }    # module clean-up code here (global destructor)

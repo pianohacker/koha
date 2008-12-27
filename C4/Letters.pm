@@ -577,6 +577,55 @@ sub EnqueueLetter ($) {
     }
 
     my $dbh       = C4::Context->dbh();
+
+	if ( $params->{'one_only'} || $params->{'update_only'} ) {
+		my $sth_search = $dbh->prepare("
+			SELECT message_id
+			  FROM message_queue
+			  WHERE
+			    borrowernumber = ? AND
+				letter_code = ? AND
+				message_transport_type = ? AND
+				status = 'pending'
+			");
+
+		my $sth_update = $dbh->prepare("
+			UPDATE message_queue
+			SET
+				subject = ?,
+				content = ?,
+				time_queued = NOW(),
+				to_address = ?,
+				from_address = ?,
+				content_type = ?
+			WHERE message_id = ?
+		");
+
+		$sth_search->execute(
+			$params->{'borrowernumber'},
+			$params->{'letter'}->{'code'},
+			$params->{'message_transport_type'},
+		);
+
+		my ($message_id) = $sth_search->fetchrow_array;
+
+		if ( defined( $message_id ) ) {
+			$sth_update->execute(
+				$params->{'letter'}->{'title'},
+				$params->{'letter'}->{'content'},
+				$params->{'to_address'},
+				$params->{'from_address'},
+				$params->{'letter'}->{'content-type'},
+				$message_id
+			);
+
+			return;
+		} elsif ( $params->{'update_only'} ) {
+			return
+		}
+	}
+
+
     my $statement = << 'ENDSQL';
 INSERT INTO message_queue
 ( borrowernumber, subject, content, metadata, letter_code, message_transport_type, status, time_queued, to_address, from_address, content_type )
@@ -598,6 +647,37 @@ ENDSQL
         $params->{'letter'}->{'content-type'},    # content_type
     );
     return $result;
+}
+
+sub CancelLetter {
+	my %params = @_;
+
+	my $dbh = C4::Context->dbh;
+	my $sth;
+
+	if ( ref($params{'message_transport_type'}) eq 'ARRAY' ) {
+		$sth = $dbh->prepare( "
+			DELETE FROM message_queue
+			WHERE
+			  borrowernumber = ?
+			  AND letter_code = ?
+			  AND status = 'pending'
+			  AND message_transport_type IN (" . join( ", ", map( "?", @{ $params{'message_transport_type'} } ) ) . ")"
+		);
+	} else {
+		$params{'message_transport_type'} = [ $params{'message_transport_type'} ];
+		$sth = $dbh->prepare( "
+			DELETE FROM message_queue
+			WHERE
+			  borrowernumber = ?
+			  AND letter_code = ?
+			  AND status = 'pending'
+			  AND message_transport_type = ?"
+		);
+	}
+
+	$sth->execute( $params{'borrowernumber'}, $params{'letter_code'}, @{ $params{'message_transport_type'} } );
+	$sth->finish;
 }
 
 =head2 SendQueuedMessages ([$hashref]) 
@@ -758,6 +838,7 @@ sub _get_unsent_messages (;$) {
     my $params = shift;
 
     my $dbh = C4::Context->dbh();
+
     my $statement = << 'ENDSQL';
 SELECT message_id, borrowernumber, subject, content, message_transport_type, status, time_queued, from_address, to_address, content_type
   FROM message_queue

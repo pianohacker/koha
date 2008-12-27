@@ -58,6 +58,7 @@ function update_child() {
 		var moremenu = [
 			{ text: _("Renew Patron"),  onclick: { fn: confirm_reregistration } },
 			{ text: _("Set Permissions"), url: "/cgi-bin/koha/members/member-flags.pl?member=<!-- TMPL_VAR NAME="borrowernumber" -->"<!-- TMPL_UNLESS NAME="CAN_user_permissions" -->, disabled: true<!-- /TMPL_UNLESS -->},
+			{ text: _("Send Bill to Patron"), url: "/cgi-bin/koha/members/boraccount.pl?borrowernumber=<!-- TMPL_VAR NAME="borrowernumber" -->&op=add_bill"<!-- TMPL_UNLESS NAME="CAN_user_tools_print_queue" -->, disabled: true<!-- /TMPL_UNLESS -->},
 			{ text: _("Delete"), onclick: { fn: confirm_deletion}<!-- TMPL_UNLESS NAME="CANDELETEUSER" -->, disabled: true<!-- /TMPL_UNLESS --> },
 			{ text: _("Update Child to Adult Patron") , onclick: { fn: update_child }<!-- TMPL_UNLESS NAME="is_child" -->, disabled: true<!-- /TMPL_UNLESS -->}
 		];
