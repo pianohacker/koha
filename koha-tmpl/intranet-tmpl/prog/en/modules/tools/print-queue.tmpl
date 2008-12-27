@@ -1,0 +1,101 @@
+<!-- TMPL_INCLUDE NAME="doc-head-open.inc" -->
+<title>Koha &rsaquo; Tools &rsaquo; Waiting Print Notices</title>
+<!-- TMPL_INCLUDE NAME="doc-head-close.inc" -->
+<!-- TMPL_INCLUDE NAME="calendar.inc" -->
+<script type="text/javascript" src="<!-- TMPL_VAR name="themelang" -->/lib/jquery/plugins/jquery.tablesorter.min.js"></script>
+<script type="text/javascript">//<![CDATA[
+$(document).ready(function() {
+	$("#newst").tablesorter({<!-- TMPL_IF EXPR="dateformat eq 'metric'" -->
+		dateFormat: 'uk',<!-- /TMPL_IF -->
+		sortList: [[2,0]],
+		headers: { 0: {sorter:false},6: { sorter: false },7: { sorter: false }}
+	});
+});
+//]]>
+</script>
+</head>
+<body>
+<!-- TMPL_INCLUDE NAME="header.inc" -->
+<!-- TMPL_INCLUDE NAME="cat-search.inc" -->
+
+<div id="breadcrumbs"><a href="/cgi-bin/koha/mainpage.pl">Home</a> &rsaquo; <a href="/cgi-bin/koha/tools/tools-home.pl">Tools</a> &rsaquo; Waiting Print Notices</div>
+
+<div id="doc3" class="yui-t2">
+   <div id="bd">
+	<div id="yui-main">
+	<div class="yui-b">
+
+<div id="toolbar">
+	<script type="text/javascript">
+	//<![CDATA[
+	// prepare DOM for YUI Toolbar
+	 $(document).ready(function() {
+	    yuiToolbar();
+		$( '#select_all' ).click( function () {
+			$( 'input[name=messages]' ).attr( 'checked', this.checked );
+		} );
+	 });
+	// YUI Toolbar Functions
+	function yuiToolbar() {
+	    new YAHOO.widget.Button("printmenuc");
+	}
+	//]]>
+	</script>
+	<ul class="toolbar">
+		<li><a id="printmenuc" href="/cgi-bin/koha/tools/print-queue.pl?op=print&amp;status=<!-- TMPL_VAR NAME="status" -->">Print All</a></li>
+</ul></div>
+
+	<h1>Waiting Print Notices</h1>
+
+	<div style="margin-bottom:5px;">
+	<form name="add_form" method="GET" action="/cgi-bin/koha/tools/print-queue.pl" >
+		<label for="status">Display:</label>
+		<!-- TMPL_VAR NAME="status_filter" -->
+		<input type="submit" class="button" value="Filter" />
+	</form>
+	</div>
+	<!-- TMPL_IF NAME="messages" -->
+	<form name="mark_done_form" method="post" action="/cgi-bin/koha/tools/print-queue.pl">
+		<table id="newst">
+			<thead>
+				<tr>
+					<th><input type="checkbox" id="select_all" /></th>
+					<th>Borrower</th>
+					<th>Subject</th>
+					<th>Generated On</th>
+				</tr>
+			</thead>
+			<tbody>
+			<!-- TMPL_LOOP NAME="messages" -->
+				<tr>
+					<td>
+						<input type="checkbox" name="messages" value="<!-- TMPL_VAR NAME="message_id" -->" />
+					</td>
+					<td><a href="/cgi-bin/koha/members/moremember.pl?borrowernumber=<!-- TMPL_VAR NAME="borrowernumber" -->"><!-- TMPL_VAR NAME="surname" -->, <!-- TMPL_VAR NAME="firstname" --></a></td>
+					<td><!-- TMPL_VAR NAME="subject" --></td>
+					<td><!-- TMPL_VAR NAME="date_queued" --></td>
+				</tr>
+			<!-- /TMPL_LOOP -->
+			</tbody>
+			</table>
+			<fieldset class="action">
+				<input type="hidden" name="op" value="mark" />
+				<input type="hidden" name="status" value="<!-- TMPL_VAR NAME="status" -->" />
+				<!-- TMPL_IF EXPR="status eq 'pending'" -->
+				<input type="submit" name="next_status_sent" value="Mark as Sent" />
+				<!-- TMPL_ELSIF EXPR="status eq 'sent'" -->
+				<input type="submit" name="next_status_failed" value="Mark as Failed" />
+				<!-- /TMPL_IF -->
+				<input type="submit" name="next_status_deleted" value="Delete" />
+			</fieldset>
+		</form>
+	<!-- TMPL_ELSE -->
+		<p>No waiting notices</p>
+	<!-- /TMPL_IF -->
+</div>
+</div>
+<div class="yui-b noprint">
+	<!-- TMPL_INCLUDE NAME="tools-menu.inc" -->
+</div>
+</div>
+<!-- TMPL_INCLUDE NAME="intranet-bottom.inc" -->

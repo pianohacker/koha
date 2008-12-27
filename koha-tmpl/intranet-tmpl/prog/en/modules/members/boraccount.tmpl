@@ -16,6 +16,15 @@
 <!-- TMPL_INCLUDE NAME="members-toolbar.inc" -->
 <form action="/cgi-bin/koha/members/boraccount.pl" method="get"><input type="hidden" name="borrowernumber" id="borrowernumber" value="<!-- TMPL_VAR NAME="borrowernumber" -->" /></form>
 
+<!-- TMPL_IF NAME="bill" -->
+<div class="dialog message">
+	<!-- TMPL_IF NAME="bill_sent_both" --><p class="problem">Print and email bills prepared and ready to send. Emails are usually automatically sent daily.</p>
+	<!-- TMPL_ELSIF NAME="bill_sent_print" --><p class="problem">Print bill prepared and ready to send.</p>
+	<!-- TMPL_ELSE --><p class="problem">No bill was prepared, because this patron has no outstanding fines.</p>
+	<!-- /TMPL_IF -->
+</div>
+<!-- /TMPL_IF -->
+
 <!-- The manual invoice and credit buttons -->
 <div class="toptabs">
 <ul class="ui-tabs-nav">
