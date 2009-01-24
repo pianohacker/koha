@@ -594,14 +594,14 @@ END_SQL
             title   => 'Overdue Notices',
             content => 'These messages were not sent directly to the patrons.',
         };
-        C4::Letters::EnqueueLetter(
-            {   letter                 => $letter,
-                borrowernumber         => undef,
-                message_transport_type => 'email',
-                attachments            => [$attachment],
-                to_address             => $admin_email_address,
-            }
-        );
+        #C4::Letters::EnqueueLetter(
+        #    {   letter                 => $letter,
+        #        borrowernumber         => undef,
+        #        message_transport_type => 'email',
+        #        attachments            => [$attachment],
+        #        to_address             => $admin_email_address,
+        #    }
+        #);
     }
 
 }
