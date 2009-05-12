@@ -1,0 +1,70 @@
+Enhanced Content:
+# Broken, omitted: OPACAmazonContent
+    -
+      - <strong>NOTE:</strong> if you have more than one source of cover images set up, Koha will use the first available.
+    -
+      - name: AmazonContent
+        type: boolean
+        default: 0
+        choices: 
+          yes: Add
+          no: Don't add
+      - Amazon cover images to results, and reviews and "Search Inside" links to detail pages. This affects the staff client and the OPAC, and requires that you have signed up for and entered an access key and associate tag.
+    -
+      - Access Amazon content using access key 
+      - name: AmazonAccessKeyID
+      - (free, at <a href="http://aws.amazon.com/">http://aws.amazon.com/</a>).
+    -
+      - Put associate tag 
+      - name: AmazonAssocTag
+      - on links to Amazon. This can net your library referral fees if a patron decides to buy an item.
+    -
+      - name: AmazonSimilarItems
+        type: boolean
+        default: 1
+        choices: 
+          yes: Show
+          no: Don't show
+      - similar items, as determined by Amazon, on staff detail pages. This requires that Amazon content be enabled.
+    -
+      - name: OPACAmazonSimilarItems
+        type: boolean
+        default: 1
+        choices: 
+          yes: Show
+          no: Don't show
+      - similar items, as determined by Amazon, on OPAC detail pages. This requires that Amazon content be enabled.
+    -
+      - name: BakerTaylorEnabled
+        type: boolean
+        default: 0
+        choices: 
+          yes: Add
+          no: Don't add
+      - Baker and Taylor links and cover images to the OPAC and staff client. This requires that you have entered in a username and password (which can be seen in image links).
+    -
+      - Baker and Taylor "My Library Bookstore" links should be accessed at https://
+      - name: BakerTaylorBookstoreURL
+        class: url
+      -<cite>isbn</cite> (this should be filled in with something like <code>ocls.mylibrarybookstore.com/MLB/actions/searchHandler.do?nextPage=bookDetails&amp;parentNum=10923&amp;key=</code>). Leave it blank to disable these links.
+    -
+      - Access Baker and Taylor using username 
+      - name: BakerTaylorUsername
+        choices: }} and password {{password BakerTaylorPassword
+      - .
+    -
+      - name: FRBRizeEditions
+        type: boolean
+        default: 0
+        choices: 
+          yes: Show
+          no: Don't show
+      - other editions of an item on the staff client (if found by one of the services below).
+    -
+      - name: OPACFRBRizeEditions
+        type: boolean
+        default: 0
+        choices: 
+          yes: Show
+          no: Don't show
+      - other editions of an item on the OPAC.

@@ -1,0 +1,17 @@
+Staff Client:
+    -
+      - intranetcolorstylesheet	 Define the color stylesheet to use in the Staff Client
+    -
+      - IntranetmainUserblock	Add a block of HTML that will display on the intranet home page
+    -
+      - IntranetNav	Use HTML tabs to add navigational links to the left-hand navigational bar in the Staff Client
+    -
+      - intranetstylesheet	Enter a complete URL to use an alternate layout stylesheet in Intranet
+    -
+      - intranetuserjs	Custom javascript for inclusion in Intranet
+    -
+      - template	Define the preferred staff interface template
+    -
+      - TemplateEncoding	Globally define the default character encoding
+    -
+      - "yuipath	Insert the path to YUI libraries, choose local if you use koha offline"

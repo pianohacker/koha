@@ -1,0 +1,13 @@
+BorrowersLog	 If ON, log edit/create/delete actions on patron data:
+    -
+      - CataloguingLog	If ON, log edit/create/delete actions on bibliographic data. WARNING: this feature is very resource consuming.
+    -
+      - FinesLog	If ON, log fines
+    -
+      - IssueLog	If ON, log checkout activity
+    -
+      - LetterLog	If ON, log all notices sent
+    -
+      - ReturnLog	If ON, enables the circulation (returns) log
+    -
+      - SubscriptionLog	If ON, enables subscriptions log

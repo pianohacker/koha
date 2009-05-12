@@ -1,0 +1,83 @@
+AnonSuggestions	 Set to anonymous borrowernumber to enable Anonymous suggestions:
+    -
+      - BiblioDefaultView	Choose the default detail view in the catalog; choose between normal, marc or isbd
+    -
+      - hidelostitems	If ON, disables display of"lost" items in OPAC.
+    -
+      - kohaspsuggest	Track search queries, turn on by defining host:dbname:user:pass
+    -
+      - LibraryName	Define the library name as displayed on the OPAC
+    -
+      - OpacAuthorities	If ON, enables the search authorities link on OPAC
+    -
+      - opacbookbag	If ON, enables display of Cart feature
+    -
+      - OpacBrowser	If ON, enables subject authorities browser on OPAC (needs to set misc/cronjob/sbuild_browser_and_cloud.pl)
+    -
+      - OpacCloud	If ON, enables subject cloud on OPAC
+    -
+      - opaccolorstylesheet	Define the color stylesheet to use in the OPAC
+    -
+      - opaccredits	Define HTML Credits at the bottom of the OPAC page
+    -
+      - OPACDisplayExtendedSubInfo	If ON, extended subscription information is displayed in the OPAC
+    -
+      - OPACDisplayRequestPriority	Show patrons the priority level on holds in the OPAC
+    -
+      - opacheader	Add HTML to be included as a custom header in the OPAC
+    -
+      - OpacHighlightedWords	If Set, then queried words are higlighted in OPAC
+    -
+      - OPACItemHolds	Allow OPAC users to place hold on specific items. If OFF, users can only request next available copy.
+    -
+      - opaclayoutstylesheet	Enter the name of the layout CSS stylesheet to use in the OPAC
+    -
+      - OpacMainUserBlock	A user-defined block of HTML in the main content area of the opac main page
+    -
+      - OpacNav	Use HTML tags to add navigational links to the left-hand navigational bar in OPAC
+    -
+      - OpacPasswordChange	If ON, enables patron-initiated password change in OPAC (disable it when using LDAP auth)
+    -
+      - opacreadinghistory	If ON, enables display of Patron Circulation History in OPAC
+    -
+      - OpacRenewalAllowed	If ON, users can renew their issues directly from their OPAC account
+    -
+      - OPACShelfBrowser	Enable/disable Shelf Browser on item details page. WARNING: this feature is very resource consuming on collections with large numbers of items.
+    -
+      - opacsmallimage	Enter a complete URL to an image to replace the default Koha logo
+    -
+      - opacstylesheet	Enter a complete URL to use an alternate layout stylesheet in OPAC
+    -
+      - OPACSubscriptionDisplay	Specify how to display subscription information in the OPAC
+    -
+      - opacthemes	Define the current theme for the OPAC interface.
+    -
+      - OpacTopissue	If ON, enables the 'most popular items' link on OPAC. Warning, this is an EXPERIMENTAL feature, turning ON may overload your server
+    -
+      - OPACURLOpenInNewWindow	If ON, URLs in the OPAC open in a new window
+    -
+      - OPACUserCSS	Add CSS to be included in the OPAC in an embedded <style> tag.
+    -
+      - opacuserjs	Define custom javascript for inclusion in OPAC
+    -
+      - opacuserlogin	Enable or disable display of user login features
+    -
+      - OPACViewOthersSuggestions	If ON, allows all suggestions to be displayed in the OPAC
+    -
+      - RequestOnOpac	If ON, globally enables patron holds on OPAC
+    -
+      - reviewson	If ON, enables patron reviews of bibliographic records in the OPAC
+    -
+      - SearchMyLibraryFirst	If ON, OPAC searches return results limited by the user's library by default if they are logged in
+    -
+      - SubscriptionHistory	Define the display preference for serials issue history in OPAC
+    -
+      - suggestion	If ON, enables patron suggestions feature in OPAC
+    -
+      - URLLinkText	Text to display as the link anchor in the OPAC
+    -
+      - virtualshelves	If ON, enables Lists management
+    -
+      - XSLTDetailsDisplay	Enable XSL stylesheet control over details page display on OPAC WARNING: MARC21 Only
+    -
+      - XSLTResultsDisplay	Enable XSL stylesheet control over results page display on OPAC WARNING: MARC21 Only

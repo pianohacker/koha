@@ -1,0 +1,101 @@
+Administration:
+# Broken, omitted: libraryAddress, MIME, OpacMaintenance
+# Only used internally, omitted: FrameworksLoaded, Version
+  Login options:
+    -
+      - name: insecure
+        type: boolean
+        default: 0
+        choices: 
+          yes: "Don't require"
+          no: Require
+      - staff to log in when accessing the staff client. This should be enabled in production environments. 
+    -
+      - name: AutoLocation
+        type: boolean
+        default: 0
+        choices: 
+          yes: Require
+          no: "Don't require"
+      - staff to log in from a computer in the IP address range <a href="/cgi-bin/koha/admin/branches.pl">specified by their library</a> (if any).
+# PostgreSQL is supported by CGI::Session but not by Koha.
+    -
+      - Store login session information 
+      - name: SessionStorage
+        type: choice
+        default: mysql
+        choices: 
+          mysql: in the MySQL database.
+          Pg: in the PostgreSQL database (not supported).
+          tmp: as temporary files.
+      -
+    -
+      - Control staff access to pages within Koha based on 
+      - name: GranularPermissions
+        type: boolean
+        default: 0
+        choices: 
+          yes: the individual page.
+          no: the module (such as administration or circulation).
+      -
+    -
+      - name: IndependantBranches
+        type: boolean
+        default: 0
+        choices: 
+          yes: Prevent
+          no: "Don't prevent"
+      - staff (but not superlibrarians) from modifying biblios, items and patrons in other libraries.
+  Interface options:
+    -
+      - Show 
+      - name: DebugLevel
+        type: choice
+        default: 0
+        choices: 
+          0: "no"
+          1: some
+          2: lots of
+      - debugging information in the browser when a fatal error occurs.
+    -
+      - name: noItemTypeImages
+        type: boolean
+        default: 0
+        choices: 
+          yes: "Don't show"
+          no: Show
+      - itemtype icons in the catalog.
+# FIXME: Move these to "Staff Client" and "OPAC"?
+  Staff client options:
+    -
+      - "The staff client is located at http://"
+      - name: staffClientBaseURL
+        class: url
+      - .
+    -
+      - Separate columns in an exported report file with 
+      - name: delimiter
+        type: choice
+        default: ","
+        choices: 
+          ';': semicolons
+          tabulation: tabs
+          ',': commas
+          '/': slashes
+          '\\': backslashes
+          '#': "#'s"
+      - by default.
+  OPAC options:
+    -
+      - "The OPAC is located at http://"
+      - name: OPACBaseURL
+        class: url
+      - . (This must be filled in correctly for RSS, unAPI, and search plugins to work.)
+    -
+      - name: singleBranchMode
+        type: choice
+        default: 0
+        choices: 
+          yes: "Don't show"
+          no: Show
+      - the branch selection menu on the OPAC.

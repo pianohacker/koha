@@ -1,0 +1,29 @@
+input.preference-url, input.preference-multi {
+    width: 20em;
+}
+
+input.preference-short, input.preference-email {
+    width: 10em;
+}
+
+input.preference-integer, input.preference-percent, input.preference-date {
+    width: 5em;
+}
+
+td.save-cell input {
+    visibility: hidden;
+}
+
+textarea.preference {
+    width: 35em;
+	height: 20em;
+	display: block;
+}
+
+textarea.preference-code {
+	font-family: monospace;
+}
+
+a.expand-textarea {
+    display: block;
+}

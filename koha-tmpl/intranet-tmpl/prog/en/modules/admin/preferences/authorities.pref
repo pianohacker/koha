@@ -1,0 +1,15 @@
+Authorities:
+    -
+      - name: BiblioAddsAuthorities
+        type: boolean
+        choices: 
+          yes: Allow
+          no: Don't allow|default=0
+      - new records to automatically create new authority records if needed rather than having to reference existing headings.
+    -
+      - name: dontmerge
+        type: boolean
+        choices: 
+          yes: Don't
+          no: Do|default=1
+      - automatically update attached biblios when changing an authority record. If this is off, please ask your administrator to enable the merge_authorities.pl cronjob.

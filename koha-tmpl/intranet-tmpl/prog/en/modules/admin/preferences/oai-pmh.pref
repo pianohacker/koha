@@ -1,0 +1,9 @@
+OAI-PMH	 if ON, OAI-PMH server is enabled:
+    -
+      - OAI-PMH:archiveID	OAI-PMH archive identification
+    -
+      - OAI-PMH:MaxCount	OAI-PMH maximum number of records by answer to ListRecords and ListIdentifiers queries
+    -
+      - OAI-PMH:Set	OAI-PMH exported set, the set name is followed by a comma and a short description, one set by line
+    -
+      - OAI-PMH:Subset	Restrict answer to matching raws of the biblioitems table EXPERIMENTAL
