@@ -1,4 +1,4 @@
-input.preference-url, input.preference-multi {
+input.preference-url, input.preference-multi, input.preference-long, input.preference-file {
     width: 20em;
 }
 
