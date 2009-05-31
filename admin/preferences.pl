@@ -78,14 +78,14 @@ sub GetTab {
 sub _get_chunk {
     my ( $value, %options ) = @_;
 
-    my $name = $options{'name'};
+    my $name = $options{'pref'};
     my $chunk = { name => $name, value => $value, type => $options{'type'} || 'input', class => $options{'class'} };
 
     if ( $options{'class'} eq 'password' ) {
         $chunk->{'input_type'} = 'password';
     } elsif ( exists( $options{ 'choices' } ) ) {
         if ( ref( $options{ 'choices' } ) eq '' ) {
-            if ( $options{'choices'} eq 'class_sources' ) {
+            if ( $options{'choices'} eq 'class-sources' ) {
                 my $sources = GetClassSources();
                 $options{'choices'} = { map { $_ => $sources->{$_}->{'description'} } @$sources };
             }
@@ -125,7 +125,7 @@ sub TransformPrefsToHTML {
 
             foreach my $piece ( @$line ) {
                 if ( ref ( $piece ) eq 'HASH' ) {
-                    my $name = $piece->{'name'};
+                    my $name = $piece->{'pref'};
 
                     if ( $name ) {
                         my $value = C4::Context->preference( $name );

@@ -1,15 +1,16 @@
 Authorities:
     -
-      - name: BiblioAddsAuthorities
-        type: boolean
-        choices: 
-          yes: Allow
-          no: Don't allow|default=0
-      - new records to automatically create new authority records if needed rather than having to reference existing headings.
+        - When editing records, 
+        - pref: BiblioAddsAuthorities
+          default: no
+          choices: 
+              yes: allow
+              no: "don't allow"
+        - them too automatically create new authority records if needed, rather than having to reference existing authorities.
     -
-      - name: dontmerge
-        type: boolean
-        choices: 
-          yes: Don't
-          no: Do|default=1
-      - automatically update attached biblios when changing an authority record. If this is off, please ask your administrator to enable the merge_authorities.pl cronjob.
+        - pref: dontmerge
+          default: yes
+          choices: 
+              yes: "Don't"
+              no: Do
+        - automatically update attached biblios when changing an authority record. If this is off, please ask your administrator to enable the merge_authorities.pl cronjob.

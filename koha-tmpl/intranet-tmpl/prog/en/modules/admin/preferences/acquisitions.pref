@@ -1,9 +1,8 @@
-Acquisitions:
 # Broken, omitted: acquisitions, emailPurchaseSuggestions
+Acquisitions:
     -
-      - name: RenewSerialAddsSuggestion
-        type: boolean
-        choices: 
-          yes: Add
-          no: Don't add
-      - a suggestion for a biblio when its attached serial is renewed.
+        - pref: RenewSerialAddsSuggestion
+          choices: 
+              yes: Add
+              no: "Don't add"
+        - a suggestion for a biblio when its attached serial is renewed.
