@@ -1,106 +1,106 @@
 Searching:
 # omitted, broken: sortbynonfiling
-  Features:
-    -
-      - name: QueryAutoTruncate
-        type: boolean
-        choices: 
-          yes: Allow
-          no: "Don't allow"
-      - words in a search query to use the * wildcard (for example, <cite>Har*</cite> would <cite>Harry</cite> and <cite>harp</cite>).
-    -
-      - name: QueryFuzzy
-        type: boolean
-        choices: 
-          yes: Try
-          no: "Don't try"
-      - to match similarly spelled words in a search (for example, a search for <cite>flang</cite> would also match <cite>flange</cite> and <cite>fang</cite>; REQUIRES ZEBRA).
-    -
-      - name: QueryRemoveStopwords
-        type: boolean
-        choices: 
-          yes: Remove
-          no: "Don't remove"
-      - stopwords <a href="http://localhost:8080/cgi-bin/koha/admin/stopwords.pl">specified in Koha</a> from searches. (Zebra, on its own, handles a few of the most common stopwords).
-    -
-      - name: QueryStemming
-        type: boolean
-        choices: 
-          yes: Try
-          no: "Don't try"
-      - to match words of the same base in a search (for example, a search for <cite>enabling</cite> would also match <cite>enable</cite> and <cite>enabled</cite>; REQUIRES ZEBRA).
-    -
-      - name: QueryWeightFields
-        type: boolean
-        choices: 
-          yes: Enable
-          no: Disable
-      - ranking of search results by relevance (REQUIRES ZEBRA).
-  Search Form:
-    -
-      - Show checkboxes to search by 
-      - name: AdvancedSearchTypes
-        choices: 
-          itemtypes: itemtype
-          ccode: collection code
-      - on the OPAC and staff advanced search pages.
-    -
-      - By default, 
-      - name: expandedSearchOption
-        type: boolean
-        choices: 
-          yes: show
-          no: "don't show"
-      - '"More options" on the OPAC and staff advanced search pages.'
-  Results Display:
-    -
-      - By default, sort search results in the staff client by
-      - name: defaultSortField
-        choices: 
-          relevance: relevance
-          popularity: total number of checkouts
-          callnumber: call number
-          pubdate: date of publication
-          acqdate: date added
-          title: title
-          author: author
-      - ','
-      - name: defaultSortOrder
-        choices:
-          asc: ascending.
-          desc: descending.
-          az: from A to Z.
-          za: from Z to A.
-    -
-      - By default, show 
-      - name: numSearchResults
-        class: integer
-      - results per page in the staff client.
-    -
-      - By default, sort search results in the OPAC by 
-      - name: OPACdefaultSortField
-        choices: 
-          relevance: relevance
-          popularity: total number of checkouts
-          callnumber: call number
-          pubdate: date of publication
-          acqdate: date added
-          title: title
-          author: author}}, {{choice OPACdefaultSortOrder
-          asc: ascending.
-          desc: descending.
-          az: from A to Z.
-          za: from Z to A.
-      -
-    -
-      - By default, show 
-      - name: OPACnumSearchResults
-        class: integer
-      - results per page in the OPAC.
-    -
-      - name: OPACItemsResultsDisplay
-        type: boolean
-        choices: 
-          yes: Show
-          no: "Don't show"
-      - an item's branch, location and call number in OPAC search results.
+    Features:
+        -
+            - name: QueryAutoTruncate
+              type: boolean
+              choices: 
+                  yes: Allow
+                  no: "Don't allow"
+            - words in a search query to use the * wildcard (for example, <cite>Har*</cite> would <cite>Harry</cite> and <cite>harp</cite>).
+        -
+            - name: QueryFuzzy
+              type: boolean
+              choices: 
+                  yes: Try
+                  no: "Don't try"
+            - to match similarly spelled words in a search (for example, a search for <cite>flang</cite> would also match <cite>flange</cite> and <cite>fang</cite>; REQUIRES ZEBRA).
+        -
+            - name: QueryRemoveStopwords
+              type: boolean
+              choices: 
+                  yes: Remove
+                  no: "Don't remove"
+            - stopwords <a href="http://localhost:8080/cgi-bin/koha/admin/stopwords.pl">specified in Koha</a> from searches. (Zebra, on its own, handles a few of the most common stopwords).
+        -
+            - name: QueryStemming
+              type: boolean
+              choices: 
+                  yes: Try
+                  no: "Don't try"
+            - to match words of the same base in a search (for example, a search for <cite>enabling</cite> would also match <cite>enable</cite> and <cite>enabled</cite>; REQUIRES ZEBRA).
+        -
+            - name: QueryWeightFields
+              type: boolean
+              choices: 
+                  yes: Enable
+                  no: Disable
+            - ranking of search results by relevance (REQUIRES ZEBRA).
+    Search Form:
+        -
+            - Show checkboxes to search by 
+            - name: AdvancedSearchTypes
+              choices: 
+                  itemtypes: itemtype
+                  ccode: collection code
+            - on the OPAC and staff advanced search pages.
+        -
+            - By default, 
+            - name: expandedSearchOption
+              type: boolean
+              choices: 
+                  yes: show
+                  no: "don't show"
+            - '"More options" on the OPAC and staff advanced search pages.'
+    Results Display:
+        -
+            - By default, sort search results in the staff client by
+            - name: defaultSortField
+              choices: 
+                  relevance: relevance
+                  popularity: total number of checkouts
+                  callnumber: call number
+                  pubdate: date of publication
+                  acqdate: date added
+                  title: title
+                  author: author
+            - ','
+            - name: defaultSortOrder
+              choices:
+                  asc: ascending.
+                  desc: descending.
+                  az: from A to Z.
+                  za: from Z to A.
+        -
+            - By default, show 
+            - name: numSearchResults
+              class: integer
+            - results per page in the staff client.
+        -
+            - By default, sort search results in the OPAC by 
+            - name: OPACdefaultSortField
+              choices: 
+                  relevance: relevance
+                  popularity: total number of checkouts
+                  callnumber: call number
+                  pubdate: date of publication
+                  acqdate: date added
+                  title: title
+                  author: author}}, {{choice OPACdefaultSortOrder
+                  asc: ascending.
+                  desc: descending.
+                  az: from A to Z.
+                  za: from Z to A.
+            -
+        -
+            - By default, show 
+            - name: OPACnumSearchResults
+              class: integer
+            - results per page in the OPAC.
+        -
+            - name: OPACItemsResultsDisplay
+              type: boolean
+              choices: 
+                  yes: Show
+                  no: "Don't show"
+            - "an item's branch, location and call number in OPAC search results."

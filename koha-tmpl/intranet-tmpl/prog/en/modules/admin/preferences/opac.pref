@@ -1,184 +1,184 @@
 # Poorly supported, omitted: kohaspsuggest
 
 OPAC:
-    - 
-      - name: AnonSuggestions
-        choices:
-          yes: Allow
-          no: "Don't allow"
-      - "patrons that aren't logged in to make purchase suggestions."
-    -
-      - By default, show bib records
-      - name: BiblioDefaultView
-        choices:
-          normal: in simple form.
-          marc: in their MARC form.
-          isbd: as specified in the ISBD template.
-    -
-      - name: hidelostitems
-        choices:
-          yes: Show
-          no: "Don't show"
-      - lost items on search and detail pages.
-    -
-      - Show
-      - name: LibraryName
-        class: long
-      - as name of the library on the OPAC.
-    -
-      - name: OpacAuthorities
-        choices: 
-          yes: Allow
-          no: "Don't allow"
-      - patrons to search your authority records.
-    -
-      - name: opacbookbag
-        choices: 
-          yes: Allow
-          no: "Don't allow"
-      - patrons to store items in a temporary "Cart" on the OPAC.
-    -
-#      This system preference does not actually affect anything
-#      - name: OpacBrowser
-#        choices:
-#          yes: Show
-#          no: "Don't show"
-#      - a subject browser on the OPAC (generated using <code>misc/cronjobs/build_browser_and_cloud.pl</code>).
-#    -
-#      opac-tags_subject.pl is the only script affected by this, and it is not linked to by any other page
-#      - name: OpacCloud
-#        choices: 
-#      - If ON, enables subject cloud on OPAC
-    -
-      - Include the additional CSS stylesheet <!-- TMPL_VAR NAME="opacthemelang" -->/css/
-      - name: opaccolorstylesheet
-        class: file
-      - on the OPAC (leave blank to disable).
-    -
-      - name: opaccredits
-        choices: 
-      - Define HTML Credits at the bottom of the OPAC page
-    -
-      - name: OPACDisplayExtendedSubInfo
-        choices: 
-      - If ON, extended subscription information is displayed in the OPAC
-    -
-      - name: OPACDisplayRequestPriority
-        choices: 
-      - Show patrons the priority level on holds in the OPAC
-    -
-      - name: opacheader
-        choices: 
-      - Add HTML to be included as a custom header in the OPAC
-    -
-      - name: OpacHighlightedWords
-        choices: 
-      - If Set, then queried words are higlighted in OPAC
-    -
-      - name: OPACItemHolds
-        choices: 
-      - Allow OPAC users to place hold on specific items. If OFF, users can only request next available copy.
-    -
-      - name: opaclayoutstylesheet
-        choices: 
-      - Enter the name of the layout CSS stylesheet to use in the OPAC
-    -
-      - name: OpacMainUserBlock
-        choices: 
-      - A user-defined block of HTML in the main content area of the opac main page
-    -
-      - name: OpacNav
-        choices: 
-      - Use HTML tags to add navigational links to the left-hand navigational bar in OPAC
-    -
-      - name: OpacPasswordChange
-        choices: 
-      - If ON, enables patron-initiated password change in OPAC (disable it when using LDAP auth)
-    -
-      - name: opacreadinghistory
-        choices: 
-      - If ON, enables display of Patron Circulation History in OPAC
-    -
-      - name: OpacRenewalAllowed
-        choices: 
-      - If ON, users can renew their issues directly from their OPAC account
-    -
-      - name: OPACShelfBrowser
-        choices: 
-      - Enable/disable Shelf Browser on item details page. WARNING: this feature is very resource consuming on collections with large numbers of items.
-    -
-      - name: opacsmallimage
-        choices: 
-      - Enter a complete URL to an image to replace the default Koha logo
-    -
-      - name: opacstylesheet
-        choices: 
-      - Enter a complete URL to use an alternate layout stylesheet in OPAC
-    -
-      - name: OPACSubscriptionDisplay
-        choices: 
-      - Specify how to display subscription information in the OPAC
-    -
-      - name: opacthemes
-        choices: 
-      - Define the current theme for the OPAC interface.
-    -
-      - name: OpacTopissue
-        choices: 
-      - If ON, enables the 'most popular items' link on OPAC. Warning, this is an EXPERIMENTAL feature, turning ON may overload your server
-    -
-      - name: OPACURLOpenInNewWindow
-        choices: 
-      - If ON, URLs in the OPAC open in a new window
-    -
-      - name: OPACUserCSS
-        choices: 
-      - Add CSS to be included in the OPAC in an embedded <style> tag.
-    -
-      - name: opacuserjs
-        choices: 
-      - Define custom javascript for inclusion in OPAC
-    -
-      - name: opacuserlogin
-        choices: 
-      - Enable or disable display of user login features
-    -
-      - name: OPACViewOthersSuggestions
-        choices: 
-      - If ON, allows all suggestions to be displayed in the OPAC
-    -
-      - name: RequestOnOpac
-        choices: 
-      - If ON, globally enables patron holds on OPAC
-    -
-      - name: reviewson
-        choices: 
-      - If ON, enables patron reviews of bibliographic records in the OPAC
-    -
-      - name: SearchMyLibraryFirst
-        choices: 
-      - If ON, OPAC searches return results limited by the user's library by default if they are logged in
-    -
-      - name: SubscriptionHistory
-        choices: 
-      - Define the display preference for serials issue history in OPAC
-    -
-      - name: suggestion
-        choices: 
-      - If ON, enables patron suggestions feature in OPAC
-    -
-      - name: URLLinkText
-        choices: 
-      - Text to display as the link anchor in the OPAC
-    -
-      - name: virtualshelves
-        choices: 
-      - If ON, enables Lists management
-    -
-      - name: XSLTDetailsDisplay
-        choices: 
-      - Enable XSL stylesheet control over details page display on OPAC WARNING: MARC21 Only
-    -
-      - name: XSLTResultsDisplay
-        choices: 
-      - Enable XSL stylesheet control over results page display on OPAC WARNING: MARC21 Only
+        - 
+            - pref: AnonSuggestions
+              choices:
+                  yes: Allow
+                  no: "Don't allow"
+            - "patrons that aren't logged in to make purchase suggestions."
+        -
+            - By default, show bib records
+            - pref: BiblioDefaultView
+              choices:
+                  normal: in simple form.
+                  marc: in their MARC form.
+                  isbd: as specified in the ISBD template.
+        -
+            - pref: hidelostitems
+              choices:
+                  yes: Show
+                  no: "Don't show"
+            - lost items on search and detail pages.
+        -
+            - Show
+            - pref: LibraryName
+              class: long
+            - as name of the library on the OPAC.
+        -
+            - pref: OpacAuthorities
+              choices: 
+                  yes: Allow
+                  no: "Don't allow"
+            - patrons to search your authority records.
+        -
+            - pref: opacbookbag
+              choices: 
+                  yes: Allow
+                  no: "Don't allow"
+            - patrons to store items in a temporary "Cart" on the OPAC.
+        -
+#            This system preference does not actually affect anything
+#            - pref: OpacBrowser
+#              choices:
+#                  yes: Show
+#                  no: "Don't show"
+#            - a subject browser on the OPAC (generated using <code>misc/cronjobs/build_browser_and_cloud.pl</code>).
+#        -
+#            opac-tags_subject.pl is the only script affected by this, and it is not linked to by any other page
+#            - pref: OpacCloud
+#              choices: 
+#            - If ON, enables subject cloud on OPAC
+        -
+            - Include the additional CSS stylesheet <!-- TMPL_VAR NAME="opacthemelang" -->/css/
+            - pref: opaccolorstylesheet
+              class: file
+            - on the OPAC (leave blank to disable).
+        -
+            - pref: opaccredits
+              choices: 
+            - Define HTML Credits at the bottom of the OPAC page
+        -
+            - pref: OPACDisplayExtendedSubInfo
+              choices: 
+            - If ON, extended subscription information is displayed in the OPAC
+        -
+            - pref: OPACDisplayRequestPriority
+              choices: 
+            - Show patrons the priority level on holds in the OPAC
+        -
+            - pref: opacheader
+              choices: 
+            - Add HTML to be included as a custom header in the OPAC
+        -
+            - pref: OpacHighlightedWords
+              choices: 
+            - If Set, then queried words are higlighted in OPAC
+        -
+            - pref: OPACItemHolds
+              choices: 
+            - Allow OPAC users to place hold on specific items. If OFF, users can only request next available copy.
+        -
+            - pref: opaclayoutstylesheet
+              choices: 
+            - Enter the name of the layout CSS stylesheet to use in the OPAC
+        -
+            - pref: OpacMainUserBlock
+              choices: 
+            - A user-defined block of HTML in the main content area of the opac main page
+        -
+            - pref: OpacNav
+              choices: 
+            - Use HTML tags to add navigational links to the left-hand navigational bar in OPAC
+        -
+            - pref: OpacPasswordChange
+              choices: 
+            - If ON, enables patron-initiated password change in OPAC (disable it when using LDAP auth)
+        -
+            - pref: opacreadinghistory
+              choices: 
+            - If ON, enables display of Patron Circulation History in OPAC
+        -
+            - pref: OpacRenewalAllowed
+              choices: 
+            - If ON, users can renew their issues directly from their OPAC account
+        -
+            - pref: OPACShelfBrowser
+              choices: 
+            - Enable/disable Shelf Browser on item details page. WARNING: this feature is very resource consuming on collections with large numbers of items.
+        -
+            - pref: opacsmallimage
+              choices: 
+            - Enter a complete URL to an image to replace the default Koha logo
+        -
+            - pref: opacstylesheet
+              choices: 
+            - Enter a complete URL to use an alternate layout stylesheet in OPAC
+        -
+            - pref: OPACSubscriptionDisplay
+              choices: 
+            - Specify how to display subscription information in the OPAC
+        -
+            - pref: opacthemes
+              choices: 
+            - Define the current theme for the OPAC interface.
+        -
+            - pref: OpacTopissue
+              choices: 
+            - If ON, enables the 'most popular items' link on OPAC. Warning, this is an EXPERIMENTAL feature, turning ON may overload your server
+        -
+            - pref: OPACURLOpenInNewWindow
+              choices: 
+            - If ON, URLs in the OPAC open in a new window
+        -
+            - pref: OPACUserCSS
+              choices: 
+            - Add CSS to be included in the OPAC in an embedded <style> tag.
+        -
+            - pref: opacuserjs
+              choices: 
+            - Define custom javascript for inclusion in OPAC
+        -
+            - pref: opacuserlogin
+              choices: 
+            - Enable or disable display of user login features
+        -
+            - pref: OPACViewOthersSuggestions
+              choices: 
+            - If ON, allows all suggestions to be displayed in the OPAC
+        -
+            - pref: RequestOnOpac
+              choices: 
+            - If ON, globally enables patron holds on OPAC
+        -
+            - pref: reviewson
+              choices: 
+            - If ON, enables patron reviews of bibliographic records in the OPAC
+        -
+            - pref: SearchMyLibraryFirst
+              choices: 
+            - If ON, OPAC searches return results limited by the user's library by default if they are logged in
+        -
+            - pref: SubscriptionHistory
+              choices: 
+            - Define the display preference for serials issue history in OPAC
+        -
+            - pref: suggestion
+              choices: 
+            - If ON, enables patron suggestions feature in OPAC
+        -
+            - pref: URLLinkText
+              choices: 
+            - Text to display as the link anchor in the OPAC
+        -
+            - pref: virtualshelves
+              choices: 
+            - If ON, enables Lists management
+        -
+            - pref: XSLTDetailsDisplay
+              choices: 
+            - Enable XSL stylesheet control over details page display on OPAC WARNING: MARC21 Only
+        -
+            - pref: XSLTResultsDisplay
+              choices: 
+            - Enable XSL stylesheet control over results page display on OPAC WARNING: MARC21 Only

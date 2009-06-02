@@ -61,8 +61,6 @@ $YAML::Syck::ImplicitTyping = 1;
 # use Smart::Comments;
 #
 
-our $PREF_REGEX = '^([a-z_-]+)(?:\.([a-z_-]+))? ([a-zA-Z_0-9-]+)((?:\|[^=]+=[^|]+)*)}}';
-
 sub GetTab {
     my ( $input, $tab ) = @_;
 
@@ -81,9 +79,9 @@ sub _get_chunk {
     my $name = $options{'pref'};
     my $chunk = { name => $name, value => $value, type => $options{'type'} || 'input', class => $options{'class'} };
 
-    if ( $options{'class'} eq 'password' ) {
+    if ( $options{'class'} && $options{'class'} eq 'password' ) {
         $chunk->{'input_type'} = 'password';
-    } elsif ( exists( $options{ 'choices' } ) ) {
+    } elsif ( $options{ 'choices' } ) {
         if ( ref( $options{ 'choices' } ) eq '' ) {
             if ( $options{'choices'} eq 'class-sources' ) {
                 my $sources = GetClassSources();
@@ -159,7 +157,7 @@ sub _get_pref_files {
     my %results;
 
     foreach my $file ( glob( "$htdocs/$theme/$lang/modules/admin/preferences/*.pref" ) ) {
-        my ( $tab ) = ( $file =~ /([a-z_-]+)\.pref$/ );
+        my ( $tab ) = ( $file =~ /([a-z0-9_-]+)\.pref$/ );
 
         $results{$tab} = $open_files ? new IO::File( $file, 'r' ) : '';
     }
@@ -181,26 +179,19 @@ sub JumpPref {
 
         close $tabfile;
     }
+
+    return ( "", "" );
 }
 
 sub SearchPrefs {
     my ( $input, $searchfield ) = @_;
     my @tabs;
 
-    sub _format_text {
-        my ( $text, $highlighted ) = @_;
-
-        return { type_text => 1, contents => $text } if ( !$highlighted );
-
-        my @results;
-
-        return @results;
-    }
-
     my %tab_files = _get_pref_files( $input, 0 );
 
     foreach my $tab_name ( keys %tab_files ) {
-        my $data = GetTab( $tab_name );
+        warn ">> Searching $tab_name";
+        my $data = GetTab( $input, $tab_name );
         my $title = ( keys( %$data ) )[0];
         my $tab = $data->{ $title };
         $tab = { '' => $tab } if ( ref( $tab ) eq 'ARRAY' );
@@ -217,7 +208,7 @@ sub SearchPrefs {
                 my @new_chunks;
 
                 foreach my $piece ( @$line ) {
-                    if ( ref( $piece ) eq 'HASH' && exists( $piece->{'choices'} ) && grep( /$searchfield/i, values( %{ $piece->{'choices'} } ) ) ) {
+                    if ( ref( $piece ) eq 'HASH' && ref( $piece->{'choices'} ) eq 'HASH' && grep( { $_ && /$searchfield/i } values( %{ $piece->{'choices'} } ) ) ) {
                         $matched = 1;
                         $piece->{'highlighted'} = 1;
                         push @new_chunks, $piece;
@@ -284,9 +275,14 @@ if ( $op eq 'save' ) {
     my $jumpfield = $input->param( 'jumpfield' );
     $template->param( jumpfield => $jumpfield );
 
-    ( $tab, $highlighted ) = JumpPref( $input, $tab, $jumpfield );
+    my $new_tab;
+    ( $new_tab, $highlighted ) = JumpPref( $input, $tab, $jumpfield );
 
-    if ( !defined( $highlighted ) ) {
+    warn "jp: $tab $highlighted";
+
+    if ( $highlighted ) {
+        $tab = $new_tab;
+    } else {
         $template->param( jump_not_found => 1 );
     }
 }
@@ -305,13 +301,16 @@ if ( $op eq 'search' ) {
         );
     }
 
-    if ( !@TABS ) {
+    if ( @TABS ) {
+        $tab = ''; # No need to load a particular tab, as we found results
+    } else {
         $template->param(
             search_not_found => 1,
-            last_tab => $tab,
         );
     }
-} else {
+}
+
+if ( $tab ) {
     my ( $tab_title, $LINES ) = TransformPrefsToHTML( GetTab( $input, $tab ), $highlighted, ( $op eq 'jump' ) );
 
     push @TABS, { tab_title => $tab_title, LINES => $LINES };
