@@ -4,19 +4,9 @@ KOHA.Preferences = {
 };
 
 $( document ).ready( function () {
-    $( '#prefs-tab tr' ).hover(
-        function () {
-            $( this ).find( 'input[type="submit"]' ).css( { visibility: 'visible' } );
-        },
-        function () {
-            $( this ).find( 'input[type="submit"]' ).css( { visibility: 'hidden' } );
-        }
-    );
     $( '#prefs-tab input.preference, #prefs-tab select.preference' ).change( function () {
         var name_cell = $( this ).parent().parent()
-            .mouseover()
-            .unbind( 'mouseenter' )
-            .unbind( 'mouseleave' )
+            .find( 'input[type="submit"]' ).css( { visibility: 'visible' } ).end()
 			.find( 'td:eq(0)' );
 
 		if ( !name_cell.find( '.modified-warning' ).length ) name_cell.append( '<em class="modified-warning">(modified)</em>' );
@@ -33,5 +23,8 @@ $( document ).ready( function () {
 
         return false;
     } ).nextAll( 'textarea, input[type=submit]' ).hide().css( { opacity: 0 } );
+
+    $( '#prefs-tab .save-cell input' ).click( function () {
+        KOHA.Preferences.Save( $( this ).
 } );
 
