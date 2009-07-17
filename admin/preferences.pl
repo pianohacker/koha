@@ -254,8 +254,8 @@ my ( $template, $borrowernumber, $cookie ) = get_template_and_user(
     }
 );
 
-my $op = $input->param('op') || '';
-my $tab = $input->param('tab');
+my $op = $input->param( 'op' ) || '';
+my $tab = $input->param( 'tab' );
 $tab ||= 'local-use';
 
 my $highlighted;
@@ -277,8 +277,6 @@ if ( $op eq 'save' ) {
 
     my $new_tab;
     ( $new_tab, $highlighted ) = JumpPref( $input, $tab, $jumpfield );
-
-    warn "jp: $tab $highlighted";
 
     if ( $highlighted ) {
         $tab = $new_tab;

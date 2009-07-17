@@ -62,6 +62,8 @@ Cataloguing:
                   yes: Add
                   no: "Don't add"
             - extra information to items automatically added to serials.
+        -
+            - TemplateEncoding	Globally define the default character encoding
     Display:
         -
             - Barcodes are 

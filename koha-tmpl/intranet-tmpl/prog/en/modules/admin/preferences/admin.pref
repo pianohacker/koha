@@ -57,13 +57,6 @@ Administration:
                   yes: "Don't show"
                   no: Show
             - itemtype icons in the catalog.
-# FIXME: Move these to "Staff Client" and "OPAC"?
-    Staff client options:
-        -
-            - "The staff client is located at http://"
-            - pref: staffClientBaseURL
-              class: url
-            - .
         -
             - Separate columns in an exported report file with 
             - pref: delimiter
@@ -73,19 +66,8 @@ Administration:
                   tabulation: tabs
                   ',': commas
                   '/': slashes
-                  '\\': backslashes
+                  '\': backslashes
                   '#': "#'s"
             - by default.
+# FIXME: Move these to "Staff Client" and "OPAC"?
     OPAC options:
-        -
-            - "The OPAC is located at http://"
-            - pref: OPACBaseURL
-              class: url
-            - . (This must be filled in correctly for RSS, unAPI, and search plugins to work.)
-        -
-            - pref: singleBranchMode
-              default: 0
-              choices: 
-                  yes: "Don't allow"
-                  no: patrons
-            - to select their branch on the OPAC.

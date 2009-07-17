@@ -1,13 +1,34 @@
-if ( KOHA === undefined ) var KOHA = {};
+// We can assume 'KOHA' exists, as we depend on KOHA.AJAX
 
 KOHA.Preferences = {
+    Save: function ( form ) {
+        data = $( form ).find( '.modified' ).serialize();
+        if ( !data ) {
+            humanMsg.displayAlert( 'Nothing to save' );
+            return;
+        }
+        KOHA.AJAX.MarkRunning( $( form ).find( '.save-all' ), _( 'Saving...' ) );
+        KOHA.AJAX.Submit( {
+            data: data,
+            url: '/cgi-bin/koha/svc/config/systempreferences/',
+            success: function ( data ) { KOHA.Preferences.Success( form ) },
+            complete: function () { KOHA.AJAX.MarkDone( $( form ).find( '.save-all' ) ) }
+        } );
+    },
+    Success: function ( form ) {
+        humanMsg.displayAlert( 'Saved' );
+
+        $( form )
+            .find( '.modified-warning' ).remove().end()
+            .find( '.modified' ).removeClass('modified');
+    }
 };
 
 $( document ).ready( function () {
-    $( '#prefs-tab input.preference, #prefs-tab select.preference' ).change( function () {
-        var name_cell = $( this ).parent().parent()
-            .find( 'input[type="submit"]' ).css( { visibility: 'visible' } ).end()
-			.find( 'td:eq(0)' );
+    $( '#prefs-tab .preference' ).change( function () {
+        $( this.form ).find( '.save-all' ).removeAttr( 'disabled' );
+        $( this ).addClass( 'modified' );
+        var name_cell = $( this ).parent().parent().find( '.name-cell' );
 
 		if ( !name_cell.find( '.modified-warning' ).length ) name_cell.append( '<em class="modified-warning">(modified)</em>' );
     } );
@@ -24,7 +45,9 @@ $( document ).ready( function () {
         return false;
     } ).nextAll( 'textarea, input[type=submit]' ).hide().css( { opacity: 0 } );
 
-    $( '#prefs-tab .save-cell input' ).click( function () {
-        KOHA.Preferences.Save( $( this ).
+    $( '#prefs-tab .save-all' ).attr( 'disabled', true ).click( function () {
+        KOHA.Preferences.Save( this.form );
+        return false;
+    } ); 
 } );
 

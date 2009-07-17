@@ -1,6 +1,19 @@
 # Poorly supported, omitted: kohaspsuggest
+# Broken, omitted: OPACDisplayExtendedSubInfo
 
 OPAC:
+        -
+            - "The OPAC is located at http://"
+            - pref: OPACBaseURL
+              class: url
+            - . (This must be filled in correctly for RSS, unAPI, and search plugins to work.)
+        -
+            - pref: singleBranchMode
+              default: 0
+              choices: 
+                  yes: Allow
+                  no: "Don't allow"
+            - patrons to select their branch on the OPAC.
         - 
             - pref: AnonSuggestions
               choices:
@@ -53,59 +66,74 @@ OPAC:
             - Include the additional CSS stylesheet <!-- TMPL_VAR NAME="opacthemelang" -->/css/
             - pref: opaccolorstylesheet
               class: file
-            - on the OPAC (leave blank to disable).
+            - on all pages in the OPAC (leave blank to disable).
         -
+            - Use the CSS stylesheet <!-- TMPL_VAR NAME="opacthemelang" -->/css/
+            - pref: opaclayoutstylesheet
+              class: file
+            - on all pages in the OPAC, instead of the default (leave blank to disable).
+        -
+            - "Include the following HTML in the header of all pages in the OPAC:"
+            - pref: opacheader
+              type: textarea
+              class: code
+        -
+            - "Include the following HTML in the footer of all pages in the OPAC:"
             - pref: opaccredits
-              choices: 
-            - Define HTML Credits at the bottom of the OPAC page
-        -
-            - pref: OPACDisplayExtendedSubInfo
-              choices: 
-            - If ON, extended subscription information is displayed in the OPAC
+              type: textarea
+              class: code
         -
             - pref: OPACDisplayRequestPriority
-              choices: 
-            - Show patrons the priority level on holds in the OPAC
-        -
-            - pref: opacheader
-              choices: 
-            - Add HTML to be included as a custom header in the OPAC
+              choices:
+                  yes: Show
+                  no: "Don't show"
+            - patrons the priority level of their holds in the OPAC.
         -
             - pref: OpacHighlightedWords
               choices: 
-            - If Set, then queried words are higlighted in OPAC
+                  yes: Highlight
+                  no: "Don't highlight"
+            - words the patron searched for in their search results.
         -
             - pref: OPACItemHolds
-              choices: 
-            - Allow OPAC users to place hold on specific items. If OFF, users can only request next available copy.
+              choices:
+                  yes: Allow
+                  no: "Don't allow" 
+            - patrons to place holds on specific items in the OPAC. If this is disabled, users can only put a hold on the next available item.
         -
-            - pref: opaclayoutstylesheet
-              choices: 
-            - Enter the name of the layout CSS stylesheet to use in the OPAC
-        -
+            - "Show the following HTML in its own column on the main page of the OPAC:"
             - pref: OpacMainUserBlock
-              choices: 
-            - A user-defined block of HTML in the main content area of the opac main page
+              type: textarea
+              class: code
         -
+            - "Show the following HTML on the left hand column of all pages on the OPAC (generally navigation links):"
             - pref: OpacNav
-              choices: 
-            - Use HTML tags to add navigational links to the left-hand navigational bar in OPAC
+              type: textarea
+              class: code
         -
             - pref: OpacPasswordChange
               choices: 
-            - If ON, enables patron-initiated password change in OPAC (disable it when using LDAP auth)
+                  yes: Allow
+                  no: "Don't allow" 
+            - patrons to change their own password on the OPAC. Note that enabling this will break LDAP authentication.
         -
             - pref: opacreadinghistory
               choices: 
-            - If ON, enables display of Patron Circulation History in OPAC
+                  yes: Allow
+                  no: "Don't allow" 
+            - patrons to see what books they have checked out in the past.
         -
             - pref: OpacRenewalAllowed
               choices: 
-            - If ON, users can renew their issues directly from their OPAC account
+                  yes: Allow
+                  no: "Don't allow" 
+            - patrons to renew their own books on the OPAC.
         -
             - pref: OPACShelfBrowser
               choices: 
-            - Enable/disable Shelf Browser on item details page. WARNING: this feature is very resource consuming on collections with large numbers of items.
+                  yes: Show
+                  no: "Don't show" 
+            - "a shelf browser on item details pages, allowing patrons to see what's near that item on the shelf. Note that this uses up a fairly large amount of resources on your server, and should be avoided if your collection has a large number of items."
         -
             - pref: opacsmallimage
               choices: 
