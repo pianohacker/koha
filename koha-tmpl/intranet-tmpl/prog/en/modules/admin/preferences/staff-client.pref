@@ -4,7 +4,7 @@ Staff Client:
         -
             - Use the
             - pref: template
-              choices: stafftemplates
+              choices: staff-templates
             - theme on the staff interface.
         -
             - "The staff client is located at http://"
@@ -12,15 +12,15 @@ Staff Client:
               class: url
             - .
         -
-            - Include the stylesheet <!-- TMPL_VAR NAME="themelang" -->/css/
+            - Include the stylesheet at 
+            - pref: intranetstylesheet
+              class: url
+            - on all pages in the staff interface, instead of the default. (This should be a complete URL, starting with <code>http://</code>.)
+        -
+            - Include the stylesheet <code><!-- TMPL_VAR NAME="themelang" -->/css/</code>
             - pref: intranetcolorstylesheet
               class: file
             - on all pages in the staff interface. (Leave blank to disable.)
-        -
-            - Include the stylesheet at 
-            - pref: intranetcolorstylesheet
-              class: url
-            - on all pages in the staff interface. (This should be a complete URL, starting with <code>http://</code>.)
         -
             - "Show the following HTML in its own column on the main page of the staff client:"
             - pref: IntranetmainUserblock
@@ -35,5 +35,5 @@ Staff Client:
             - Use the Yahoo UI libraries
             - pref: yuipath
               choices:
-                  local: "included with Koha (faster, will work if internet goes down)"
-                  "http://yui.yahooapis.com/2.5.1/build": "from Yahoo's own servers (less demand on your servers)"
+                  local: "included with Koha (faster, will work if internet goes down)."
+                  "http://yui.yahooapis.com/2.5.1/build": "from Yahoo's own servers (less demand on your servers)."

@@ -2,35 +2,35 @@ Searching:
 # omitted, broken: sortbynonfiling
     Features:
         -
-            - name: QueryAutoTruncate
+            - pref: QueryAutoTruncate
               type: boolean
               choices: 
                   yes: Allow
                   no: "Don't allow"
             - words in a search query to use the * wildcard (for example, <cite>Har*</cite> would <cite>Harry</cite> and <cite>harp</cite>).
         -
-            - name: QueryFuzzy
+            - pref: QueryFuzzy
               type: boolean
               choices: 
                   yes: Try
                   no: "Don't try"
             - to match similarly spelled words in a search (for example, a search for <cite>flang</cite> would also match <cite>flange</cite> and <cite>fang</cite>; REQUIRES ZEBRA).
         -
-            - name: QueryRemoveStopwords
+            - pref: QueryRemoveStopwords
               type: boolean
               choices: 
                   yes: Remove
                   no: "Don't remove"
             - stopwords <a href="http://localhost:8080/cgi-bin/koha/admin/stopwords.pl">specified in Koha</a> from searches. (Zebra, on its own, handles a few of the most common stopwords).
         -
-            - name: QueryStemming
+            - pref: QueryStemming
               type: boolean
               choices: 
                   yes: Try
                   no: "Don't try"
             - to match words of the same base in a search (for example, a search for <cite>enabling</cite> would also match <cite>enable</cite> and <cite>enabled</cite>; REQUIRES ZEBRA).
         -
-            - name: QueryWeightFields
+            - pref: QueryWeightFields
               type: boolean
               choices: 
                   yes: Enable
@@ -39,14 +39,14 @@ Searching:
     Search Form:
         -
             - Show checkboxes to search by 
-            - name: AdvancedSearchTypes
+            - pref: AdvancedSearchTypes
               choices: 
                   itemtypes: itemtype
                   ccode: collection code
             - on the OPAC and staff advanced search pages.
         -
             - By default, 
-            - name: expandedSearchOption
+            - pref: expandedSearchOption
               type: boolean
               choices: 
                   yes: show
@@ -54,8 +54,14 @@ Searching:
             - '"More options" on the OPAC and staff advanced search pages.'
     Results Display:
         -
+            - Show search results
+            - pref: XSLTResultsDisplay
+              choices: 
+                  yes: using XSLT stylesheets.
+                  no: normally.
+        -
             - By default, sort search results in the staff client by
-            - name: defaultSortField
+            - pref: defaultSortField
               choices: 
                   relevance: relevance
                   popularity: total number of checkouts
@@ -65,7 +71,7 @@ Searching:
                   title: title
                   author: author
             - ','
-            - name: defaultSortOrder
+            - pref: defaultSortOrder
               choices:
                   asc: ascending.
                   desc: descending.
@@ -73,12 +79,12 @@ Searching:
                   za: from Z to A.
         -
             - By default, show 
-            - name: numSearchResults
+            - pref: numSearchResults
               class: integer
             - results per page in the staff client.
         -
             - By default, sort search results in the OPAC by 
-            - name: OPACdefaultSortField
+            - pref: OPACdefaultSortField
               choices: 
                   relevance: relevance
                   popularity: total number of checkouts
@@ -94,11 +100,11 @@ Searching:
             -
         -
             - By default, show 
-            - name: OPACnumSearchResults
+            - pref: OPACnumSearchResults
               class: integer
             - results per page in the OPAC.
         -
-            - name: OPACItemsResultsDisplay
+            - pref: OPACItemsResultsDisplay
               type: boolean
               choices: 
                   yes: Show

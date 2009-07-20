@@ -82,10 +82,16 @@ sub _get_chunk {
     if ( $options{'class'} && $options{'class'} eq 'password' ) {
         $chunk->{'input_type'} = 'password';
     } elsif ( $options{ 'choices' } ) {
-        if ( ref( $options{ 'choices' } ) eq '' ) {
+        if ( $options{'choices'} && ref( $options{ 'choices' } ) eq '' ) {
             if ( $options{'choices'} eq 'class-sources' ) {
                 my $sources = GetClassSources();
                 $options{'choices'} = { map { $_ => $sources->{$_}->{'description'} } @$sources };
+            } elsif ( $options{'choices'} eq 'opac-templates' ) {
+                $options{'choices'} = { map { $_ => $_ } getallthemes( 'opac' ) }
+            } elsif ( $options{'choices'} eq 'staff-templates' ) {
+                $options{'choices'} = { map { $_ => $_ } getallthemes( 'intranet' ) }
+            } else {
+                die 'Unrecognized source of preference values: ' . $options{'choices'};
             }
         }
 
@@ -112,12 +118,12 @@ sub TransformPrefsToHTML {
     my $tab = $data->{ $title };
     $tab = { '' => $tab } if ( ref( $tab ) eq 'ARRAY' );
 
-    while ( my ( $group, $contents ) = each %$tab ) {
+    foreach my $group ( sort keys %$tab ) {
         if ( $group ) {
             push @lines, { is_group_title => 1, title => $group };
         }
 
-        foreach my $line ( @$contents ) {
+        foreach my $line ( @{ $tab->{ $group } } ) {
             my @chunks;
             my @names;
 
@@ -130,7 +136,7 @@ sub TransformPrefsToHTML {
                         $value = $piece->{'default'} if ( !defined( $value ) && $piece->{'default'} );
                         my $chunk = _get_chunk( $value, %$piece );
 
-                        $chunk->{'highlighted'} = 1 if ( $name =~ /$highlighted_pref/ );
+                        $chunk->{'highlighted'} = 1 if ( $highlighted_pref && $name =~ /$highlighted_pref/ );
 
                         push @chunks, $chunk;
                         push @names, { name => $name, highlighted => ( $highlighted_pref && ( $name =~ /$highlighted_pref/i ? 1 : 0 ) ) };

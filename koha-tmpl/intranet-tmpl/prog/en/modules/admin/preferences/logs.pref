@@ -1,22 +1,43 @@
 Logging:
     -
         - pref: BorrowersLog
-        - If ON, log edit/create/delete actions on patron data
+          choices:
+              on: Log
+              off: "Don't log"
+        - changes to patron records.
     -
         - pref: CataloguingLog
-        - "If ON, log edit/create/delete actions on bibliographic data. WARNING: this feature is very resource consuming."
+          choices:
+              on: Log
+              off: "Don't log"
+        - any changes to bibliographic or item records. Since this occurs whenever a book is checked in or out as well, it is not advisable to turn this on.
     -
         - pref: FinesLog
-        - If ON, log fines
+          choices:
+              on: Log
+              off: "Don't log"
+        - when fines are paid or charged.
     -
         - pref: IssueLog
+          choices:
+              on: Log
+              off: "Don't log"
         - If ON, log checkout activity
     -
         - pref: LetterLog
+          choices:
+              on: Log
+              off: "Don't log"
         - If ON, log all notices sent
     -
         - pref: ReturnLog
+          choices:
+              on: Log
+              off: "Don't log"
         - If ON, enables the circulation (returns) log
     -
         - pref: SubscriptionLog
+          choices:
+              on: Log
+              off: "Don't log"
         - If ON, enables subscriptions log

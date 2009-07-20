@@ -3,24 +3,23 @@ Circulation:
 # FIXME: printcirculationslips is also omitted. It _technically_ could work, but C4::Print is HLT specific and needs a little bit of refactoring.
     Interface options:
         -
-            - name: CircAutocompl
-              type: boolean
+            - pref: CircAutocompl
               choices: 
                   yes: Do
-                  no: Don't try
+                  no: "Don't try"
             - to automatically fill in the member when entering a patron search on the circulation screen.
         -
-            - name: itemBarcodeInputFilter
+            - pref: itemBarcodeInputFilter
               type: choice
               choices: 
-                  OFF: Don't filter
+                  OFF: "Don't filter"
                   whitespace: Remove spaces from
                   cuecat: Convert from CueCat form
                   T-prefix: Remove the first number from T-prefix style
             - scanned patron barcodes.
         -
             - Sort previous checkouts on the circulation page from 
-            - name: previousIssuesDefaultSortOrder
+            - pref: previousIssuesDefaultSortOrder
               type: choice
               choices: 
                   asc: earliest to latest
@@ -28,85 +27,75 @@ Circulation:
             - due date.
         -
             - Sort today's checkouts on the circulation page from 
-            - name: todaysIssuesDefaultSortOrder
+            - pref: todaysIssuesDefaultSortOrder
               type: choice
               choices: 
                   asc: earliest to latest
                   desc: latest to earliest
             - due date.
         -
-            - name: SpecifyDueDate
-              type: boolean
+            - pref: SpecifyDueDate
               choices: 
                   yes: Allow
-                  no: Don't allow
+                  no: "Don't allow"
             - staff to specify a due date for a checkout.
         -
             - Mark a hold as problematic if it has been waiting for more than 
-            - name: ReservesMaxPickUpDelay
+            - pref: ReservesMaxPickUpDelay
               class: integer
             - days.
     Policy Restrictions:
         -
-            - name: AllowHoldPolicyOverride
-              type: boolean
+            - pref: AllowHoldPolicyOverride
               choices: 
                   yes: Allow
-                  no: Don't allow
+                  no: "Don't allow"
             - staff to override hold policies when placing holds.
         -
-            - name: AllowHoldsOnDamagedItems
-              type: boolean
+            - pref: AllowHoldsOnDamagedItems
               choices: 
                   yes: Allow
-                  no: Don't allow
+                  no: "Don't allow"
             - hold requests to be placed on damaged items.
         -
-            - name: AllowOnShelfHolds
-              type: boolean
+            - pref: AllowOnShelfHolds
               choices: 
                   yes: Allow
-                  no: Don't allow
+                  no: "Don't allow"
             - hold requests to be placed on items that are not checked out.
         -
-            - name: AllowRenewalLimitOverride
-              type: boolean
+            - pref: AllowRenewalLimitOverride
               choices: 
                   yes: Allow
-                  no: Don't allow
+                  no: "Don't allow"
             - staff to manually override the renewal limit and renew a checkout when it would go over the renewal limit.
         -
-            - name: canreservefromotherbranches
-              type: boolean
+            - pref: canreservefromotherbranches
               choices: 
                   yes: Allow
                   no: Don't allow (with independent branches)
             - a user from one library to place a hold on an item from another library
         -
-            - name: IssuingInProcess
-              type: boolean
+            - pref: IssuingInProcess
               choices: 
                   yes: Prevent
                   no: Don't prevent}} patrons from checking out books if they have more than {{input.currency noissuescharge
             - <!-- TMPL_VAR NAME="local_currency" -->.
         -
-            - name: ReturnBeforeExpiry
-              type: boolean
+            - pref: ReturnBeforeExpiry
               choices: 
                   yes: Require
-                  no: Don't require
+                  no: "Don't require"
             - patrons to return books before their accounts expire (by restricting due dates to before the patron's expiration date).
     Checkout Policy:
         -
-            - name: AutomaticItemReturn
-              type: boolean
+            - pref: AutomaticItemReturn
               choices: 
                   yes: Do
                   no: Don't
             - automatically transfer items to their home branch when they are returned.
         -
-            - name: UseBranchTransferLimits
-              type: boolean
+            - pref: UseBranchTransferLimits
               choices: 
                   yes: Enforce
                   no: Don't enforce}} branch transfer limits based on {{choice BranchTransferLimitsType
@@ -115,7 +104,7 @@ Circulation:
             - .
         -
             - Use the checkout and fines rules of 
-            - name: CircControl
+            - pref: CircControl
               type: choice
               choices: 
                   PickupLibrary: the library you are logged in at.
@@ -124,7 +113,7 @@ Circulation:
             -
         -
             - Use the checkout and fines rules of 
-            - name: HomeOrHoldingBranch
+            - pref: HomeOrHoldingBranch
               type: choice
               choices: 
                   homebranch: the library the item is from.
@@ -132,61 +121,62 @@ Circulation:
             -<br />NOTE: This is deprecated in favor of <code>CircControl</code>, but used by some parts of Koha. It will be removed soon.
         -
             - Make all checkouts have a maximum due date of 
-            - name: globalDueDate
+            - pref: globalDueDate
               class: date
             - .
         -
             - Prevent patrons from making holds on the OPAC if they owe more than 
-            - name: maxoutstanding
+            - pref: maxoutstanding
               class: currency
             - <!-- TMPL_VAR NAME="localcurrency" --> in fines.
         -
             - Show a warning on the "Transfers to Recieve" screen if the transfer has not been received 
-            - name: TransfersMaxDaysWarning
+            - pref: TransfersMaxDaysWarning
               class: integer
             - after it is sent.
         -
-            - name: daysMode
+            - pref: daysMode
               type: choice
               choices: 
                   Days: Include
-                  Calendar: Don't include
+                  Calendar: "Don't include"
             - days when the library in closed when calculating due dates.
     Holds Policy:
         -
             - Satisfy holds from the libraries 
-            - name: StaticHoldsQueueWeight
+            - pref: StaticHoldsQueueWeight
               class: multi
-              choices: }} (as branchcodes, separated by commas; if empty, uses all libraries) {{boolean RandomizeHoldsQueueWeight
+            - (as branchcodes, separated by commas; if empty, uses all libraries)
+            - pref: RandomizeHoldsQueueWeight
+              choices:
                   yes: in random order.
                   no: in that order.
             -
         -
-            - name: ReservesNeedReturns
-              type: boolean
+            - pref: ReservesNeedReturns
               choices: 
-                  yes: Don't automatically
+                  yes: "Don't automatically"
                   no: Automatically
             - mark holds as found and waiting when a hold is placed specifically on them and they are already checked in.
         -
             - Patrons can only have 
-            - name: maxreserves
+            - pref: maxreserves
               class: integer
-            - holds.
+            - holds at once.
     Fines Policy:
         -
             - Calculate fines based on days overdue 
-            - name: finesCalendar
+            - pref: finesCalendar
               type: choice
               choices: 
                   ignoreCalendar: directly.
                   noFinesWhenClosed: not including days the library is closed.
             -
         -
-            - name: finesMode
+            - pref: finesMode
               type: choice
               choices: 
-                  off: Don't calculate
+                  off: "Don't calculate"
                   test: Calculate (but only for mailing to the admin)
                   production: Calculate and charge
             - fines (when <code>misc/cronjobs/fines.pl</code> is being run).

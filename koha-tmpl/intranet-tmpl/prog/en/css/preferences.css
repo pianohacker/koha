@@ -20,7 +20,7 @@ textarea.preference {
 	display: block;
 }
 
-textarea.preference-code {
+textarea.preference-code, input.preference-file {
 	font-family: monospace;
 }
 

@@ -1,8 +1,7 @@
 I18N/L18N:
     -
         - Format dates like 
-        - name: dateformat
-          type: choice
+        - pref: dateformat
           default: us
           choices: 
               us: mm/dd/yyyy
@@ -10,8 +9,7 @@ I18N/L18N:
               iso: yyyy/mm/dd
         - .
     -
-        - name: opaclanguagesdisplay
-          type: boolean
+        - pref: opaclanguagesdisplay
           default: 0
           choices: 
               yes: Allow

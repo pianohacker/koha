@@ -1,6 +1,6 @@
 Cataloguing:
 # broken, omitted: marc
-    Interface Options:
+    Interface:
         -
             - Use 
             - pref: DefaultClassificationSource
@@ -63,9 +63,6 @@ Cataloguing:
                   no: "Don't add"
             - extra information to items automatically added to serials.
         -
-            - TemplateEncoding	Globally define the default character encoding
-    Display:
-        -
             - Barcodes are 
             - pref: autoBarcode
               choices: 
@@ -73,7 +70,11 @@ Cataloguing:
                   annual: generated in the form &lt;year&gt;-0001, &lt;year&gt;-0002.
                   hbyymmincr: generated in the form &lt;branchcode&gt;yymm0001.
                   OFF: not generated automatically.
-            -
+    Display:
+        -
+            - Show
+            - pref: URLLinkText
+            - as the text of links embedded in MARC records.
         -
             - pref: hide_marc
               choices: 
@@ -83,9 +84,9 @@ Cataloguing:
         -
             - pref: LabelMARCView
               choices: 
-                  standard: "Don't collapse"
-                  economical: Do collapse
-            - repeated tags of the same type into one tag entry.
+                  standard: "Don't"
+                  economical: Do
+            - collapse repeated tags of the same type into one tag entry.
         -
             - By default, display biblio records in 
             - pref: IntranetBiblioDefaultView
