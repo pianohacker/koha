@@ -1,5 +1,11 @@
 Logging:
     -
+        - pref: LetterLog
+          choices:
+              on: Log
+              off: "Don't log"
+        - when an automatic claim notice is sent.
+    -
         - pref: BorrowersLog
           choices:
               on: Log
@@ -16,28 +22,22 @@ Logging:
           choices:
               on: Log
               off: "Don't log"
-        - when fines are paid or charged.
+        - when overdue fines are charged or automatically forgiven.
     -
         - pref: IssueLog
           choices:
               on: Log
               off: "Don't log"
-        - If ON, log checkout activity
-    -
-        - pref: LetterLog
-          choices:
-              on: Log
-              off: "Don't log"
-        - If ON, log all notices sent
+        - when items are checked out.
     -
         - pref: ReturnLog
           choices:
               on: Log
               off: "Don't log"
-        - If ON, enables the circulation (returns) log
+        - when items are returned.
     -
         - pref: SubscriptionLog
           choices:
               on: Log
               off: "Don't log"
-        - If ON, enables subscriptions log
+        - when serials are added, deleted or changed.
