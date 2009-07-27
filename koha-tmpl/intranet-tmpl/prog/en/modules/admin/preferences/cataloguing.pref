@@ -94,7 +94,6 @@ Cataloguing:
                   default: normal form.
                   marc: MARC form.
                   isbd: ISBD form (see below).
-            -
         -
             - "Use the following as the ISBD template:"
             - pref: ISBD

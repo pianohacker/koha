@@ -87,7 +87,7 @@ Enhanced Content:
                   no: "Don't show"
             - similar items, as determined by Amazon, on item detail pages on the OPAC.
         -
-            - pref: OPACAmazonSimilarItems
+            - pref: OPACAmazonReviews
               default: 1
               choices:
                   yes: Show
@@ -102,7 +102,7 @@ Enhanced Content:
             - include information (such as reviews and citations) from Babelthèque in item detail pages on the OPAC.
     Baker and Taylor:
         -
-             pref: BakerTaylorEnabled
+            - pref: BakerTaylorEnabled
               choices:
                   yes: Add
                   no: "Don't add"

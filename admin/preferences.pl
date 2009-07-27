@@ -85,7 +85,7 @@ sub _get_chunk {
         if ( $options{'choices'} && ref( $options{ 'choices' } ) eq '' ) {
             if ( $options{'choices'} eq 'class-sources' ) {
                 my $sources = GetClassSources();
-                $options{'choices'} = { map { $_ => $sources->{$_}->{'description'} } @$sources };
+                $options{'choices'} = { map { $_ => $sources->{$_}->{'description'} } keys %$sources };
             } elsif ( $options{'choices'} eq 'opac-templates' ) {
                 $options{'choices'} = { map { $_ => $_ } getallthemes( 'opac' ) }
             } elsif ( $options{'choices'} eq 'staff-templates' ) {
