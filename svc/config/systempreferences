@@ -62,7 +62,7 @@ Used to set a single system preference.
 sub set_preference {
     my ( $preference ) = @_;
 
-    C4::Context->set_preference( $preference, $query->param( 'value' ) );
+    C4::Context->set_preference( $preference, $query->param( 'value' ) ) unless ( C4::Context->config('demo') );
 
     C4::Service->return_success( $response );
 }
@@ -91,7 +91,7 @@ sub set_preferences {
 
         next if ( !defined( $pref ) );
 
-        C4::Context->set_preference( $pref, $query->param( $param ) );
+        C4::Context->set_preference( $pref, $query->param( $param ) ) unless ( C4::Context->config('demo') );
     } 
 
     C4::Service->return_success( $response );

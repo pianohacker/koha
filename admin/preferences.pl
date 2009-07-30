@@ -275,7 +275,7 @@ if ( $op eq 'save' ) {
 
         next if ( !defined( $pref ) );
 
-        C4::Context->set_preference( $pref, $input->param( $param ) );
+        C4::Context->set_preference( $pref, $input->param( $param ) ) unless ( C4::Context->config('demo') );
     }
 
     print $input->redirect( '/cgi-bin/koha/admin/preferences.pl?tab=' . $tab );
