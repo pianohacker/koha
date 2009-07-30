@@ -106,7 +106,7 @@ sub _get_chunk {
     }
 
     $chunk->{ 'type_' . $chunk->{'type'} } = 1;
-    
+
     return $chunk;
 }
 
@@ -142,7 +142,7 @@ sub TransformPrefsToHTML {
                         push @names, { name => $name, highlighted => ( $highlighted_pref && ( $name =~ /$highlighted_pref/i ? 1 : 0 ) ) };
                     } else {
                         push @chunks, $piece;
-                    } 
+                    }
                 } else {
                     push @chunks, { type_text => 1, contents => $piece };
                 }
@@ -194,44 +194,44 @@ sub SearchPrefs {
     my @tabs;
 
     my %tab_files = _get_pref_files( $input, 0 );
+    my @terms = split( /\s+/, $searchfield );
+
+    sub matches {
+        my ( $text ) = @_;
+
+        return !grep( { $text !~ /$_/i } @terms );
+    }
 
     foreach my $tab_name ( keys %tab_files ) {
-        warn ">> Searching $tab_name";
         my $data = GetTab( $input, $tab_name );
         my $title = ( keys( %$data ) )[0];
         my $tab = $data->{ $title };
         $tab = { '' => $tab } if ( ref( $tab ) eq 'ARRAY' );
 
         my $matched_groups;
-        
+
         while ( my ( $group_title, $contents ) = each %$tab ) {
-            my $include_entire_group = ( $group_title =~ /$searchfield/i );
+            my $include_entire_group = matches( $group_title );
 
             my @new_contents;
 
             foreach my $line ( @$contents ) {
                 my $matched;
-                my @new_chunks;
 
                 foreach my $piece ( @$line ) {
-                    if ( ref( $piece ) eq 'HASH' && ref( $piece->{'choices'} ) eq 'HASH' && grep( { $_ && /$searchfield/i } values( %{ $piece->{'choices'} } ) ) ) {
-                        $matched = 1;
-                        $piece->{'highlighted'} = 1;
-                        push @new_chunks, $piece;
-                    } elsif ( $piece =~ /$searchfield/i ) {
-                        $matched = 1;
-                        while ( $piece =~ s/(.*\W)(\w*$searchfield\w*)(\W.*)/$3/gi ) {
-                            push @new_chunks, { type_text => 1, contents => $1 };
-                            push @new_chunks, { type_text => 1, highlighted => 1, contents => $2 };
+                    if ( ref( $piece ) eq 'HASH' ) {
+                        if ( ref( $piece->{'choices'} ) eq 'HASH' && grep( { $_ && matches( $_ ) } values( %{ $piece->{'choices'} } ) ) ) {
+                            $matched = 1;
+                        } elsif ( matches( $piece->{'pref'} ) ) {
+                            $matched = 1;
                         }
-
-                        push @new_chunks, { type_text => 1, contents => $piece } if ( $piece );
-                    } else {
-                        push @new_chunks, $piece;
+                    } elsif ( matches( $piece ) ) {
+                        $matched = 1;
                     }
+                    last if ( $matched );
                 }
 
-                push @new_contents, \@new_chunks if ( $matched || $include_entire_group );
+                push @new_contents, $line if ( $matched || $include_entire_group );
             }
 
             $matched_groups->{$group_title} = \@new_contents if ( @new_contents );
@@ -273,7 +273,7 @@ if ( $op eq 'save' ) {
         next if ( !defined( $pref ) );
 
         #C4::Context->set_preference( $pref, $input->param( $param ) );
-    } 
+    }
 
     print $input->redirect( '/cgi-bin/koha/admin/preferences.pl?tab=' . $tab );
     exit;
@@ -295,6 +295,9 @@ my @TABS;
 
 if ( $op eq 'search' ) {
     my $searchfield = $input->param( 'searchfield' );
+
+    $searchfield =~ s/[^a-zA-Z0-9_ -]//g;
+
     $template->param( searchfield => $searchfield );
 
     @TABS = SearchPrefs( $input, $searchfield );

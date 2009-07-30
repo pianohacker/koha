@@ -25,7 +25,7 @@ KOHA.Preferences = {
 };
 
 $( document ).ready( function () {
-    $( '#prefs-tab .preference' ).change( function () {
+    $( '.prefs-tab .preference' ).change( function () {
         $( this.form ).find( '.save-all' ).removeAttr( 'disabled' );
         $( this ).addClass( 'modified' );
         var name_cell = $( this ).parent().parent().find( '.name-cell' );
@@ -37,7 +37,7 @@ $( document ).ready( function () {
         document.location.hash = "highlighted";
     }
 
-    $( '#prefs-tab .expand-textarea' ).show().click( function () {
+    $( '.prefs-tab .expand-textarea' ).show().click( function () {
         $( this ).hide().nextAll( 'textarea, input[type=submit]' )
             .animate( { height: 'show', queue: false } )
             .animate( { opacity: 1 } );
@@ -45,7 +45,7 @@ $( document ).ready( function () {
         return false;
     } ).nextAll( 'textarea, input[type=submit]' ).hide().css( { opacity: 0 } );
 
-    $( '#prefs-tab .save-all' ).attr( 'disabled', true ).click( function () {
+    $( '.prefs-tab .save-all' ).attr( 'disabled', true ).click( function () {
         KOHA.Preferences.Save( this.form );
         return false;
     } ); 
