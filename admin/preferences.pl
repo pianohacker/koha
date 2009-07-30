@@ -211,7 +211,10 @@ sub SearchPrefs {
         my $matched_groups;
 
         while ( my ( $group_title, $contents ) = each %$tab ) {
-            my $include_entire_group = matches( $group_title );
+            if ( matches( $group_title ) ) {
+                $matched_groups->{$group_title} = $contents;
+                next;
+            }
 
             my @new_contents;
 
@@ -231,7 +234,7 @@ sub SearchPrefs {
                     last if ( $matched );
                 }
 
-                push @new_contents, $line if ( $matched || $include_entire_group );
+                push @new_contents, $line if ( $matched );
             }
 
             $matched_groups->{$group_title} = \@new_contents if ( @new_contents );
@@ -272,7 +275,7 @@ if ( $op eq 'save' ) {
 
         next if ( !defined( $pref ) );
 
-        #C4::Context->set_preference( $pref, $input->param( $param ) );
+        C4::Context->set_preference( $pref, $input->param( $param ) );
     }
 
     print $input->redirect( '/cgi-bin/koha/admin/preferences.pl?tab=' . $tab );
