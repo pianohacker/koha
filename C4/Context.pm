@@ -523,7 +523,7 @@ sub set_preference {
 
     my $dbh = C4::Context->dbh or return 0;
 
-    my $type = $dbh->selectrow_array( "SELECT type FROM systempreferences WHERE variable = ?", {}, $var )
+    my $type = $dbh->selectrow_array( "SELECT type FROM systempreferences WHERE variable = ?", {}, $var );
 
     $value = 0 if ( $type && $type eq 'YesNo' && $value eq '' );
 
