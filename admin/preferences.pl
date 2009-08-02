@@ -158,7 +158,7 @@ sub TransformPrefsToHTML {
 sub _get_pref_files {
     my ( $input, $open_files ) = @_;
 
-    my ( $htdocs, $theme, $lang, undef ) = C4::Output::_get_template_file( 'admin/preferences/admin.tmpl', 'intranet', $input );
+    my ( $htdocs, $theme, $lang, undef ) = C4::Output::_get_template_file( 'admin/preferences/admin.pref', 'intranet', $input );
 
     my %results;
 
@@ -176,11 +176,11 @@ sub JumpPref {
 
     return ( $tab ) if ( $jumpfield !~ /^[a-zA-Z_0-9-]+$/ );
 
-    my %tab_files = _get_pref_files( $input );
+    my %tab_files = _get_pref_files( $input, 1 );
 
     while ( my ( $tab, $tabfile ) = each %tab_files ) {
         while ( <$tabfile> ) {
-            return ( $tab, $1 ) if ( /name: ($jumpfield)/i );
+            return ( $tab, $1 ) if ( /pref: ($jumpfield)/i );
         }
 
         close $tabfile;
@@ -193,8 +193,8 @@ sub SearchPrefs {
     my ( $input, $searchfield ) = @_;
     my @tabs;
 
-    my %tab_files = _get_pref_files( $input, 0 );
-    my @terms = split( /\s+/, $searchfield );
+    my %tab_files = _get_pref_files( $input );
+    our @terms = split( /\s+/, $searchfield );
 
     sub matches {
         my ( $text ) = @_;
