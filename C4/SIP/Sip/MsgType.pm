@@ -531,7 +531,7 @@ sub handle_checkout {
 	$resp = CHECKOUT_RESP . '1';
 	$resp .= sipbool($status->renew_ok);
 	if ($ils->supports('magnetic media')) {
-	    $resp .= sipbool($item->magnetic);
+	    $resp .= sipbool($item->magnetic_media);
 	} else {
 	    $resp .= 'U';
 	}
@@ -634,11 +634,26 @@ sub handle_checkin {
     $resp .= $status->ok ? '1' : '0';
     $resp .= $status->resensitize ? 'Y' : 'N';
     if ($item && $ils->supports('magnetic media')) {
-		$resp .= sipbool($item->magnetic);
+		$resp .= sipbool($item->magnetic_media);
     } else {
-	# The item barcode was invalid or the system doesn't support
-	# the 'magnetic media' indicator
+        # item barcode is invalid or system doesn't support 'magnetic media' indicator
 		$resp .= 'U';
+    }
+
+    # apparently we can't trust the returns from Checkin yet (because C4::Circulation::AddReturn is faulty)
+    # So we reproduce the alert logic here.
+    if (not $status->alert) {
+        if ($item->hold_patron_id) {
+            $status->alert(1);
+            if ($item->destination_loc and $item->destination_loc ne $current_loc) {
+                $status->alert_type('02');  # hold at other library
+            } else {
+                $status->alert_type('01');  # hold at this library
+            }
+        } elsif ($item->destination_loc and $item->destination_loc ne $current_loc) {
+            $status->alert(1);
+            $status->alert_type('04');  # no hold, just send it
+        }
     }
     $resp .= $status->alert ? 'Y' : 'N';
     $resp .= Sip::timestamp;
@@ -656,17 +671,21 @@ sub handle_checkin {
             $resp .= add_field(FID_PATRON_ID, $patron->id);
         }
         if ($item) {
-            $resp .= maybe_add(FID_MEDIA_TYPE,        $item->sip_media_type     );
-            $resp .= maybe_add(FID_ITEM_PROPS,        $item->sip_item_properties);
-            # $resp .= maybe_add(FID_COLLECTION_CODE, $item->collection_code    );
-            # $resp .= maybe_add(FID_CALL_NUMBER,     $item->call_number        );
-            # $resp .= maybe_add(FID_DESTINATION,     $item->destination_loc    );
-            # $resp .= maybe_add(FID_ALERT_TYPE,      $item->alert_type         );
-            # $resp .= maybe_add(FID_PATRON_ID,       $item->hold_patron_id     );
-            # $resp .= maybe_add(FID_PATRON_NAME,     $item->hold_patron_name   );
+            $resp .= maybe_add(FID_MEDIA_TYPE,           $item->sip_media_type     );
+            $resp .= maybe_add(FID_ITEM_PROPS,           $item->sip_item_properties);
+            $resp .= maybe_add(FID_COLLECTION_CODE,      $item->collection_code    );
+            $resp .= maybe_add(FID_CALL_NUMBER,          $item->call_number        );
+            $resp .= maybe_add(FID_DESTINATION_LOCATION, $item->destination_loc    );
+            $resp .= maybe_add(FID_HOLD_PATRON_ID,       $item->hold_patron_id     );
+            $resp .= maybe_add(FID_HOLD_PATRON_NAME,     $item->hold_patron_name   );
+            if ($status->hold and $status->hold->{branchcode} ne $item->destination_loc) {
+                warn 'SIP hold mismatch: $status->hold->{branchcode}=' . $status->hold->{branchcode} . '; $item->destination_loc=' . $item->destination_loc;
+                # just me being paranoid.
+            }
         }
     }
 
+    $resp .= maybe_add(FID_ALERT_TYPE, $status->alert_type) if $status->alert;
     $resp .= maybe_add(FID_SCREEN_MSG, $status->screen_msg);
     $resp .= maybe_add(FID_PRINT_LINE, $status->print_line);
 
@@ -1328,7 +1347,7 @@ sub handle_renew {
 	$resp .= '1';
 	$resp .= $status->renewal_ok ? 'Y' : 'N';
 	if ($ils->supports('magnetic media')) {
-	    $resp .= sipbool($item->magnetic);
+	    $resp .= sipbool($item->magnetic_media);
 	} else {
 	    $resp .= 'U';
 	}
@@ -1570,7 +1589,7 @@ sub api_auth($$) {
 	$query->param(userid   => $username);
 	$query->param(password => $password);
 	my ($status, $cookie, $sessionID) = check_api_auth($query, {circulate=>1}, "intranet");
-	print STDERR "check_api_auth returns " . ($status || 'undef') . "\n";
+	# print STDERR "check_api_auth returns " . ($status || 'undef') . "\n";
 	# print "api_auth userenv = " . &dump_userenv;
 	return $status;
 }

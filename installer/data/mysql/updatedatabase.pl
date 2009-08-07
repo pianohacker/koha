@@ -2467,6 +2467,27 @@ if (C4::Context->preference("Version") < TransformToNum($DBversion)) {
     print "Upgrade to $DBversion done (added FilterBeforeOverdueReport syspref and new index on authorised_values)\n";
 }
 
+$DBversion = "3.01.00.038";
+if (C4::Context->preference("Version") < TransformToNum($DBversion)) {
+    # update branches table
+    # 
+    $dbh->do("ALTER TABLE branches ADD `branchzip` varchar(25) default NULL AFTER `branchaddress3`");
+    $dbh->do("ALTER TABLE branches ADD `branchcity` mediumtext AFTER `branchzip`");
+    $dbh->do("ALTER TABLE branches ADD `branchcountry` text AFTER `branchcity`");
+    $dbh->do("ALTER TABLE branches ADD `branchurl` mediumtext AFTER `branchemail`");
+    $dbh->do("ALTER TABLE branches ADD `branchnotes` mediumtext AFTER `branchprinter`");
+    print "Upgrade to $DBversion done (add ZIP, city, country, URL, and notes column to branches)\n";
+    SetVersion ($DBversion);
+}
+
+$DBversion = '3.01.00.039';
+if (C4::Context->preference("Version") < TransformToNum($DBversion)) {
+    $dbh->do("INSERT INTO systempreferences (variable,value,options,explanation,type)VALUES('SpineLabelFormat', '<itemcallnumber><copynumber>', '30|10', 'This preference defines the format for the quick spine label printer. Just list the fields you would like to see in the order you would like to see them, surrounded by <>, for example <itemcallnumber>.', 'Textarea')");
+    $dbh->do("INSERT INTO systempreferences (variable,value,options,explanation,type)VALUES('SpineLabelAutoPrint', '0', '', 'If this setting is turned on, a print dialog will automatically pop up for the quick spine label printer.', 'YesNo')");
+    SetVersion ($DBversion);
+    print "Upgrade to $DBversion done (added SpineLabelFormat and SpineLabelAutoPrint sysprefs)\n";
+}
+
 =item DropAllForeignKeys($table)
 
   Drop all foreign keys of the table $table
