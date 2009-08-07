@@ -57,6 +57,12 @@ OPAC:
                   no: "Don't highlight"
             - words the patron searched for in their search results.
         -
+            - pref: AuthorisedValueImages
+              choices:
+                  yes: Show
+                  no: "Don't show"
+            - images for <a href="/cgi-bin/koha/admin/authorised_values.pl">authorized values</a> (such as lost statuses and locations) in search results and item detail pages on the OPAC.
+        -
             - Use the image at
             - pref: opacsmallimage
               class: url
