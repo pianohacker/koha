@@ -68,3 +68,7 @@
     }
     //]]>
 </script>
+<style type="text/css">
+	#uploadpanel,#fileuploadstatus,#fileuploadfailed,#jobpanel,#jobstatus,#jobfailed { display : none; }
+	#fileuploadstatus,#jobstatus { margin:.4em; }
+	#fileuploadprogress,#jobprogress{ width:150px;height:10px;border:1px solid #666;background:url('/intranet-tmpl/prog/img/progress.png') -300px 0px no-repeat; }</style>

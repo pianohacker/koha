@@ -1,0 +1,32 @@
+<!-- TMPL_IF NAME="missing" -->
+<h2>Missing items</h2>
+<div class="help">
+    <p>
+    The following items were not scanned, but should have been on the shelf:
+    </p>
+</div>
+<table>
+    <thead>
+        <tr><th class="tool"><input type="checkbox" id="missing-check-all" /></th><th>Call Number</th><th>Title</th><th>Barcode</th></tr>
+    </thead>
+    <tbody>
+        <!-- TMPL_LOOP NAME="missing" -->
+        <tr>
+            <td class="tool">
+                <input type="checkbox" name="itemnumber" value="<!-- TMPL_VAR NAME="itemnumber"-->" />
+            </td>
+            <td>
+                <!-- TMPL_VAR NAME="itemcallnumber" -->
+            </td>
+            <td>
+                <a href="/cgi-bin/koha/catalogue/detail.pl?biblionumber=<!-- TMPL_VAR NAME="biblionumber" -->"><cite><!-- TMPL_VAR NAME="title" --></cite></a>
+                <!-- TMPL_IF NAME="author" -->by <!-- TMPL_VAR NAME="author" --><!-- /TMPL_IF -->
+            </td>
+            <td>
+                <a href="/cgi-bin/koha/catalogue/moredetail.pl?biblionumber=<!-- TMPL_VAR NAME="biblionumber" -->&amp;itemnumber=<!-- TMPL_VAR NAME="itemnumber" -->"><!-- TMPL_VAR NAME="barcode" --></a>
+            </td>
+        </tr>
+        <!--/TMPL_LOOP -->
+    </tbody>
+</table>
+<!-- /TMPL_IF -->

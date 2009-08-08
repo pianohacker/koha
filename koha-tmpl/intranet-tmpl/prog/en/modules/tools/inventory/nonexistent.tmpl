@@ -1,0 +1,20 @@
+<!-- TMPL_IF NAME="nonexistent" -->
+<h2>Nonexistent barcodes</h2>
+<div class="help">
+    <p>
+    The following barcodes could not be found:
+    </p>
+</div>
+<ul>
+    <!-- TMPL_LOOP NAME="nonexistent" -->
+    <li>
+        <strong><!-- TMPL_VAR NAME="barcode" --></strong>
+        <!-- TMPL_IF NAME="last_title" -->
+        - after <cite><!-- TMPL_VAR NAME="last_title" --></cite>
+        <!-- TMPL_IF NAME="last_author" -->by <!-- TMPL_VAR NAME="last_author" --><!-- /TMPL_IF -->
+        (<!-- TMPL_VAR NAME="last_itemcallnumber" -->)
+        <!-- /TMPL_IF -->
+    </li>
+    <!-- /TMPL_LOOP -->
+</ul>
+<!-- /TMPL_IF -->
