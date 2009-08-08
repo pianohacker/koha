@@ -134,7 +134,7 @@ function CheckForm(f) {
       </li>
     </ol>
   </fieldset>
-  <fieldset class="action"><input type="button" id="mainformsubmit" onclick="return CheckForm(this.form);" value="Stage for import" /></fieldset>
+  <fieldset class="action"><input type="button" id="mainformsubmit" value="Stage for import" /></fieldset>
  
        <div id="jobpanel"><div id="jobstatus">Job progress: <div id="jobprogress"></div> <span id="jobprogresspercent">0</span>%</div>
      <div id="jobfailed"></div></div>

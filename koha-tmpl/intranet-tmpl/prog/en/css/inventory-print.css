@@ -1,0 +1,3 @@
+.tool, .missing-tools, #uploadfile, #uploadpanel, #processfile {
+    display: none;
+}
