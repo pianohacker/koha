@@ -56,15 +56,14 @@ my ($template, $loggedinuser, $cookie) = get_template_and_user({
 });
 
 my $issuerid = $loggedinuser;
-my ($op, $patronid, $barcode, $confirmed, $timedout) = (
+my ($op, $patronid, $barcode, $confirmed, $barcode_driven) = (
     $query->param("op")         || '',
     $query->param("patronid")   || '',
     $query->param("barcode")    || '',
     $query->param("confirmed")  || '',
-    $query->param("timedout")   || '', #not actually using this...
+    $query->param("barcode_driven")   || 0,
 );
 
-my %confirmation_strings = ( RENEW_ISSUE => "This item is already checked out to you.  Return it?", );
 my $issuenoconfirm = 1; #don't need to confirm on issue.
 #warn "issuerid: " . $issuerid;
 my $issuer   = GetMemberDetails($issuerid);
@@ -204,5 +203,11 @@ if ($borrower->{cardnumber}) {
         nouser     => $patronid,
     );
 }
+
+$template->param(
+    barcode_driven => $barcode_driven,
+    SelfCheckEndSessionBarcode => C4::Context->preference('SelfCheckEndSessionBarcode'),
+    SelfCheckTimeout => C4::Context->preference('SelfCheckTimeout'),
+);
 
 output_html_with_http_headers $query, $cookie, $template->output;

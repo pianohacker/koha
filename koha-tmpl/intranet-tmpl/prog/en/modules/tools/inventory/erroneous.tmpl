@@ -1,0 +1,79 @@
+<!-- TMPL_IF NAME="erroneous" -->
+<h2>Unexpected items</h2>
+<div class="help">
+    <p>
+    The following items were scanned, but should have not have been on the shelf:
+    </p>
+</div>
+<table>
+    <thead>
+        <tr><th class="tool">&nbsp;</th><th>Call Number</th><th>Title</th><th>Barcode</th><th>Problems</th></tr>
+    </thead>
+    <tbody>
+        <!-- TMPL_LOOP NAME="erroneous" -->
+        <tr>
+            <td class="tool">
+                <!-- TMPL_IF NAME="is_checked_out" -->
+                <a href="/cgi-bin/koha/circ/returns.pl?barcode=<!-- TMPL_VAR NAME="barcode"-->" class="checkin">Check In</a>
+                <!-- TMPL_ELSE -->
+                <!-- TMPL_IF NAME="CAN_user_editcatalogue" -->
+                <a href="/cgi-bin/koha/cataloguing/additem.pl?biblionumber=<!-- TMPL_VAR NAME="biblionumber" -->&amp;op=edititem&amp;itemnumber=<!-- TMPL_VAR NAME="itemnumber" -->">Edit Item</a>
+                <!-- /TMPL_IF -->
+                <!-- /TMPL_IF -->
+            </td>
+            <td>
+                <!-- TMPL_IF NAME="callnumber_wrong" -->
+                <strong><!-- TMPL_VAR NAME="itemcallnumber" --></strong>
+                <!-- TMPL_ELSE -->
+                <!-- TMPL_VAR NAME="itemcallnumber" -->
+                <!-- /TMPL_IF -->
+            </td>
+            <td>
+                <a href="/cgi-bin/koha/catalogue/detail.pl?biblionumber=<!-- TMPL_VAR NAME="biblionumber" -->"><cite><!-- TMPL_VAR NAME="title" --></cite></a>
+                <!-- TMPL_IF NAME="author" -->by <!-- TMPL_VAR NAME="author" --><!-- /TMPL_IF -->
+            </td>
+            <td>
+                <a href="/cgi-bin/koha/catalogue/moredetail.pl?biblionumber=<!-- TMPL_VAR NAME="biblionumber" -->&amp;itemnumber=<!-- TMPL_VAR NAME="itemnumber" -->"><!-- TMPL_VAR NAME="barcode" --></a>
+            </td>
+            <td>
+                <ul>
+                    <!-- TMPL_IF NAME="callnumber_wrong" --><li>Call number is outside the range you selected</li><!-- /TMPL_IF -->
+                    <!-- TMPL_IF NAME="is_lost" --><li>Is: <strong><!-- TMPL_VAR NAME="lost_description" --></strong></li><!-- /TMPL_IF -->
+                    <!-- TMPL_IF NAME="is_damaged" --><li>Is: <strong><!-- TMPL_VAR NAME="damaged_description" --></strong></li><!-- /TMPL_IF -->
+                    <!-- TMPL_IF NAME="is_wthdrawn" --><li>Is: <strong><!-- TMPL_VAR NAME="wthdrawn_description" --></strong></li><!-- /TMPL_IF -->
+                    <!-- TMPL_IF NAME="is_checked_out" --><li><strong>Checked out</strong></li><!-- /TMPL_IF -->
+                    <!-- TMPL_IF NAME="branchcode_wrong" -->
+                    <li>
+                        <!-- TMPL_IF NAME="holdingbranch_description" -->
+                        At <strong><!-- TMPL_VAR NAME="holdingbranch_description" --></strong>, not
+                        <!-- TMPL_LOOP NAME="branchcode_possible_values" --><!-- TMPL_IF NAME="__inner__" -->, <!-- TMPL_ELSIF NAME="__last__" --><!-- TMPL_UNLESS NAME="__first__" --> or <!-- /TMPL_UNLESS --><!-- /TMPL_IF --><!-- TMPL_VAR NAME="description" --><!--/TMPL_LOOP -->
+                        <!-- TMPL_ELSE -->
+                        Holding library is <strong>not set</strong>
+                        <!-- /TMPL_IF -->
+                    </li>
+                    <!-- /TMPL_IF -->
+                    <!-- TMPL_IF NAME="itemtype_wrong" -->
+                    <li>
+                        In "<strong><!-- TMPL_VAR NAME="itemtype_description" --></strong>", not
+                        <!-- TMPL_LOOP NAME="itemtype_possible_values" --><!-- TMPL_IF NAME="__inner__" -->, <!-- TMPL_ELSIF NAME="__last__" --><!-- TMPL_UNLESS NAME="__first__" --> or <!-- /TMPL_UNLESS --><!-- /TMPL_IF -->"<!-- TMPL_VAR NAME="description" -->"<!--/TMPL_LOOP -->
+                    </li>
+                    <!-- /TMPL_IF -->
+                    <!-- TMPL_IF NAME="location_wrong" -->
+                    <li>
+                        In the "<strong><!-- TMPL_VAR NAME="location_description" --></strong>" location, not
+                        <!-- TMPL_LOOP NAME="location_possible_values" --><!-- TMPL_IF NAME="__inner__" -->, <!-- TMPL_ELSIF NAME="__last__" --><!-- TMPL_UNLESS NAME="__first__" --> or <!-- /TMPL_UNLESS --><!-- /TMPL_IF -->"<!-- TMPL_VAR NAME="description" -->"<!--/TMPL_LOOP -->
+                    </li>
+                    <!-- /TMPL_IF -->
+                    <!-- TMPL_IF NAME="collection_wrong" -->
+                    <li>
+                        In the "<strong><!-- TMPL_VAR NAME="ccode_description" --></strong>" collection, not
+                        <!-- TMPL_LOOP NAME="collection_possible_values" --><!-- TMPL_IF NAME="__inner__" -->, <!-- TMPL_ELSIF NAME="__last__" --><!-- TMPL_UNLESS NAME="__first__" --> or <!-- /TMPL_UNLESS --><!-- /TMPL_IF -->"<!-- TMPL_VAR NAME="description" -->"<!--/TMPL_LOOP -->
+                    </li>
+                    <!-- /TMPL_IF -->
+                </ul>
+            </td>
+        </tr>
+        <!-- /TMPL_LOOP -->
+    </tbody>
+</table>
+<!-- /TMPL_IF -->

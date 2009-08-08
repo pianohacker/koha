@@ -9,21 +9,14 @@
 	#fileuploadprogress,#jobprogress{ width:150px;height:10px;border:1px solid #666;background:url('/intranet-tmpl/prog/img/progress.png') -300px 0px no-repeat; }</style>
 <script type="text/javascript">
 //<![CDATA[
-$(document).ready(function(){
-	$("#processfile").hide();
-	$("#uploadfile").submit(function(){
-		alert("Hey!");
-	});
-});
-function CheckForm(f) {
-    if ($("#fileToUpload").value == '') {
-        alert('Please upload a file first.');
-    } else {
-        return submitBackgroundJob(f);
-    }
-    return false;
-}
-
+	$("#processfile").hide().submit( function (f) {
+        if ($("#fileToUpload").value == '') {
+            alert('Please upload a file first.');
+        } else {
+            return submitBackgroundJob(f);
+        }
+        return false;
+    } );
 //]]>
 </script>
 </head>
@@ -142,7 +135,7 @@ function CheckForm(f) {
       </li>
     </ol>
   </fieldset>
-  <fieldset class="action"><input type="button" id="mainformsubmit" onclick="return CheckForm(this.form);" value="Stage for import" /></fieldset>
+  <fieldset class="action"><input type="button" id="mainformsubmit" value="Stage for import" /></fieldset>
  
        <div id="jobpanel"><div id="jobstatus">Job progress: <div id="jobprogress"></div> <span id="jobprogresspercent">0</span>%</div>
      <div id="jobfailed"></div></div>
