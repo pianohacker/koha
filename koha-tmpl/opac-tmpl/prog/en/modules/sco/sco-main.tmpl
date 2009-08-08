@@ -7,7 +7,9 @@
 <script type="text/javascript">//<![CDATA[
 function sco_init(valid_session) {
     if (valid_session == 1) {
-        setTimeout("location.href='/cgi-bin/koha/sco/sco-main.pl?op=logout';",120000); // TODO: syspref for timeout
+        <!-- TMPL_IF NAME="SelfCheckTimeout" -->
+        setTimeout("location.href='/cgi-bin/koha/sco/sco-main.pl?op=logout';", <!-- TMPL_VAR NAME="SelfCheckTimeout" --> * 1000); // TODO: syspref for timeout
+        <!-- /TMPL_IF -->
     }
 }
 function dofocus() {    // named function req'd for body onload event by some FF and IE7 security models
@@ -19,10 +21,12 @@ function checkout_confirm(patronid) {
     var   barcode = $("#barcode").val();
     // alert("checkout_confirm('" + patronid + "') called for barcode '" + barcode + "'");
     if (! barcode) { dofocus(); return false; }    // no barcode
-    if (barcode == "__KOHA_NEW_CIRC__") {   // magic barcode 
+    <!-- TMPL_IF NAME="SelfCheckEndSessionBarcode" -->
+    if (barcode == "<!-- TMPL_VAR NAME="SelfCheckEndSessionBarcode" -->") {   // magic barcode 
         window.location.href='/cgi-bin/koha/sco/sco-main.pl?op=logout';
         return false;
     }
+    <!-- /TMPL_IF -->
     if (this.valid_session == 0) {
         // probably should force logout like above ? --atz 6/09
         if (confirm('Session has expired.  Click \'OK\' to continue processing this item.  Click Cancel if you are not ' + patronid)){
@@ -202,6 +206,7 @@ Sorry, This Self-Checkout Station has lost authentication.  Please contact the a
 	<!-- TMPL_VAR NAME="author" --></span> (<!-- TMPL_VAR NAME="barcode" -->)</td>
 	<td><!-- TMPL_VAR NAME="itemcallnumber" DEFAULT="&nbsp;" --></td>
 	<!-- TMPL_IF NAME="overdue" --><td class="overdue"><!-- TMPL_VAR NAME="date_due_display" --></td><!-- TMPL_ELSE --><td><!-- TMPL_VAR NAME="date_due_display" --></td><!-- /TMPL_IF -->
+    <!-- TMPL_UNLESS NAME="barcode_driven" -->
 	<td>
     <form action="/cgi-bin/koha/sco/sco-main.pl" method="post">
     <input type="hidden" name="op" value="checkout" />
@@ -214,7 +219,8 @@ Sorry, This Self-Checkout Station has lost authentication.  Please contact the a
         <input type="button" value="Renew Item" <!-- TMPL_UNLESS NAME="renew" --> name="confirm"<!-- /TMPL_UNLESS --> class="renew" onclick="this.form.confirmed.value='1';this.form.submit();" />
         <!-- /TMPL_IF -->
     </form>
-	</td>
+    </td>
+    <!-- /TMPL_UNLESS -->
 	<!-- TMPL_UNLESS NAME="nofines" --><td><!-- TMPL_IF NAME="charges" -->Yes<!-- TMPL_ELSE -->No<!-- /TMPL_IF --></td><!-- /TMPL_UNLESS --></tr>
 	<!-- /TMPL_LOOP -->
     </tbody>
@@ -227,7 +233,14 @@ Sorry, This Self-Checkout Station has lost authentication.  Please contact the a
 	<!-- TMPL_ELSE --><!-- not validuser -->
 	<div class="sco_entry" >
 	<form id="mainform" action="/cgi-bin/koha/sco/sco-main.pl" name="mainform" method="post">
-	<fieldset class="checkout"><label for="patronid">Please enter your card number:</label> 
+    <fieldset class="checkout">
+    <label for="patronid">
+        <!-- TMPL_IF NAME="barcode_driven" -->
+        Please scan your library card:
+        <!-- TMPL_ELSE -->
+        Please enter your card number:
+        <!-- /TMPL_IF -->
+    </label> 
 	<input type="text" id="patronid" class="focus" size="20" name="patronid" />
 
  	<!-- TMPL_LOOP NAME="INPUTS" --><input type="hidden" name="<!-- TMPL_VAR ESCAPE=HTML NAME="name" -->" value="<!-- TMPL_VAR ESCAPE=HTML NAME="value" -->"><!-- /TMPL_LOOP -->

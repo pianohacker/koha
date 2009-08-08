@@ -2,32 +2,113 @@
 <title>Koha &rsaquo; Tools &rsaquo; Inventory</title>
 <!-- TMPL_INCLUDE NAME="doc-head-close.inc" -->
 <!-- TMPL_INCLUDE NAME="calendar.inc" -->
-<script type="text/javascript" src="<!-- TMPL_VAR name="themelang" -->/lib/jquery/plugins/jquery.checkboxes.min.js"></script>
-<script type="text/javascript">
-//<![CDATA[
-$(document).ready(function(){
-	$(".checkall").click(function(){
-	        $(".checkboxed").checkCheckboxes();
-	        return false;
-		});
-	$(".clearall").click(function(){
-	        $(".checkboxed").unCheckCheckboxes();
-	        return false;
-	    });
-<!-- TMPL_IF NAME="offset" -->$("#markseen").before("<input type=\"submit\" value=\"&lt;&lt; Mark Seen and Continue\" id=\"markback\" />");<!-- /TMPL_IF -->
-<!-- TMPL_IF NAME="nextoffset" -->$("#markseen").after("<input type=\"submit\" id=\"marknext\" value=\"Mark Seen and Continue &gt;&gt;\" />");<!-- /TMPL_IF -->
-	$("#markback").click(function(){
-		$(".checkboxed").find("input").filter("[name=offset]").attr("value","<!-- TMPL_VAR NAME="prevoffset" -->");
-		return true;
-	});
-	$("#marknext").click(function(){
-		$(".checkboxed").find("input").filter("[name=offset]").attr("value","<!-- TMPL_VAR NAME="nextoffset" -->");
-		return true;
-	});
-	});
-//]]>
-</script>
+<!-- TMPL_INCLUDE NAME="file-upload.inc" -->
 </head>
+<link rel="stylesheet" type="text/css" href="<!-- TMPL_VAR name="themelang" -->/lib/jquery/plugins/jquery.asmselect.css">
+<link rel="stylesheet" type="text/css" media="print" href="<!-- TMPL_VAR NAME="themelang" -->/css/inventory-print.css">
+<script type="text/javascript" src="<!-- TMPL_VAR name="themelang" -->/lib/jquery/plugins/jquery.asmselect.js"></script>
+<script type="text/javascript">
+    <!--
+    $( document ).ready( function () {
+        $( "#processfile" ).hide().submit( function (f) {
+            if ( $( "#fileToUpload" ).value == '') {
+                alert( _( 'Please upload a file first.' ) );
+            } else {
+                $( '#check-inventory' ).attr( 'disabled', 'disabled' ).val( 'Checking...' );
+                hide_inventory_results();
+                $.ajax( {
+                    url: '/cgi-bin/koha/svc/catalogue/inventory',
+                    dataType: 'json',
+                    data: $( '#processfile :input' ).serialize() + '&amp;render_as_html=1',
+                    success: show_inventory_results,
+                    error: error_callback,
+                    complete: function () { $( '#check-inventory' ).removeAttr( 'disabled' ).val( 'Recheck' ) }
+                } );
+            }
+            return false;
+        } );
+        $( '#branchloop, #itemtype, #locationloop, #collection' ).asmSelect();
+    } );
+    function error_callback() {
+        alert( 'Internal error' );
+        setTimeout( window.location.reload, 500 );
+    }
+    function link_popup() {
+        window.open( this.href, 'details-popup', 'width=800,height=600,location=no,toolbar=no,scrollbars=yes,resize=yes' );
+        return false;
+    }
+    function hide_inventory_results() {
+        $( '#success, #nonexistent, #missing-form, #erroneous' ).hide();
+        $( '#nonexistent, #missing, #erroneous' ).children().remove();
+    }
+    function show_inventory_results( data ) {
+        $( '#processfile' ).fadeTo( 'normal', 0.6 ).find( ':input, a' ).one( 'click', function () {
+            $( '#processfile' ).fadeTo( 'fast', 1 );
+        } );
+
+        if ( !( data.nonexistent || data.missing || data.erroneous ) ) {
+            $( '#success' ).show();
+            return;
+        }
+
+        if ( data.nonexistent ) {
+            $( '#nonexistent' ).html( data.nonexistent ).show();
+        }
+        if ( data.missing ) {
+            $( '#missing' ).html( data.missing )
+                .find( 'a' ).click( link_popup );
+            $( '#missing-form' ).show().submit( mark_as_lost );;
+            $( '#missing-check-all' ).click( function() {
+                var master = this;
+                $( '#missing tbody :checkbox' ).each( function() {
+                    this.checked = master.checked;
+                } );
+            } );
+        }
+        if ( data.erroneous ) {
+            $( '#erroneous' ).html( data.erroneous ).show()
+                .find( 'a' ).click( link_popup );
+        }
+    }
+    function mark_as_lost() {
+        var $checked = $( '#missing input[name=itemnumber]:checked' );
+        if ( $checked.length ) {
+            $( '#mark-lost' ).attr( 'disabled', 'disabled' ).val( 'Submitting...' );
+            $.ajax( {
+                url: '/cgi-bin/koha/svc/catalogue/inventory',
+                type: 'POST',
+                dataType: 'json',
+                data: $( '#missing-form :input' ).serialize(),
+                success: function () {
+                    $checked.parent().parent()
+                        .find( 'td' ).slideUp().end()
+                        .remove();
+
+                    if ( $( '#missing tbody' ).children().length == 0 ) {
+                        $( '#missing' ).children().remove();
+                        $( '#missing-form' ).fadeOut();
+                    }
+
+                    alert( $checked.length + _( ' item(s) marked as ' ) + $( '#lostvalue option:selected' ).text() );
+                },
+                error: error_callback,
+                complete: function () { $( '#mark-lost' ).removeAttr( 'disabled' ).val( 'Submit' ) }
+            } );
+        } else {
+            alert( _( "No items were selected." ) );
+        }
+
+        return false;
+    }
+    // -->
+</script>
+<style type="text/css">
+    <!--
+    h2 {
+        margin-top: 1em;
+    }
+    -->
+</style>
 <body>
 <!-- TMPL_INCLUDE NAME="header.inc" -->
 <!-- TMPL_INCLUDE NAME="cat-search.inc"-->
@@ -40,220 +121,105 @@ $(document).ready(function(){
 	<div id="yui-main">
 	<div class="yui-b">
     <h1>Inventory/Stocktaking</h1>
-    <!--TMPL_IF Name="Number" --><div class="dialog message"><!--TMPL_VAR Name="Number"--> items modified : datelastseen set to <!--TMPL_VAR Name="date"--></div><!-- /TMPL_IF-->
-    <!--TMPL_IF Name="errorfile" --><div class="dialog alert"><!--TMPL_VAR Name="errorfile"--> can't be opened</div><!-- /TMPL_IF-->
-    <!--TMPL_LOOP Name="errorloop"-->
-        <div class="dialog alert">
-            <!--TMPL_VAR Name="barcode"-->
-            <!--TMPL_IF Name="ERR_BARCODE"-->: barcode not found<!--/TMPL_IF-->
-            <!--TMPL_IF Name="ERR_WTHDRAWN"-->: item withdrawn<!--/TMPL_IF-->
-            <!--TMPL_IF Name="ERR_ONLOAN_RET"-->: item was on loan. It was returned before marked as seen<!--/TMPL_IF-->
-            <!--TMPL_IF Name="ERR_ONLOAN_NOT_RET"-->: item was on loan. couldn't be returned.<!--/TMPL_IF-->
-        </div>
-    <!-- /TMPL_LOOP-->
-	<!-- TMPL_UNLESS name="loop" -->
-	<div class="yui-g">
-    <form method="post" action="/cgi-bin/koha/tools/inventory.pl" enctype="multipart/form-data">
-        <fieldset class="rows">
-            <legend>Use a barcode file</legend>
-	 <ol>
-            <li><label for="uploadbarcodes">Barcode file: </label> <input type="file" id="uploadbarcodes" name="uploadbarcodes" /></li>
-            <li><label for="setdate">Set inventory date to:</label> <input type="text" id="setdate" name="setdate" value="<!-- TMPL_VAR name="today" -->" />
-             <img src="<!-- TMPL_VAR Name="themelang" -->/lib/calendar/cal.gif" id="setdate_button" alt="Show Calendar" />
-            <script type="text/javascript">
-            Calendar.setup(
-            {
-            inputField : "setdate",
-            ifFormat : "<!-- TMPL_VAR NAME="DHTMLcalendar_dateformat" -->",
-            button : "setdate_button"
-            }
-            );
-            </script>
-			<div class="hint"><!-- TMPL_INCLUDE NAME="date-format.inc" --></div>
-            </li>
-          </ol>
+    <form id="uploadfile" method="POST" enctype="multipart/form-data" action="/cgi-bin/koha/tools/inventory.pl">
+        <fieldset id="uploadform" class="rows">
+            <legend>Upload barcodes</legend>
+            <ol>
+                <li>
+                <div id="fileuploadform">
+                    <label for="fileToUpload">Select the file containing barcodes:</label>
+                    <input type="file" name="fileToUpload" id="fileToUpload" />
+                </div>
+                </li>
+            </ol>
+            <fieldset class="action">
+                <button class="submit" onclick="return ajaxFileUpload();">Upload file</button>
+            </fieldset> 
         </fieldset>
+    </form>
+    <div id="uploadpanel">
+        <div id="fileuploadstatus">Upload progress: <div id="fileuploadprogress"></div> <span id="fileuploadpercent">0</span>%</div>
+        <div id="fileuploadfailed"></div>
+    </div>
+    <form id="processfile" method="POST" action="/cgi-bin/koha/tools/inventory.pl">
+        <input type="hidden" name="uploadedfileid" id="uploadedfileid" value="" />
         <fieldset class="rows">
-        <legend>Select items you want to check</legend>
+        <legend>Select items to check this list against</legend>
         <ol><li>
-        <label for="branchloop">Library</label><select id="branchloop" name="branchcode" style="width:12em;">
-            <option value="">All Locations</option>
+        <label for="branchloop">Library</label><select id="branchloop" name="branchcode" style="width:12em;" title="Select a Library, or all">
         <!-- TMPL_LOOP NAME="branchloop" -->
+            <option value="<!-- TMPL_VAR NAME="value" -->"><!-- TMPL_VAR NAME="branchname" --></option>
+        <!-- /TMPL_LOOP -->
+        </select>
+        </li>
+        <li>
+        <label for="itemtype">Item type</label>
+        <select name="itemtype" id="itemtype" style="width:12em;" title="Select an Item Type, or all">
+        <!-- TMPL_LOOP name="itemtypeloop" -->
             <!-- TMPL_IF name="selected" -->
-                <option value="<!-- TMPL_VAR NAME="value" -->" selected="selected"><!-- TMPL_VAR NAME="branchname" --></option>
+                <option value="<!-- TMPL_VAR NAME="value" -->" selected="selected"><!-- TMPL_VAR NAME="description" --></option>
             <!-- TMPL_ELSE -->
-                <option value="<!-- TMPL_VAR NAME="value" -->"><!-- TMPL_VAR NAME="branchname" --></option>
+                <option value="<!-- TMPL_VAR NAME="value" -->"><!-- TMPL_VAR NAME="description" --></option>
             <!-- /TMPL_IF -->
         <!-- /TMPL_LOOP -->
         </select>
         </li>
-        <!-- TMPL_IF NAME="authorised_values" -->
+        <!-- TMPL_IF NAME="locationloop" -->
         <li>
-            <label for="locationloop">Item Location (items.location) is</label> 
-        <select id="locationloop" name="location">
-                <option value="">Filter location</option>
-        <!-- TMPL_LOOP NAME="authorised_values" -->
-            <!-- TMPL_IF name="selected" -->
-                <option value="<!-- TMPL_VAR NAME="authorised_value" -->" selected="selected"><!-- TMPL_VAR NAME="lib" --></option>
-            <!-- TMPL_ELSE -->
-                <option value="<!-- TMPL_VAR NAME="authorised_value" -->"><!-- TMPL_VAR NAME="lib" --></option>
-            <!-- /TMPL_IF -->
+            <label for="locationloop">Item Location:</label> 
+        <select id="locationloop" name="location" title="Select a Location, or all">
+        <!-- TMPL_LOOP NAME="locationloop" -->
+            <option value="<!-- TMPL_VAR NAME="authorised_value" -->"><!-- TMPL_VAR NAME="lib" --></option>
         <!-- /TMPL_LOOP -->
         </select>        </li>
         <!-- /TMPL_IF -->
+        <!-- TMPL_IF NAME="ccodeloop" -->
         <li>
-            <label for="minlocation">Item callnumber between: </label>
-                <input type="text" name="minlocation" id="minlocation" value="<!-- TMPL_VAR NAME="minlocation" -->" /> (items.itemcallnumber)  </li>
-           <li><label for="maxlocation">...and: </label>
-                <input type="text" name="maxlocation" id="maxlocation" value="<!-- TMPL_VAR NAME="maxlocation" -->" />
+            <label for="ccodeloop">Collection:</label> 
+            <select id="collection" name="collection" title="Select a Collection, or all">
+                <!-- TMPL_LOOP NAME="ccodeloop" -->
+                <option value="<!-- TMPL_VAR NAME="authorised_value" -->"><!-- TMPL_VAR NAME="lib" --></option>
+                <!-- /TMPL_LOOP -->
+            </select>
         </li>
-        <!-- TMPL_IF name="statuses" -->
-	</ol>
-	</fieldset>
-            <fieldset class="rows">
-            <legend>Item statuses:</legend>
-            <div name="statuses" style="display: block;">
-                  <!-- TMPL_LOOP name="statuses" -->
-                      <!-- TMPL_IF name="values" -->
-                          <fieldset style="float: left; padding: 5px; margin: 5px;text-align:right">
-                              <legend><!-- TMPL_VAR name="fieldname" --></legend>
-                              <ul id="statuses-<!-- TMPL_VAR name="fieldname" -->" style="display: inline;">
-                              <!-- TMPL_LOOP name="values" -->
-                                  <!-- TMPL_IF NAME="lib" --><li>
-                                    <label for="<!-- TMPL_VAR name="id" -->">
-                                      <!-- TMPL_VAR name="lib" -->
-                                    </label>
-                                    <input type="checkbox" name="status-<!-- TMPL_VAR name="fieldname" -->-<!-- TMPL_VAR name="id" -->" id="<!-- TMPL_VAR name="id" -->" />
-                                  </li><!-- /TMPL_IF -->
-                              <!-- /TMPL_LOOP -->
-                              </ul>
-                          </fieldset>
-                      <!-- /TMPL_IF -->
-                  <!-- /TMPL_LOOP -->
-                </div>
-            </fieldset>
-		<fieldset class="rows">
-          <ol>
         <!-- /TMPL_IF -->
-
-        <li><label for="datelastseen">Inventory date:</label>
-            <input type="text" id="datelastseen" name="datelastseen" value="<!-- TMPL_VAR NAME="datelastseen" -->" />
-            <img src="<!-- TMPL_VAR Name="themelang" -->/lib/calendar/cal.gif" id="datelastseen_button" alt="Show Calendar" />
-            <script type="text/javascript">
-            Calendar.setup(
-            {
-            inputField : "datelastseen",
-            ifFormat : "<!-- TMPL_VAR NAME="DHTMLcalendar_dateformat" -->",
-            button : "datelastseen_button"
-            }
-            );
-            </script>
-			<div class="hint"><!-- TMPL_INCLUDE NAME="date-format.inc" --></div>
-        </li>
-        <li><label for="ignoreissued">Skip copies on loan: </label>
-            <!-- TMPL_IF NAME="ignoreissued" -->
-            <input type="checkbox" id="ignoreissued" name="ignoreissued" checked="checked" /></li>
-            <!-- TMPL_ELSE -->
-            <input type="checkbox" id="ignoreissued" name="ignoreissued" /></li>
-            <!-- /TMPL_IF -->
-        <li><label for="pagesize">Show: </label>
-            <input type="text" id="pagesize" name="pagesize" value="<!-- TMPL_VAR NAME="pagesize" -->" maxlength="5" size="5" /> items</li>
-          <li><label for="offset">Beginning at offset: </label>
-            <input type="text" id="offset" name="offset" value="<!-- TMPL_VAR NAME="offset" -->" size="5" maxlength="5" />
-        </li>
         <li>
-           <label for="CSVexport">Export to csv file</label>
-           <input type="checkbox" name="CSVexport" id="CSVexport" />
+            <label for="minlocation">Call number between: </label> 
+                <input type="text" name="mincallnumber" id="mincallnumber" value="" />  </li>
+           <li><label for="maxlocation">...and: </label> 
+                <input type="text" name="maxcallnumber" id="maxcallnumber" value="" />
         </li>
-        <li>
-            <label for="compareinv2barcd">Compare barcodes list to results</label>
-            <input type="checkbox" name="compareinv2barcd" id="compareinv2barcd" />
-        </li>
-        </ol>
-  </fieldset>
+    </fieldset>
             <input type="hidden" name="op" value="do_it" />
-            <fieldset class="action"><input type="submit" value="Submit" class="button" /></fieldset>
+            <fieldset class="action"><input type="submit" value="Check" class="submit" id="check-inventory" /></fieldset>
     </form>
-	</div>
-	</div>
-	<!--/TMPL_UNLESS-->
-    <!-- TMPL_IF NAME="loop" -->
-    <form method="post" action="/cgi-bin/koha/tools/inventory.pl" class="checkboxed">
-    <input type="hidden" name="markseen" value="1" />
-    <input type="hidden" name="minlocation" value="<!-- TMPL_VAR NAME="minlocation" -->" />
-    <input type="hidden" name="maxlocation" value="<!-- TMPL_VAR NAME="maxlocation" -->" />
-    <input type="hidden" name="location" value="<!-- TMPL_VAR NAME="location" -->" />
-    <input type="hidden" name="branchcode" value="<!-- TMPL_VAR NAME="branchcode" -->" />
-    <input type="hidden" name="datelastseen" value="<!-- TMPL_VAR NAME="datelastseen" -->" />
-    <input type="hidden" name="pagesize" value="<!-- TMPL_VAR NAME="pagesize" -->" />
-    <input type="hidden" name="offset" value="<!-- TMPL_VAR NAME="offset" -->" />
-	<div style="padding : .3em 0"><a href="#" class="checkall">[Select All]</a> <a href="#" class="clearall">[Clear All]</a></div>
-    <table>
-        <tr>
-            <th>Seen</th>
-            <th>Barcode</th>
-            <th>Title</th>
-            <th>Unseen since</th>
-            <th>Problems</th>
-        </tr>
-    <!-- TMPL_LOOP NAME="loop" -->
-        <tr>
-            <td>
-                <input type="checkbox" name="SEEN-<!-- TMPL_VAR NAME="itemnumber" -->" value="1" />
-            </td>
-            <td>
-                <!-- TMPL_VAR NAME="barcode" -->
-            </td>
-            <td>
-                <p><b><!-- TMPL_VAR NAME="itemcallnumber" --></b> - <a href="#" onclick="window.open('/cgi-bin/koha/catalogue/MARCdetail.pl?biblionumber=<!--TMPL_VAR Name="biblionumber"-->','marcview','width=800,height=600,toolbar=0,scrollbars=1');"><!-- TMPL_VAR NAME="title" escape="html" --></a></p>
-                <p><!-- TMPL_VAR NAME="author" --></p>
-            </td>
-            <td>
-                <p><!-- TMPL_VAR name="datelastseen" --></p>
-            </td>
-            <td>
-                 <!-- TMPL_IF name="notfoundbarcode" -->
-                     <p style="background: red;">Not found among barcodes in barcodes file.</p>
-                 <!-- TMPL_ELSIF name="notfoundkoha" -->
-                     <p style="background: red;">Not found in koha.</p>
-                 <!-- TMPL_ELSE -->
-                     <p style="background: green;">None</p>
-                 <!-- /TMPL_IF -->
-            </td>
-        </tr>
-    <!-- /TMPL_LOOP -->
-    </table>
-	<div style="padding : .3em 0"><a href="#" class="checkall">[Select All]</a> <a href="#" class="clearall">[Clear All]</a></div>
-     <input type="submit" id="markseen" value="Mark seen" />
+    <a name="results"></a>
+    <p id="success" style="display: none">
+    Congratulations! All checks succeeded.
+    </p>
+    <div id="nonexistent"></div>
+    <form action="/cgi-bin/koha/tools/inventory.pl" id="missing-form" style="display:none">
+        <div id="missing"></div>
+        <fieldset class="rows missing-tools">
+            <ol>
+                <li>
+                <label for="lostvalue">Mark selected items as:</label>
+                <select id="lostvalue" name="lostvalue">
+                    <!-- TMPL_LOOP NAME="lostloop" -->
+                    <!-- TMPL_IF NAME="selected" -->
+                    <option value="<!-- TMPL_VAR NAME="authorised_value" -->" selected="selected"><!-- TMPL_VAR NAME="lib" --></option>
+                    <!-- TMPL_ELSE -->
+                    <option value="<!-- TMPL_VAR NAME="authorised_value" -->"><!-- TMPL_VAR NAME="lib" --></option>
+                    <!-- /TMPL_IF -->
+                    <!-- /TMPL_LOOP -->
+                </select>
+                </li>
+            </ol>
+        </fieldset>
+        <fieldset class="action missing-tools"><input id="mark-lost" type="submit" class="submit" value="Submit" /></fieldset>
     </form>
-    <!-- TMPL_IF NAME="offset" -->
-    <form method="post" action="/cgi-bin/koha/tools/inventory.pl">
-        <input type="hidden" name="minlocation" value="<!-- TMPL_VAR NAME="minlocation" -->" />
-        <input type="hidden" name="maxlocation" value="<!-- TMPL_VAR NAME="maxlocation" -->" />
-        <input type="hidden" name="location" value="<!-- TMPL_VAR NAME="location" -->" />
-        <input type="hidden" name="branchcode" value="<!-- TMPL_VAR NAME="branchcode" -->" />
-        <input type="hidden" name="datelastseen" value="<!-- TMPL_VAR NAME="datelastseen" -->" />
-        <input type="hidden" name="pagesize" value="<!-- TMPL_VAR NAME="pagesize" -->" />
-        <input type="hidden" name="offset" value="<!-- TMPL_VAR NAME="prevoffset" -->" />
-        <input type="hidden" name="op" value="do_it" />
-        <input type="submit" value="&lt;&lt; Continue without Marking" class="submit" />
-    </form>
-    <!-- /TMPL_IF -->
-    <!-- TMPL_IF NAME="nextoffset" -->
-    <form method="post">
-        <input type="hidden" name="location" value="<!-- TMPL_VAR NAME="location" -->" />
-        <input type="hidden" name="branchcode" value="<!-- TMPL_VAR NAME="branchcode" -->" />
-        <input type="hidden" name="minlocation" value="<!-- TMPL_VAR NAME="minlocation" -->" />
-        <input type="hidden" name="maxlocation" value="<!-- TMPL_VAR NAME="maxlocation" -->" />
-        <input type="hidden" name="datelastseen" value="<!-- TMPL_VAR NAME="datelastseen" -->" />
-        <input type="hidden" name="pagesize" value="<!-- TMPL_VAR NAME="pagesize" -->" />
-        <input type="hidden" name="offset" value="<!-- TMPL_VAR NAME="nextoffset" -->" />
-        <input type="hidden" name="op" value="do_it" />
-        <input type="submit" value="Continue without Marking &gt;&gt;" class="submit" />
-    </form>
-    </div>
-    <!-- /TMPL_IF -->
-    <!-- /TMPL_IF -->
+    <div id="erroneous"></div>
+</div>
 </div>
 <div class="yui-b">
 <!-- TMPL_INCLUDE NAME="tools-menu.inc" -->

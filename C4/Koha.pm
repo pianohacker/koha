@@ -68,6 +68,7 @@ BEGIN {
 
 # expensive functions
 memoize('GetAuthorisedValues');
+memoize('GetKohaAuthorisedValues');
 
 =head1 NAME
 
@@ -1140,21 +1141,31 @@ Returns undef if no authorised value category is defined for the kohafield.
 =cut
 
 sub GetKohaAuthorisedValues {
-  my ($kohafield,$fwcode,$opac) = @_;
-  $fwcode='' unless $fwcode;
-  my %values;
-  my $dbh = C4::Context->dbh;
-  my $avcode = GetAuthValCode($kohafield,$fwcode);
-  if ($avcode) {  
-	my $sth = $dbh->prepare("select authorised_value, lib, lib_opac from authorised_values where category=? ");
-   	$sth->execute($avcode);
-	while ( my ($val, $lib, $lib_opac) = $sth->fetchrow_array ) { 
-		$values{$val} = ($opac && $lib_opac) ? $lib_opac : $lib;
-   	}
-   	return \%values;
-  } else {
-  	return undef;
-  }
+    my ($kohafield,$fwcode,$opac) = @_;
+    $fwcode='' unless $fwcode;
+    my $dbh = C4::Context->dbh;
+    my $avcode = GetAuthValCode($kohafield,$fwcode);
+    if ($avcode) {  
+        my $sql;
+        my @params;
+        if ( $avcode eq "branches" ) {
+            $sql = "SELECT branchcode, branchname FROM branches";
+        } elsif ( $avcode eq "itemtypes" ) {
+            $sql = "SELECT itemtype, description FROM itemtypes";
+        } elsif ( $opac ) {
+            $sql = "SELECT authorised_value, IF(lib_opac, lib_opac, lib) FROM authorised_values WHERE category=?";
+        } else {
+
+            $sql = "SELECT authorised_value, lib FROM authorised_values WHERE category=?";
+            @params = ( $avcode );
+        }
+        # Retrieve an arrayref like [ 'MAIN', 'Main Library', 'CPL',
+        # 'Centerville' ], then turn that into an array, and turn _that_ into a
+        # hashref.
+        return { @{ $dbh->selectcol_arrayref( $sql, { Columns => [ 1, 2 ] }, @params ) } };
+    } else {
+        return undef;
+    }
 }
 
 =head2 GetKohaAuthorisedValuesFromField
