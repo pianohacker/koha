@@ -73,9 +73,11 @@ my %return_failed;
 for my $failedret (@failedreturns) { $return_failed{$failedret} = 1; }
 
 my $template_name;
+my $quickslip = 0;
 
 if    ($print eq "page") { $template_name = "members/moremember-print.tmpl";   }
 elsif ($print eq "slip") { $template_name = "members/moremember-receipt.tmpl"; }
+elsif ($print eq "qslip") { $template_name = "members/moremember-receipt.tmpl"; $quickslip = 1; }
 else {                     $template_name = "members/moremember.tmpl";         }
 
 my ( $template, $loggedinuser, $cookie ) = get_template_and_user(
@@ -222,15 +224,44 @@ my $overdues_exist = 0;
 my $totalprice = 0;
 for ( my $i = 0 ; $i < $count ; $i++ ) {
     my $datedue = $issue->[$i]{'date_due'};
+    my $issuedate = $issue->[$i]{'issuedate'};
     $issue->[$i]{'date_due'}  = C4::Dates->new($issue->[$i]{'date_due'}, 'iso')->output('syspref');
     $issue->[$i]{'issuedate'} = C4::Dates->new($issue->[$i]{'issuedate'},'iso')->output('syspref');
+    my $biblionumber = $issue->[$i]{'biblionumber'};
     my %row = %{ $issue->[$i] };
     $totalprice += $issue->[$i]{'replacementprice'};
     $row{'replacementprice'} = $issue->[$i]{'replacementprice'};
+    # item lost, damaged loops
+    if ($row{'itemlost'}) {
+        my $fw = GetFrameworkCode($issue->[$i]{'biblionumber'});
+        my $category = GetAuthValCode('items.itemlost',$fw);
+        my $lostdbh = C4::Context->dbh;
+        my $sth = $lostdbh->prepare("select lib from authorised_values where category=? and authorised_value =? ");
+        $sth->execute($category, $row{'itemlost'});
+        my $loststat = $sth->fetchrow;
+        if ($loststat) {
+           $row{'itemlost'} = $loststat;
+        }
+    }
+    if ($row{'damaged'}) {
+        my $fw = GetFrameworkCode($issue->[$i]{'biblionumber'});
+        my $category = GetAuthValCode('items.damaged',$fw);
+        my $damageddbh = C4::Context->dbh;
+        my $sth = $damageddbh->prepare("select lib from authorised_values where category=? and authorised_value =? ");
+        $sth->execute($category, $row{'damaged'});
+        my $damagedstat = $sth->fetchrow;
+        if ($damagedstat) {
+           $row{'itemdamaged'} = $damagedstat;
+        }
+    }
+    # end lost, damaged
     if ( $datedue lt $today ) {
         $overdues_exist = 1;
         $row{'red'} = 1;
 	}
+	 if ( $issuedate eq $today ) {
+        $row{'today'} = 1; 
+	 }
 
     #find the charge for an item
     my ( $charge, $itemtype ) =
@@ -374,6 +405,7 @@ $template->param(
     dateformat      => C4::Context->preference("dateformat"),
     "dateformat_" . (C4::Context->preference("dateformat") || '') => 1,
     samebranch     => $samebranch,
+    quickslip		  => $quickslip,
 );
 
 output_html_with_http_headers $input, $cookie, $template->output;

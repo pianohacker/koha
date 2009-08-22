@@ -833,23 +833,17 @@ sub GetMarcStructure {
         return $marc_structure_cache->{$forlibrarian}->{$frameworkcode};
     }
 
-    my $sth;
-    my $libfield = ( $forlibrarian eq 1 ) ? 'liblibrarian' : 'libopac';
-
-    # check that framework exists
-    $sth =
-      $dbh->prepare(
+    my $sth = $dbh->prepare(
         "SELECT COUNT(*) FROM marc_tag_structure WHERE frameworkcode=?");
     $sth->execute($frameworkcode);
     my ($total) = $sth->fetchrow;
     $frameworkcode = "" unless ( $total > 0 );
-    $sth =
-      $dbh->prepare(
+    $sth = $dbh->prepare(
         "SELECT tagfield,liblibrarian,libopac,mandatory,repeatable 
         FROM marc_tag_structure 
         WHERE frameworkcode=? 
         ORDER BY tagfield"
-      );
+    );
     $sth->execute($frameworkcode);
     my ( $liblibrarian, $libopac, $tag, $res, $tab, $mandatory, $repeatable );
 
@@ -863,13 +857,12 @@ sub GetMarcStructure {
         $res->{$tag}->{repeatable} = $repeatable;
     }
 
-    $sth =
-      $dbh->prepare(
-            "SELECT tagfield,tagsubfield,liblibrarian,libopac,tab,mandatory,repeatable,authorised_value,authtypecode,value_builder,kohafield,seealso,hidden,isurl,link,defaultvalue 
-                FROM marc_subfield_structure 
-            WHERE frameworkcode=? 
-                ORDER BY tagfield,tagsubfield
-            "
+    $sth = $dbh->prepare(
+        "SELECT tagfield,tagsubfield,liblibrarian,libopac,tab,mandatory,repeatable,authorised_value,authtypecode,value_builder,kohafield,seealso,hidden,isurl,link,defaultvalue 
+         FROM   marc_subfield_structure 
+         WHERE  frameworkcode=? 
+         ORDER BY tagfield,tagsubfield
+        "
     );
     
     $sth->execute($frameworkcode);
@@ -888,7 +881,7 @@ sub GetMarcStructure {
     while (
         (
             $tag,          $subfield,      $liblibrarian,
-            ,              $libopac,       $tab,
+            $libopac,      $tab,
             $mandatory,    $repeatable,    $authorised_value,
             $authtypecode, $value_builder, $kohafield,
             $seealso,      $hidden,        $isurl,
@@ -920,7 +913,7 @@ sub GetMarcStructure {
 
 =head2 GetUsedMarcStructure
 
-    the same function as GetMarcStructure expcet it just take field
+    the same function as GetMarcStructure except it just takes field
     in tab 0-9. (used field)
     
     my $results = GetUsedMarcStructure($frameworkcode);
@@ -934,7 +927,6 @@ sub GetMarcStructure {
 
 sub GetUsedMarcStructure($){
     my $frameworkcode = shift || '';
-    my $dbh           = C4::Context->dbh;
     my $query         = qq/
         SELECT *
         FROM   marc_subfield_structure
@@ -942,13 +934,9 @@ sub GetUsedMarcStructure($){
             AND frameworkcode = ?
         ORDER BY tagfield, tagsubfield
     /;
-    my @results;
-    my $sth = $dbh->prepare($query);
+    my $sth = C4::Context->dbh->prepare($query);
     $sth->execute($frameworkcode);
-    while (my $row = $sth->fetchrow_hashref){
-        push @results,$row;
-    }
-    return \@results;
+    return $sth->fetchall_arrayref({});
 }
 
 =head2 GetMarcFromKohaField
@@ -1329,7 +1317,7 @@ sub GetMarcAuthors {
     my ( $record, $marcflavour ) = @_;
     my ( $mintag, $maxtag );
     # tagslib useful for UNIMARC author reponsabilities
-    my $tagslib = &GetMarcStructure( 1, '' ); # FIXME : we don't have the framework available, we take the default framework. May be bugguy on some setups, will be usually correct.
+    my $tagslib = &GetMarcStructure( 1, '' ); # FIXME : we don't have the framework available, we take the default framework. May be buggy on some setups, will be usually correct.
     if ( $marcflavour eq "MARC21" ) {
         $mintag = "700";
         $maxtag = "720"; 
@@ -1636,6 +1624,7 @@ $auth_type contains :
 sub TransformHtmlToXml {
     my ( $tags, $subfields, $values, $indicator, $ind_tag, $auth_type ) = @_;
     my $xml = MARC::File::XML::header('UTF-8');
+    $xml .= "<record>\n";
     $auth_type = C4::Context->preference('marcflavour') unless $auth_type;
     MARC::File::XML->default_record_format($auth_type);
     # in UNIMARC, field 100 contains the encoding
@@ -1682,10 +1671,8 @@ sub TransformHtmlToXml {
                         warn "Indicator in @$tags[$i] is empty";
                         $ind2 = " ";
                     }
-                    $xml .=
-"<datafield tag=\"@$tags[$i]\" ind1=\"$ind1\" ind2=\"$ind2\">\n";
-                    $xml .=
-"<subfield code=\"@$subfields[$i]\">@$values[$i]</subfield>\n";
+                    $xml .= "<datafield tag=\"@$tags[$i]\" ind1=\"$ind1\" ind2=\"$ind2\">\n";
+                    $xml .= "<subfield code=\"@$subfields[$i]\">@$values[$i]</subfield>\n";
                     $first = 0;
                 }
                 else {
@@ -1703,17 +1690,16 @@ sub TransformHtmlToXml {
                         # rest of the fixed fields
                     }
                     elsif ( @$tags[$i] < 10 ) {
-                        $xml .=
-"<controlfield tag=\"@$tags[$i]\">@$values[$i]</controlfield>\n";
+                        $xml .= "<controlfield tag=\"@$tags[$i]\">@$values[$i]</controlfield>\n";
                         $first = 1;
                     }
                     else {
                         my $ind1 = substr( @$indicator[$j], 0, 1 );
                         my $ind2 = substr( @$indicator[$j], 1, 1 );
-                        $xml .=
-"<datafield tag=\"@$tags[$i]\" ind1=\"$ind1\" ind2=\"$ind2\">\n";
-                        $xml .=
-"<subfield code=\"@$subfields[$i]\">@$values[$i]</subfield>\n";
+                        $ind1 = " " if !defined($ind2) or $ind2 eq "";
+                        $ind2 = " " if !defined($ind2) or $ind2 eq "";
+                        $xml .= "<datafield tag=\"@$tags[$i]\" ind1=\"$ind1\" ind2=\"$ind2\">\n";
+                        $xml .= "<subfield code=\"@$subfields[$i]\">@$values[$i]</subfield>\n";
                         $first = 0;
                     }
                 }
@@ -1726,12 +1712,12 @@ sub TransformHtmlToXml {
                 if ($first) {
                     my $ind1 = substr( @$indicator[$j], 0, 1 );
                     my $ind2 = substr( @$indicator[$j], 1, 1 );
-                    $xml .=
-"<datafield tag=\"@$tags[$i]\" ind1=\"$ind1\" ind2=\"$ind2\">\n";
+                    $ind1 = " " if !defined($ind2) or $ind2 eq "";
+                    $ind2 = " " if !defined($ind2) or $ind2 eq "";
+                    $xml .= "<datafield tag=\"@$tags[$i]\" ind1=\"$ind1\" ind2=\"$ind2\">\n";
                     $first = 0;
                 }
-                $xml .=
-"<subfield code=\"@$subfields[$i]\">@$values[$i]</subfield>\n";
+                $xml .= "<subfield code=\"@$subfields[$i]\">@$values[$i]</subfield>\n";
             }
         }
         $prevtag = @$tags[$i];
@@ -1749,6 +1735,7 @@ sub TransformHtmlToXml {
         $xml .= "<subfield code=\"a\">$string</subfield>\n";
         $xml .= "</datafield>\n";
     }
+    $xml .= "</record>\n";
     $xml .= MARC::File::XML::footer();
     return $xml;
 }
@@ -3420,7 +3407,7 @@ sub set_service_options {
     biblionumber
     MARC::Record of the bib
 
-  returns: a hashref malling the authorised value to the value set for this biblionumber
+  returns: a hashref mapping the authorised value to the value set for this biblionumber
 
       $authorised_values = {
                              'Scent'     => 'flowery',

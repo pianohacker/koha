@@ -164,6 +164,7 @@ $tabsysprefs{BranchTransferLimitsType}       = "Circulation";
 $tabsysprefs{AllowNotForLoanOverride}        = "Circulation";
 $tabsysprefs{RenewalPeriodBase}              = "Circulation";
 $tabsysprefs{FilterBeforeOverdueReport}      = "Circulation";
+$tabsysprefs{AllowHoldDateInFuture}          = "Circulation";
 
 # Staff Client
 $tabsysprefs{TemplateEncoding}        = "StaffClient";
@@ -230,6 +231,7 @@ $tabsysprefs{OPACAmazonEnabled}      = "EnhancedContent";
 $tabsysprefs{AmazonCoverImages}      = "EnhancedContent";
 $tabsysprefs{OPACAmazonCoverImages}  = "EnhancedContent";
 $tabsysprefs{AWSAccessKeyID}         = "EnhancedContent";
+$tabsysprefs{AWSPrivateKey}          = "EnhancedContent";
 $tabsysprefs{AmazonLocale}           = "EnhancedContent";
 $tabsysprefs{AmazonAssocTag}         = "EnhancedContent";
 $tabsysprefs{AmazonSimilarItems}     = "EnhancedContent";
@@ -307,6 +309,7 @@ $tabsysprefs{OPACViewOthersSuggestions}  = "OPAC";
 $tabsysprefs{URLLinkText}                = "OPAC";
 $tabsysprefs{OPACShelfBrowser}           = "OPAC";
 $tabsysprefs{OPACDisplayRequestPriority} = "OPAC";
+$tabsysprefs{OPACAllowHoldDateInFuture}  = "OPAC";
 
 # OPAC
 $tabsysprefs{SearchMyLibraryFirst} = "OPAC";
