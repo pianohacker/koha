@@ -2500,7 +2500,100 @@ $DBversion = '3.01.00.041';
 if (C4::Context->preference("Version") < TransformToNum($DBversion)) {
     $dbh->do("INSERT INTO `systempreferences` (variable,value,explanation,options,type) VALUES('AWSPrivateKey','','See:  http://aws.amazon.com.  Note that this is required after 2009/08/15 in order to retrieve any enhanced content other than book covers from Amazon.','','free')");
     SetVersion ($DBversion);
-    print "Upgrade to $DBversion done (added AWSPrivateKey syspref - note that if you use enhanced content from Amazon, this should be set right away.)";
+    print "Upgrade to $DBversion done (added AWSPrivateKey syspref - note that if you use enhanced content from Amazon, this should be set right away.)\n";
+}
+
+$DBversion = '3.01.00.042';
+if (C4::Context->preference("Version") < TransformToNum($DBversion)) {
+    $dbh->do("INSERT INTO `systempreferences` (variable,value,explanation,options,type) VALUES('OPACFineNoRenewals','99999','Fine Limit above which user canmot renew books via OPAC','','Integer')");
+    SetVersion ($DBversion);
+    print "Upgrade to $DBversion done (added OPACFineNoRenewals syspref)\n";
+}
+
+$DBversion = '3.01.00.043';
+if (C4::Context->preference("Version") < TransformToNum($DBversion)) {
+    $dbh->do('ALTER TABLE items ADD COLUMN permanent_location VARCHAR(80) DEFAULT NULL AFTER location');
+    $dbh->do('UPDATE items SET permanent_location = location');
+    $dbh->do("INSERT INTO `systempreferences` ( `variable` , `value` , `options` , `explanation` , `type` ) VALUES ( 'NewItemsDefaultLocation', '', '', 'If set, all new items will have a location of the given Location Code ( Authorized Value type LOC )', '')");
+    $dbh->do("INSERT INTO `systempreferences` ( `variable` , `value` , `options` , `explanation` , `type` ) VALUES ( 'InProcessingToShelvingCart', '0', '', 'If set, when any item with a location code of PROC is ''checked in'', it''s location code will be changed to CART.', 'YesNo')");
+    $dbh->do("INSERT INTO `systempreferences` ( `variable` , `value` , `options` , `explanation` , `type` ) VALUES ( 'ReturnToShelvingCart', '0', '', 'If set, when any item is ''checked in'', it''s location code will be changed to CART.', 'YesNo')");
+    SetVersion ($DBversion);
+    print "Upgrade to $DBversion done (amended Item added NewItemsDefaultLocation, InProcessingToShelvingCart, ReturnToShelvingCart sysprefs)\n";
+}
+
+$DBversion = '3.01.00.044';
+if (C4::Context->preference("Version") < TransformToNum($DBversion)) {
+    $dbh->do("INSERT INTO systempreferences (variable,value,explanation,options,type)VALUES( 'DisplayClearScreenButton', '0', 'If set to yes, a clear screen button will appear on the circulation page.', 'If set to yes, a clear screen button will appear on the circulation page.', 'YesNo')");
+    SetVersion ($DBversion);
+    print "Upgrade to $DBversion done (added DisplayClearScreenButton system preference)\n";
+}
+
+$DBversion = '3.01.00.045';
+if (C4::Context->preference("Version") < TransformToNum($DBversion)) {
+    $dbh->do("INSERT INTO systempreferences (variable,value,options,explanation,type)VALUES('HidePatronName', '0', '', 'If this is switched on, patron''s cardnumber will be shown instead of their name on the holds and catalog screens', 'YesNo')");
+    SetVersion ($DBversion);
+    print "Upgrade to $DBversion done (added a preference to hide the patrons name in the staff catalog)";
+}
+
+$DBversion = "3.01.00.046";
+if (C4::Context->preference("Version") < TransformToNum($DBversion)) {
+    # update borrowers table
+    # 
+    $dbh->do("ALTER TABLE borrowers ADD `country` text AFTER zipcode");
+    $dbh->do("ALTER TABLE borrowers ADD `B_country` text AFTER B_zipcode");
+    $dbh->do("ALTER TABLE deletedborrowers ADD `country` text AFTER zipcode");
+    $dbh->do("ALTER TABLE deletedborrowers ADD `B_country` text AFTER B_zipcode");
+    print "Upgrade to $DBversion done (add country and B_country to borrowers)\n";
+    SetVersion ($DBversion);
+}
+
+$DBversion = '3.01.00.047';
+if (C4::Context->preference("Version") < TransformToNum($DBversion)) {
+    $dbh->do("ALTER TABLE items MODIFY itemcallnumber varchar(255);");
+    $dbh->do("ALTER TABLE deleteditems MODIFY itemcallnumber varchar(255);");
+    $dbh->do("ALTER TABLE tmp_holdsqueue MODIFY itemcallnumber varchar(255);");
+    SetVersion ($DBversion);
+    print " Upgrade to $DBversion done (bug 2761: change max length of itemcallnumber to 255 from 30)\n";
+}
+
+$DBversion = '3.01.00.048';
+if (C4::Context->preference("Version") < TransformToNum($DBversion)) {
+    $dbh->do("UPDATE userflags SET flagdesc='View Catalog (Librarian Interface)' WHERE bit=2;");
+    $dbh->do("UPDATE userflags SET flagdesc='Edit Catalog (Modify bibliographic/holdings data)' WHERE bit=9;");
+    $dbh->do("UPDATE userflags SET flagdesc='Allow to edit authorities' WHERE bit=14;");
+    $dbh->do("UPDATE userflags SET flagdesc='Allow to access to the reports module' WHERE bit=16;");
+    $dbh->do("UPDATE userflags SET flagdesc='Allow to manage serials subscriptions' WHERE bit=15;");
+    SetVersion ($DBversion);
+    print " Upgrade to $DBversion done (bug 2611: fix spelling/capitalization in permission flag descriptions)\n";
+}
+
+$DBversion = '3.01.00.049';
+if (C4::Context->preference("Version") < TransformToNum($DBversion)) {
+    $dbh->do("UPDATE permissions SET description = 'Perform inventory (stocktaking) of your catalog' WHERE code = 'inventory';");
+     SetVersion ($DBversion);
+    print "Upgrade to $DBversion done (bug 2611: changed catalogue to catalog per the standard)\n";
+}
+
+$DBversion = '3.01.00.050';
+if (C4::Context->preference("Version") < TransformToNum($DBversion)) {
+    $dbh->do("INSERT INTO `systempreferences` (variable,value,explanation,options,type) VALUES ('OPACSearchForTitleIn','<li class=\"yuimenuitem\">\n<a target=\"_blank\" class=\"yuimenuitemlabel\" href=\"http://worldcat.org/search?q=TITLE\">Other Libraries (WorldCat)</a></li>\n<li class=\"yuimenuitem\">\n<a class=\"yuimenuitemlabel\" href=\"http://www.scholar.google.com/scholar?q=TITLE\" target=\"_blank\">Other Databases (Google Scholar)</a></li>\n<li class=\"yuimenuitem\">\n<a class=\"yuimenuitemlabel\" href=\"http://www.bookfinder.com/search/?author=AUTHOR&amp;title=TITLE&amp;st=xl&amp;ac=qr\" target=\"_blank\">Online Stores (Bookfinder.com)</a></li>','Enter the HTML that will appear in the ''Search for this title in'' box on the detail page in the OPAC.  Enter TITLE, AUTHOR, or ISBN in place of their respective variables in the URL.  Leave blank to disable ''More Searches'' menu.','70|10','Textarea');");
+    SetVersion ($DBversion);
+    print "Upgrade to $DBversion done (bug 1934: Add OPACSearchForTitleIn syspref)\n";
+}
+
+$DBversion = '3.01.00.051';
+if (C4::Context->preference("Version") < TransformToNum($DBversion)) {
+    $dbh->do("UPDATE systempreferences SET explanation='Fine limit above which user cannot renew books via OPAC' WHERE variable='OPACFineNoRenewals';");
+    $dbh->do("UPDATE systempreferences SET explanation='If set to ON, a clear screen button will appear on the circulation page.' WHERE variable='DisplayClearScreenButton';");
+    SetVersion ($DBversion);
+    print "Upgrade to $DBversion done (fixed typos in new sysprefs)\n";
+}
+
+$DBversion = '3.01.00.052';
+if (C4::Context->preference("Version") < TransformToNum($DBversion)) {
+    $dbh->do('ALTER TABLE deleteditems ADD COLUMN permanent_location VARCHAR(80) DEFAULT NULL AFTER location');
+    SetVersion ($DBversion);
+    print "Upgrade to $DBversion done (bug 3481: add permanent_location column to deleteditems)\n";
 }
 
 =item DropAllForeignKeys($table)
