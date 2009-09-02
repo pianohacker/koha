@@ -1,17 +1,13 @@
-input.preference-url, input.preference-multi, input.preference-long, input.preference-file {
+.preference-url, .preference-multi, .preference-long, .preference-file {
     width: 20em;
 }
 
-input.preference-short, input.preference-email {
+.preference-short, .preference-email {
     width: 10em;
 }
 
-input.preference-integer, input.preference-percent, input.preference-date {
+.preference-integer, .preference-percent, .preference-date, .preference-currency {
     width: 5em;
-}
-
-td.save-cell input {
-    visibility: hidden;
 }
 
 textarea.preference {
@@ -20,7 +16,7 @@ textarea.preference {
 	display: block;
 }
 
-textarea.preference-code, input.preference-file {
+textarea.preference-code, .preference-file {
 	font-family: monospace;
 }
 

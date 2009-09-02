@@ -51,6 +51,13 @@ OPAC:
                   no: "Don't show"
             - patrons the priority level of their holds in the OPAC.
         -
+            - pref: OPACShowCheckoutName
+              default: 0
+              choices:
+                  yes: Show
+                  no: "Don't show"
+            - the name of the patron that has an item checked out on item detail pages on the OPAC.
+        -
             - pref: OpacHighlightedWords
               choices: 
                   yes: Highlight
@@ -212,11 +219,22 @@ OPAC:
                   no: "Don't allow" 
             - patrons to place holds on specific items in the OPAC. If this is disabled, users can only put a hold on the next available item.
         -
+            - pref: OPACAllowHoldDateInFuture
+              choices:
+                  yes: Allow
+                  no: "Don't allow" 
+            - "patrons to place holds that don't enter the waiting list until a certain future date (if AllowHoldDateInFuture is also on)."
+        -
             - pref: OpacRenewalAllowed
               choices: 
                   yes: Allow
                   no: "Don't allow" 
             - patrons to renew their own books on the OPAC.
+        -
+            - Only allow patrons to renew their own books on the OPAC if they have less than
+            - pref: OPACFineNoRenewals
+              class: currency
+            - <!-- TMPL_VAR NAME="local_currency" --> in fines (leave blank to disable).
         -
             - pref: OPACViewOthersSuggestions
               choices: 

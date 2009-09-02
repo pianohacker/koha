@@ -36,6 +36,13 @@ Searching:
                   yes: Enable
                   no: Disable
             - ranking of search results by relevance (REQUIRES ZEBRA).
+        -
+            - pref: OpacGroupResults
+              default: 0
+              choices: 
+                  yes: Use
+                  no: "Don't use" 
+            - PazPar2 to group similar results on the OPAC. This requires that PazPar2 is set up and running.
     Search Form:
         -
             - Show checkboxes to search by 
