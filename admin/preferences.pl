@@ -114,6 +114,7 @@ sub TransformPrefsToHTML {
     my ( $data, $highlighted_pref ) = @_;
 
     my @lines;
+    my $dbh = C4::Context->dbh;
     my $title = ( keys( %$data ) )[0];
     my $tab = $data->{ $title };
     $tab = { '' => $tab } if ( ref( $tab ) eq 'ARRAY' );
@@ -132,8 +133,13 @@ sub TransformPrefsToHTML {
                     my $name = $piece->{'pref'};
 
                     if ( $name ) {
-                        my $value = C4::Context->preference( $name );
-                        $value = $piece->{'default'} if ( !defined( $value ) && $piece->{'default'} );
+                        my $row = $dbh->selectrow_hashref( "SELECT value FROM systempreferences WHERE variable = ?", {}, $name );
+                        my $value;
+                        if ( !defined( $row ) && defined( $piece->{'default'} ) ) {
+                            $value = $piece->{'default'} 
+                        } else {
+                            $value = $row->{'value'};
+                        }
                         my $chunk = _get_chunk( $value, %$piece );
 
                         $chunk->{'highlighted'} = 1 if ( $highlighted_pref && $name =~ /$highlighted_pref/ );
