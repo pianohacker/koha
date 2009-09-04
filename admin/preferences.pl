@@ -1,11 +1,6 @@
 #!/usr/bin/perl
-# vim: set et :
-
-# script to administer the systempref table
-# written 20/02/2002 by paul.poulain@free.fr
-# This software is placed under the gnu General Public License, v2 (http://www.gnu.org/licenses/gpl.html)
-
-# Copyright 2009 LibLime
+#
+# Copyright 2009 Jesse Weaver and the Koha Dev Team
 #
 # This file is part of Koha.
 #
@@ -21,25 +16,6 @@
 # You should have received a copy of the GNU General Public License along with
 # Koha; if not, write to the Free Software Foundation, Inc., 59 Temple Place,
 # Suite 330, Boston, MA  02111-1307 USA
-
-=head1 systempreferences.pl
-
-ALGO :
- this script use an $op to know what to do.
- if $op is empty or none of the above values,
-    - the default screen is build (with all records, or filtered datas).
-    - the   user can clic on add, modify or delete record.
- if $op=add_form
-    - if primkey exists, this is a modification,so we read the $primkey record
-    - builds the add/modify form
- if $op=add_validate
-    - the user has just send datas, so we create/modify the record
- if $op=delete_form
-    - we show the record having primkey=$primkey and ask for deletion validation form
- if $op=delete_confirm
-    - we delete the record having primkey=$primkey
-
-=cut
 
 use strict;
 use warnings;
@@ -57,6 +33,7 @@ use File::Spec;
 use IO::File;
 use YAML::Syck qw();
 $YAML::Syck::ImplicitTyping = 1;
+our $lang;
 
 # use Smart::Comments;
 #
@@ -81,6 +58,22 @@ sub _get_chunk {
 
     if ( $options{'class'} && $options{'class'} eq 'password' ) {
         $chunk->{'input_type'} = 'password';
+    } elsif ( $options{'type'} && ( $options{'type'} eq 'opac-languages' || $options{'type'} eq 'staff-languages' ) ) {
+        my $current_languages = { map { +$_, 1 } split( /\s*,\s*/, $value ) };
+
+        my $theme;
+        my $interface;
+        if ( $options{'type'} eq 'opac-languages' ) {
+            # this is the OPAC
+            $interface = 'opac';
+            $theme     = C4::Context->preference('opacthemes');
+        } else {
+            # this is the staff client
+            $interface = 'intranet';
+            $theme     = C4::Context->preference('template');
+        }
+        $chunk->{'languages'} = getTranslatedLanguages( $interface, $theme, $lang, $current_languages );
+        $chunk->{'type'} = 'languages';
     } elsif ( $options{ 'choices' } ) {
         if ( $options{'choices'} && ref( $options{ 'choices' } ) eq '' ) {
             if ( $options{'choices'} eq 'class-sources' ) {
@@ -263,12 +256,13 @@ my ( $template, $borrowernumber, $cookie ) = get_template_and_user(
     {   template_name   => "admin/preferences.tmpl",
         query           => $input,
         type            => "intranet",
-        authnotrequired => 1,
+        authnotrequired => 0,
         flagsrequired   => { parameters => 1 },
         debug           => 1,
     }
 );
 
+$lang = $template->param( 'lang' );
 my $op = $input->param( 'op' ) || '';
 my $tab = $input->param( 'tab' );
 $tab ||= 'local-use';
@@ -276,12 +270,17 @@ $tab ||= 'local-use';
 my $highlighted;
 
 if ( $op eq 'save' ) {
-    foreach my $param ( $input->param() ) {
-        my ( $pref ) = ( $param =~ /pref_(.*)/ );
+    unless ( C4::Context->config( 'demo' ) ) {
+        foreach my $param ( $input->param() ) {
+            my ( $pref ) = ( $param =~ /pref_(.*)/ );
 
-        next if ( !defined( $pref ) );
+            next if ( !defined( $pref ) );
 
-        C4::Context->set_preference( $pref, $input->param( $param ) ) unless ( C4::Context->config('demo') );
+            my $value = join( ',', $input->param( $param ) );
+
+            C4::Context->set_preference( $pref, $value );
+            logaction( 'SYSTEMPREFERENCE', 'MODIFY', undef, $pref . " | " . $value );
+        }
     }
 
     print $input->redirect( '/cgi-bin/koha/admin/preferences.pl?tab=' . $tab );

@@ -119,6 +119,31 @@
                     <!-- TMPL_ELSIF NAME="type_textarea" -->
 					<a class="expand-textarea" style="display: none" href="#">Click to Edit</a>
 					<textarea name="pref_<!-- TMPL_VAR NAME="name" -->" id="pref_<!-- TMPL_VAR NAME="name" -->" class="preference preference-<!-- TMPL_VAR NAME="class" DEFAULT="short" -->"><!-- TMPL_VAR NAME="value" --></textarea>
+                    <!-- TMPL_ELSIF NAME="type_languages" -->
+                    <table>
+                    <!-- TMPL_LOOP NAME="languages" -->
+                    <tr><td>
+                        <!-- TMPL_IF NAME="plural" -->
+                        <!-- TMPL_IF NAME="native_description" --><!-- TMPL_VAR NAME="native_description" --><!-- TMPL_ELSE --><!-- TMPL_VAR NAME="rfc4646_subtag" --><!-- /TMPL_IF -->
+                        <!-- TMPL_LOOP NAME="sublanguages_loop" --><table><tr><td>
+                        <label for="<!-- TMPL_VAR NAME="rfc4646_subtag" -->"><!-- TMPL_VAR NAME="native_description" --> <!-- TMPL_VAR NAME="script_description" --> <!-- TMPL_VAR NAME="region_description" --> <!-- TMPL_VAR NAME="variant_description" -->(<!-- TMPL_VAR NAME="rfc4646_subtag" -->)</label>
+                        <!-- TMPL_IF NAME="enabled" -->
+                        <input value="<!-- TMPL_VAR NAME="rfc4646_subtag" -->" name="pref_<!-- TMPL_VAR NAME="name" -->" id="<!-- TMPL_VAR NAME="rfc4646_subtag" -->" type="checkbox" checked="checked" />
+                        <!-- TMPL_ELSE -->
+                        <input value="<!-- TMPL_VAR NAME="rfc4646_subtag" -->" name="pref_<!-- TMPL_VAR NAME="name" -->" id="<!-- TMPL_VAR NAME="rfc4646_subtag" -->" type="checkbox" />
+                        <!-- /TMPL_IF -->
+                        <!-- /TMPL_LOOP -->
+                        <!-- TMPL_ELSE -->
+                        <label for="<!-- TMPL_VAR NAME="rfc4646_subtag" -->"><!-- TMPL_VAR NAME="native_description" -->(<!-- TMPL_VAR NAME="rfc4646_subtag" -->)</label>
+                        <!-- TMPL_IF NAME="group_enabled" -->
+                        <input value="<!-- TMPL_VAR NAME="rfc4646_subtag" -->" name="pref_<!-- TMPL_VAR NAME="name" -->" id="<!-- TMPL_VAR NAME="rfc4646_subtag" -->" type="checkbox" checked="checked" />
+                        <!-- TMPL_ELSE -->
+                        <input value="<!-- TMPL_VAR NAME="rfc4646_subtag" -->" name="pref_<!-- TMPL_VAR NAME="name" -->" id="<!-- TMPL_VAR NAME="rfc4646_subtag" -->" type="checkbox" />
+                        <!-- /TMPL_IF -->
+                        <!-- /TMPL_IF -->
+                    </td></tr>
+                    <!-- /TMPL_LOOP -->
+                    </table>
                     <!-- /TMPL_IF -->
                     <!-- /TMPL_LOOP -->
                 </td>
@@ -131,7 +156,6 @@
     </form>
     </div>
     <!-- /TMPL_LOOP -->
-    <!-- <pre> TMPL_VAR NAME="dump" ESCAPE="HTML" </pre> -->
 </div>
 </div>
 <div class="yui-b">

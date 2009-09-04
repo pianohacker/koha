@@ -15,8 +15,7 @@ KOHA.AJAX = {
         KOHA.xhr = xhr;
         if ( !xhr.getResponseHeader( 'content-type' ).match( 'application/json' ) ) {
             // Something really failed
-            humanMsg.displayAlert( _( 'Internal Server Error' ) );
-            setTimeout( window.location.reload, 500 );
+            humanMsg.displayAlert( _( 'Internal Server Error, please reload the page' ) );
             return;
         }
 
@@ -24,7 +23,6 @@ KOHA.AJAX = {
 
         if ( error.type == 'auth' ) {
             humanMsg.displayMsg( _( 'You need to log in again, your session has timed out' ) );
-            setTimeout( window.location.reload, 500 );
         }
 
         if ( callback ) {

@@ -23,7 +23,7 @@ use warnings;
 
 use C4::Context;
 use C4::Service;
-use C4::Auth qw/check_api_auth/;
+use C4::Log;
 
 =head1 NAME
 
@@ -62,7 +62,11 @@ Used to set a single system preference.
 sub set_preference {
     my ( $preference ) = @_;
 
-    C4::Context->set_preference( $preference, $query->param( 'value' ) ) unless ( C4::Context->config('demo') );
+    unless ( C4::Context->config('demo') ) {
+        my $value = join( ',', $query->param( 'value' ) );
+        C4::Context->set_preference( $preference, $value );
+        logaction( 'SYSTEMPREFERENCE', 'MODIFY', undef, $preference . " | " . $value );
+    }
 
     C4::Service->return_success( $response );
 }
@@ -86,13 +90,18 @@ pref_GranularPermissions=0
 =cut
 
 sub set_preferences {
-    foreach my $param ( $query->param() ) {
-        my ( $pref ) = ( $param =~ /pref_(.*)/ );
+    unless ( C4::Context->config( 'demo' ) ) {
+        foreach my $param ( $query->param() ) {
+            my ( $pref ) = ( $param =~ /pref_(.*)/ );
 
-        next if ( !defined( $pref ) );
+            next if ( !defined( $pref ) );
 
-        C4::Context->set_preference( $pref, $query->param( $param ) ) unless ( C4::Context->config('demo') );
-    } 
+            my $value = join( ',', $query->param( $param ) );
+
+            C4::Context->set_preference( $pref, $value );
+            logaction( 'SYSTEMPREFERENCE', 'MODIFY', undef, $pref . " | " . $value );
+        }
+    }
 
     C4::Service->return_success( $response );
 }
