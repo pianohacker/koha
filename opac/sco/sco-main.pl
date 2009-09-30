@@ -64,6 +64,15 @@ my ($op, $patronid, $barcode, $confirmed, $barcode_driven) = (
     $query->param("barcode_driven")   || 0,
 );
 
+if ($op eq "logout") {
+    $template->param( loggedoutpatron => $patronid );
+    $query->param( patronid => undef );
+    $patronid = undef;
+} elsif ($op eq "logout_auto") {
+    $query->param( patronid => undef );
+    $patronid = undef;
+}
+
 my $issuenoconfirm = 1; #don't need to confirm on issue.
 #warn "issuerid: " . $issuerid;
 my $issuer   = GetMemberDetails($issuerid);
@@ -75,10 +84,7 @@ my $confirm_required = 0;
 my $return_only = 0;
 #warn "issuer cardnumber: " .   $issuer->{cardnumber};
 #warn "patron cardnumber: " . $borrower->{cardnumber};
-if ($op eq "logout") {
-    $query->param( patronid => undef );
-}
-elsif ( $op eq "returnbook" ) {
+if ( $op eq "returnbook" ) {
     my ($doreturn) = AddReturn( $barcode, $branch );
     #warn "returnbook: " . $doreturn;
     $borrower = GetMemberDetails( undef, $patronid );   # update borrower

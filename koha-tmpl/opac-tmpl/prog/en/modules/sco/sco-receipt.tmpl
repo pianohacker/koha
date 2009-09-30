@@ -1,0 +1,46 @@
+<!-- TMPL_INCLUDE NAME="doc-head-open.inc" -->
+Print Receipt for <!-- TMPL_VAR NAME="cardnumber" --></title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<link rel="shortcut icon" href="<!-- TMPL_VAR NAME="themelang" -->/includes/favicon.ico" type="image/x-icon" />
+<link rel="stylesheet" type="text/css" href="<!-- TMPL_VAR NAME="themelang" -->/css/print.css" />
+<script language="javascript">
+        window.print();
+        window.close();
+</script>
+</head>
+<body onload="window.print();window.close();">
+
+<div id="receipt">
+
+<h3><!-- TMPL_VAR name="LibraryName" --></h3>
+<!-- TMPL_IF NAME="branchname" --><!-- TMPL_VAR NAME="branchname" --><br /><!-- /TMPL_IF -->
+<!-- TMPL_IF NAME="branchaddress1" --><!-- TMPL_VAR NAME="branchaddress1" --><br /><!-- /TMPL_IF -->
+<!-- TMPL_IF NAME="branchaddress2" --><!-- TMPL_VAR NAME="branchaddress2" --><br /><!-- /TMPL_IF -->
+<!-- TMPL_IF NAME="branchaddress3" --><!-- TMPL_VAR NAME="branchaddress3" --><br /><!-- /TMPL_IF -->
+<!-- TMPL_IF NAME="branchphone" --><!-- TMPL_VAR NAME="branchphone" --><br /><!-- /TMPL_IF -->
+
+<!-- TMPL_VAR NAME="todaysdate" --><br />
+
+<h4>Checked Out</h4>
+<!-- TMPL_loop name="issueloop" -->
+<!-- TMPL_IF name="red" --><!-- TMPL_ELSE -->
+<p><a href="/cgi-bin/koha/catalogue/detail.pl?item=<!-- TMPL_VAR NAME="itemnumber" -->&amp;biblionumber=<!-- TMPL_VAR NAME="biblionumber" -->&amp;bi=<!-- TMPL_VAR NAME="biblioitemnumber" -->"><!-- TMPL_VAR NAME="title" escape="html" --></a><br />
+Barcode: <!-- TMPL_VAR NAME="barcode" --><br />
+Date due: <!-- TMPL_VAR NAME="date_due" --><br /></p>
+    <!-- /TMPL_IF -->
+    <!-- /TMPL_LOOP -->
+
+<!-- TMPL_IF NAME="overdues_exist" -->
+
+<h4>Overdues</h4>
+    <!-- TMPL_LOOP NAME="issueloop" -->
+    <!-- TMPL_IF NAME="red" -->
+<p><a href="/cgi-bin/koha/catalogue/detail.pl?item=<!-- TMPL_VAR NAME="itemnumber" -->&amp;biblionumber=<!-- TMPL_VAR NAME="biblionumber" -->&amp;bi=<!-- TMPL_VAR NAME="biblioitemnumber" -->"><!-- TMPL_VAR NAME="title" escape="html" --></a><br />
+Barcode: <!-- TMPL_VAR NAME="barcode" --><br />
+Date due: <!-- TMPL_VAR NAME="date_due" --><br /></p>
+    <!-- /TMPL_IF -->
+    <!-- /TMPL_LOOP -->
+
+<!-- /TMPL_IF -->
+
+<!-- TMPL_INCLUDE NAME="opac-bottom.inc" -->
