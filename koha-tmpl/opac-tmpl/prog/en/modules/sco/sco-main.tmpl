@@ -8,7 +8,7 @@
 function sco_init(valid_session) {
     if (valid_session == 1) {
         <!-- TMPL_IF NAME="SelfCheckTimeout" -->
-        setTimeout("location.href='/cgi-bin/koha/sco/sco-main.pl?op=logout';", <!-- TMPL_VAR NAME="SelfCheckTimeout" --> * 1000); // TODO: syspref for timeout
+        setTimeout("location.href='/cgi-bin/koha/sco/sco-main.pl?op=logout_auto&patronid=<!-- TMPL_VAR NAME="patronid" -->';", <!-- TMPL_VAR NAME="SelfCheckTimeout" --> * 1000); // TODO: syspref for timeout
         <!-- /TMPL_IF -->
     }
 }
@@ -23,7 +23,7 @@ function checkout_confirm(patronid) {
     if (! barcode) { dofocus(); return false; }    // no barcode
     <!-- TMPL_IF NAME="SelfCheckEndSessionBarcode" -->
     if (barcode == "<!-- TMPL_VAR NAME="SelfCheckEndSessionBarcode" -->") {   // magic barcode 
-        window.location.href='/cgi-bin/koha/sco/sco-main.pl?op=logout';
+        window.location.href='/cgi-bin/koha/sco/sco-main.pl?op=logout&patronid=<!-- TMPL_VAR NAME="patronid" -->';
         return false;
     }
     <!-- /TMPL_IF -->
@@ -60,6 +60,9 @@ $(document).ready(function() {
             <!-- TMPL_UNLESS NAME="nofines" -->, 4: { sorter: false }<!-- /TMPL_UNLESS -->
         }
     });
+    <!-- TMPL_IF NAME="loggedoutpatron" -->
+    window.open("/cgi-bin/koha/sco/sco-receipt.pl?cardnumber=<!-- TMPL_VAR NAME="loggedoutpatron" -->");
+    <!-- /TMPL_IF -->
 });
 //]]>
 </script>
@@ -187,7 +190,13 @@ Sorry, This Self-Checkout Station has lost authentication.  Please contact the a
 	<input type="hidden" name="valid_session" value="1" />
 	<input type="submit" value="Submit" class="submit" /></fieldset>
 	</form>
-	<div><form method="post" action="/cgi-bin/koha/sco/sco-main.pl?op=logout" ><input type="submit" value="Finish" class="finish" /></form></div>
+    <div>
+        <form method="post" action="/cgi-bin/koha/sco/sco-main.pl?op=logout" >
+            <input type="hidden" name="op" value="logout" />
+            <input type="hidden" name="patronid" value="<!-- TMPL_VAR NAME="patronid" -->" />
+            <input type="submit" value="Finish" class="finish" />
+        </form>
+    </div>
 	</div> <!-- sco_entry --> <!-- newcheckout -->
 
 	<div id="borrowerdetails">
