@@ -149,6 +149,7 @@ $tabsysprefs{globalDueDate}                  = "Circulation";
 $tabsysprefs{holdCancelLength}               = "Circulation";
 $tabsysprefs{itemBarcodeInputFilter}         = "Circulation";
 $tabsysprefs{WebBasedSelfCheck}              = "Circulation";
+$tabsysprefs{ShowPatronImageInWebBasedSelfCheck} = "Circulation";
 $tabsysprefs{CircControl}                    = "Circulation";
 $tabsysprefs{finesCalendar}                  = "Circulation";
 $tabsysprefs{previousIssuesDefaultSortOrder} = "Circulation";
@@ -170,6 +171,7 @@ $tabsysprefs{InProcessingToShelvingCart}     = "Circulation";
 $tabsysprefs{NewItemsDefaultLocation}        = "Circulation";
 $tabsysprefs{ReturnToShelvingCart}           = "Circulation";
 $tabsysprefs{DisplayClearScreenButton}       = "Circulation";
+$tabsysprefs{AllowAllMessageDeletion}        = "Circulation";
 
 # Staff Client
 $tabsysprefs{TemplateEncoding}        = "StaffClient";
@@ -320,6 +322,7 @@ $tabsysprefs{OPACDisplayRequestPriority} = "OPAC";
 $tabsysprefs{OPACAllowHoldDateInFuture}  = "OPAC";
 $tabsysprefs{OPACPatronDetails}  = "OPAC";
 $tabsysprefs{OPACFinesTab}  = "OPAC";
+$tabsysprefs{DisplayOPACiconsXSLT}	 = "OPAC";
 
 # OPAC
 $tabsysprefs{SearchMyLibraryFirst} = "OPAC";
@@ -370,6 +373,8 @@ $tabsysprefs{'OAI-PMH:MaxCount'}  = "OAI-PMH";
 $tabsysprefs{'OAI-PMH:Set'}       = "OAI-PMH";
 $tabsysprefs{'OAI-PMH:Subset'}    = "OAI-PMH";
 
+# ILS-DI variables
+$tabsysprefs{'ILS-DI'} = "ILS-DI";
 sub StringSearch {
     my ( $searchstring, $type ) = @_;
     my $dbh = C4::Context->dbh;
