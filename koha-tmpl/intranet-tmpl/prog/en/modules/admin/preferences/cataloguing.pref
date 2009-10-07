@@ -12,6 +12,19 @@ Cataloguing:
                   yes: Display
                   no: "Don't display"
             - descriptions of fields and subfields in the MARC editor.
+    Spine Labels:
+        -
+            - When using the quick spine label printer,
+            - pref: SpineLabelAutoPrint
+              choices: 
+                  yes: do
+                  no: "don't"
+            - automatically pop up a print dialog.
+        -
+            - "Include the following fields on a quick-printed spine label:"
+            - (Enter in columns from the <code>biblio</code>, <code>biblioitems</code> or <code>items</code> tables, surrounded by <code>&lt;</code> and <code>&gt;</code>.)
+            - pref: SpineLabelFormat
+              type: textarea
     Record Structure:
         -
             - Interpret and store MARC records in the 
@@ -86,7 +99,7 @@ Cataloguing:
               choices: 
                   standard: "Don't"
                   economical: Do
-            - collapse repeated tags of the same type into one tag entry.
+            - collapse repeated tags of the same type into one tag entry on the display.
         -
             - By default, display biblio records in 
             - pref: IntranetBiblioDefaultView
