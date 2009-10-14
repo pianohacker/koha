@@ -8,16 +8,19 @@
 	#fileuploadstatus,#jobstatus { margin:.4em; }
 	#fileuploadprogress,#jobprogress{ width:150px;height:10px;border:1px solid #666;background:url('/intranet-tmpl/prog/img/progress.png') -300px 0px no-repeat; }</style>
 <script type="text/javascript">
-//<![CDATA[
-	$("#processfile").hide().submit( function (f) {
-        if ($("#fileToUpload").value == '') {
-            alert('Please upload a file first.');
-        } else {
-            return submitBackgroundJob(f);
-        }
-        return false;
+//<!--
+    $( document ).ready( function() {
+        $("#processfile").hide();
+        $('#mainformsubmit').click( function () {
+            if ($("#fileToUpload").value == '') {
+                alert('Please upload a file first.');
+            } else {
+                return submitBackgroundJob(this.form);
+            }
+            return false;
+        } );
     } );
-//]]>
+//-->
 </script>
 </head>
 <body>
