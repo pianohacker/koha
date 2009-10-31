@@ -204,8 +204,8 @@ $template->param(result=>\@results);
 =cut
 
 sub SimpleSearch {
-    my ( $query, $offset, $max_results, $servers )  = @_;
-
+    my ( $query, $offset, $max_results, $servers, $query_type )  = @_;
+    
     if ( C4::Context->preference('NoZebra') ) {
         my $result = NZorder( NZanalyse($query) )->{'biblioserver'};
         my $search_result =
@@ -227,7 +227,11 @@ sub SimpleSearch {
         for ( my $i = 0 ; $i < @servers ; $i++ ) {
             eval {
                 $zconns[$i] = C4::Context->Zconn( $servers[$i], 1 );
-                $zoom_queries[$i] = new ZOOM::Query::CCL2RPN( $query, $zconns[$i]);
+                if ( $query_type && $query_type eq 'pqf' ) {
+                    $zoom_queries[$i] = new ZOOM::Query::PQF( $query, $zconns[$i]);
+                } else {
+                    $zoom_queries[$i] = new ZOOM::Query::CCL2RPN( $query, $zconns[$i]);
+                }
                 $tmpresults[$i] = $zconns[$i]->search( $zoom_queries[$i] );
 
                 # error handling

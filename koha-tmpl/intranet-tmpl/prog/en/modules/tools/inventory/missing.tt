@@ -1,0 +1,32 @@
+[% IF ( missing ) %]
+<h2>Missing items</h2>
+<div class="help">
+    <p>
+    The following items were not scanned, but should have been on the shelf:
+    </p>
+</div>
+<table>
+    <thead>
+        <tr><th class="tool"><input type="checkbox" id="missing-check-all" /></th><th>Call Number</th><th>Title</th><th>Barcode</th></tr>
+    </thead>
+    <tbody>
+        [% FOREACH missin IN missing %]
+        <tr>
+            <td class="tool">
+                <input type="checkbox" name="itemnumber" value="[% missin.itemnumber %]" />
+            </td>
+            <td>
+                [% missin.itemcallnumber %]
+            </td>
+            <td>
+                <a href="/cgi-bin/koha/catalogue/detail.pl?biblionumber=[% missin.biblionumber %]"><cite>[% missin.title %]</cite></a>
+                [% IF ( missin.author ) %]by [% missin.author %][% END %]
+            </td>
+            <td>
+                <a href="/cgi-bin/koha/catalogue/moredetail.pl?biblionumber=[% missin.biblionumber %]&amp;itemnumber=[% missin.itemnumber %]">[% missin.barcode %]</a>
+            </td>
+        </tr>
+        [% END %]
+    </tbody>
+</table>
+[% END %]

@@ -1,0 +1,20 @@
+[% IF ( nonexistent ) %]
+<h2>Nonexistent barcodes</h2>
+<div class="help">
+    <p>
+    The following barcodes could not be found:
+    </p>
+</div>
+<ul>
+    [% FOREACH nonexisten IN nonexistent %]
+    <li>
+        <strong>[% nonexisten.barcode %]</strong>
+        [% IF ( nonexisten.last_title ) %]
+        - after <cite>[% nonexisten.last_title %]</cite>
+        [% IF ( nonexisten.last_author ) %]by [% nonexisten.last_author %][% END %]
+        ([% nonexisten.last_itemcallnumber %])
+        [% END %]
+    </li>
+    [% END %]
+</ul>
+[% END %]
