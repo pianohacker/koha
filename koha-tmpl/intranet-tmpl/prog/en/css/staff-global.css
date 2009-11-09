@@ -1045,7 +1045,7 @@ div.first fieldset {
 	margin-right : 0;
 }
 
-#circ_needsconfirmation {
+#circ_needsconfirmation div {
 	margin : auto;
 }
 
@@ -1448,7 +1448,16 @@ div#header_search input.submit {
 	font-size : 1em;
 }
 
-input[type=submit], input[type=button] {
+button img {
+	margin-right: 0.25em;
+	vertical-align: middle;
+}
+
+button.running {
+	color: #999;
+}
+
+input[type=submit], input[type=button], button {
 	border: 1px outset #999999;
 	border-top-color: #666;
 	border-left-color: #666;
@@ -1466,11 +1475,11 @@ input.submit,button.submit {
 	color: #333333;
 }
 
-*html input.submit {
+*html input.submit, *html button {
 	padding : .1em;
 }
 
-input[type=submit]:active, input[type=button]:active {
+input[type=submit]:active, input[type=button]:active, button:active {
 	border : 1px inset #999999;
 }
 

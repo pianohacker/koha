@@ -302,6 +302,7 @@ sub get_template_and_user {
             intranetstylesheet          => C4::Context->preference("intranetstylesheet"),
             intranetuserjs              => C4::Context->preference("intranetuserjs"),
             noItemTypeImages            => C4::Context->preference("noItemTypeImages"),
+            dateformat                  => C4::Context->preference("dateformat"),
             suggestion                  => C4::Context->preference("suggestion"),
             virtualshelves              => C4::Context->preference("virtualshelves"),
 			StaffSerialIssueDisplayCount => C4::Context->preference("StaffSerialIssueDisplayCount"),

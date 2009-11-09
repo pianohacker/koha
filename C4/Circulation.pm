@@ -2160,6 +2160,8 @@ this parameter is not supplied, lastreneweddate is set to the current date.
 If C<$datedue> is the empty string, C<&AddRenewal> will calculate the due date automatically
 from the book's item type.
 
+AddRenewal will return the new due date.
+
 =cut
 
 sub AddRenewal {

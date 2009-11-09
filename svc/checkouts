@@ -19,12 +19,15 @@
 #
 
 use strict;
+use warnings;
+
 use C4::Service;
 use C4::Context;
 use C4::Dates;
-use C4::Members;
 use C4::Circulation;
+use C4::Members;
 use C4::Biblio;
+use C4::Koha;
 use JSON;
 
 our @biblio_removed_keys = ( 'marc', 'marcxml' );
@@ -86,13 +89,18 @@ sub new_checkout {
         C4::Service->return_error( 'need_confirmation', $error_string, @flags );
     }
 
-       my ($issueid, $date_due) = AddIssue( $borrower, $barcode, ( $duedatespec && C4::Dates->new( $duedatespec ) ), $cancelreserve );
-    $response->param( issueid => $issueid, date_due => $date_due );
+    my ($issueid, $date_due) = AddIssue( $borrower, $barcode, ( $duedatespec && C4::Dates->new( $duedatespec ) ), $cancelreserve );
+    $response->param( issueid => $issueid, date_due => $date_due->output('iso') );
 
     my $biblio = GetBiblioFromItemNumber( undef, $barcode );
     foreach my $key (@biblio_removed_keys) {
         delete $biblio->{$key};
     }
+	$biblio->{'itemtype'} = ( C4::Context->preference( 'item-level_itypes' ) ) ? $biblio->{'itype'} : $biblio->{'itemtype'};
+
+    my $itemtypeinfo = getitemtypeinfo($biblio->{'itemtype'});
+    $biblio->{'itemtype_description'} = $itemtypeinfo->{description};
+	$biblio->{'itemtype_image'} = $itemtypeinfo->{imageurl};
     
     $response->param( biblio => $biblio );
 
@@ -148,7 +156,7 @@ sub return_checkout {
 
     my $branch = C4::Context->userenv->{'branch'};
     my @issueids = split( '\\|', $issueid_entry );
-    my @errors;
+    my @responses;
     my $exemptfine = $query->param( 'exemptfine' );
     my $dropboxmode = $query->param( 'dropboxmode' );
 
@@ -156,7 +164,7 @@ sub return_checkout {
 		my $issue = GetIssue( $issueid );
 
         if ( !defined( $issue ) ) {
-            push @errors, [ 'input', 'not_found', field => 'issueid', issueid => $issueid ];
+            push @responses, [ 'input', 'not_found', field => 'issueid', issueid => $issueid ];
             next;
         }
 
@@ -166,15 +174,15 @@ sub return_checkout {
 		if ( !$returned ) {
 			my ( $error_string, @flags ) = format_error( $messages );
 
-			push @errors, [ 'impossible', $error_string, @flags ];
-		} elsif ( %{$messages} ) {
+			push @responses, [ 'impossible', $error_string, issueid => $issueid, @flags ];
+		} elsif ( defined( $messages ) && %{$messages} ) {
 			my ( $error_string, @flags ) = format_error( $messages );
 
-			push @errors, { 'warning' => $error_string, @flags };
+			push @responses, { 'warning' => $error_string, issueid => $issueid, @flags };
 		}
 	}
 
-	C4::Service->return_multi( \@errors );
+	C4::Service->return_multi( \@responses );
 }
 
 C4::Service->dispatch(

@@ -5,6 +5,7 @@
 (<!-- TMPL_VAR NAME="cardnumber" -->)
 <!-- /TMPL_IF --></title>
 <!-- TMPL_INCLUDE NAME="doc-head-close.inc" -->
+<link rel="stylesheet" type="text/css" href="<!-- TMPL_VAR name="themelang" -->/css/humanmsg.css">
 <script type="text/javascript" src="<!-- TMPL_VAR name="themelang" -->/lib/jquery/plugins/jquery.tablesorter.min.js"></script>
 <script type="text/javascript" src="<!-- TMPL_VAR name="themelang" -->/lib/jquery/plugins/jquery.checkboxes.min.js"></script>
 <script type="text/javascript">
@@ -139,30 +140,32 @@ function refocus(calendar) {
 
 <!-- TMPL_INCLUDE NAME="calendar.inc" -->
 <!-- TMPL_IF NAME="AjaxCirc" -->
-    <script type="text/javascript">
-        var circ_impossible_str_tmpl  = new Array(
-            stats => "Local Use Recorded" ,
-            invalid_date => "The due date is invalid" ,
-            unknown_barcode => "The barcode was not found" ,
-            not_for_loan => "Item not for loan" ,
-            wthdrawn => "Item has been withdrawn" ,
-            gna => "Patron's address is in doubt" ,
-            card_lost => "Patron's card is lost" ,
-            debarred => "Patron is restricted" ,
-            no_more_renewals => "No more renewals possible" ,
-            expired => "Patron's card is expired" ,
-            notsamebranch => "This item belongs to $homebranch and cannot be issued from this location."
-        );
-
-        var confirm_str_tmpl = new Array(
-            debt_str => "The patron has a debt of $debt" ,
-            renew_issue_str => "Item is currently checked out to this patron.  Renew?" ,
-            reserve_waiting_str => "Item is consigned for " ,
-            reserved => "Item is on reserve for " ,
-            issued_to_another_str => "Item checked out to $issued_to_another.  Check in and check out?" ,
-            too_many_str =>  "Too many checked out (already checked out / max : $too_many)"
-        );
-
+<script type="text/javascript" src="<!-- TMPL_VAR name="themelang" -->/lib/jquery/plugins/humanmsg.js"></script>
+<script type="text/javascript" src="<!-- TMPL_VAR name="themelang" -->/lib/jquery/plugins/jquery.color.js"></script>
+	<script type="text/javascript" src="<!-- TMPL_VAR name="themelang" -->/js/pages/circulation-ajax.js"></script>
+	<script type="text/javascript">
+		//<![CDATA[
+		circulation.issues = {
+		<!-- TMPL_LOOP NAME="allissues" -->
+			<!-- TMPL_VAR NAME="issueid" -->: {
+				biblionumber: "<!-- TMPL_VAR NAME="biblionumber" ESCAPE="JS" -->",
+				itemnumber: "<!-- TMPL_VAR NAME="itemnumber" ESCAPE="JS" -->",
+				title: "<!-- TMPL_VAR NAME="title" ESCAPE="JS" -->",
+				author: "<!-- TMPL_VAR NAME="author" ESCAPE="JS" -->",
+				itemcallnumber: "<!-- TMPL_VAR NAME="itemcallnumber" ESCAPE="JS" -->",
+				date_due: "<!-- TMPL_VAR NAME="dd" ESCAPE="JS" -->",
+				itemtype: "<!-- TMPL_VAR NAME="itemtype" ESCAPE="JS" -->",
+				itemtype_description: "<!-- TMPL_VAR NAME="itemtype_description" ESCAPE="JS" -->",
+				itemtype_image: "<!-- TMPL_VAR NAME="itemtype_image" ESCAPE="JS" -->",
+				itemnotes: "<!-- TMPL_VAR NAME="itemnotes" ESCAPE="JS" -->",
+				barcode: "<!-- TMPL_VAR NAME="barcode" ESCAPE="JS" -->",
+			},
+		<!-- /TMPL_LOOP -->
+		}
+        <!-- TMPL_UNLESS NAME="noItemTypeImages" -->koha.item_type_images = true;<!-- /TMPL_UNLESS -->
+		circulation.issuecount = <!-- TMPL_VAR NAME="issuecount" -->;
+		circulation.branch = '<!-- TMPL_VAR NAME="branch" -->';
+		//]]>
 	</script>
     <!-- /TMPL_IF -->
 </head>
@@ -232,9 +235,12 @@ function refocus(calendar) {
 
 <!-- TMPL_IF NAME="dateexpiry" --><div class="dialog message">Patron's account has been renewed until <!-- TMPL_VAR NAME="dateexpiry" --></div><!-- /TMPL_IF -->
 <!-- TMPL_IF NAME="NEEDSCONFIRMATION" -->
-<div class="yui-g">
+<div id="circ_needsconfirmation" class="yui-g">
+<!-- TMPL_ELSE -->
+<div id="circ_needsconfirmation" class="yui-g" style="display:none">
+<!-- /TMPL_IF -->
 
-<div id="circ_needsconfirmation" class="dialog alert">
+<div class="dialog alert">
 <h3>Please Confirm Checkout</h3>
 
 <ul id="confirm_list">
@@ -284,8 +290,9 @@ function refocus(calendar) {
 <!-- /TMPL_IF -->
 </ul>
 
-<form method="post" action="/cgi-bin/koha/circ/circulation.pl">
+<form method="post" action="/cgi-bin/koha/circ/circulation.pl" id="confirmation_form">
 
+<!-- TMPL_IF NAME="NEEDSCONFIRMATION" -->
 <!-- TMPL_IF NAME="RESERVED" -->
     <p>
     <input type="checkbox" id="cancelreserve" name="cancelreserve" value="1" />
@@ -302,12 +309,16 @@ function refocus(calendar) {
 
     <input type="hidden" name="barcode" value="<!-- TMPL_VAR NAME="barcode" -->" />
     <input type="hidden" name="borrowernumber" value="<!-- TMPL_VAR NAME="borrowernumber" -->" />
-    <input type="hidden" name="issueconfirmed" value="1" />
     <!-- TMPL_IF NAME="DEBT" --><input type="hidden" name="debt_confirmed" value="1" /><!-- /TMPL_IF -->
     <input type="hidden" name="duedatespec" value="<!-- TMPL_VAR NAME="duedatespec" -->" />
     <input type="hidden" name="stickyduedate" value="<!-- TMPL_VAR NAME="stickyduedate" -->" />
     <input type="hidden" name="branch" value="<!-- TMPL_VAR NAME="branch" -->" />
-    <input type="submit" class="approve" value="Yes, Check Out (Y)" accesskey="y" />
+<!-- TMPL_ELSE -->
+    <input type="hidden" name="debt_confirmed" value="0" id="debt_confirmed" />
+<!-- /TMPL_IF -->
+    <input type="hidden" name="issueconfirmed" value="1" />
+    <input id="confirm_checkout" type="submit" class="approve" value="Yes, Check Out (Y)" accesskey="y" />
+<!-- TMPL_IF NAME="NEEDSCONFIRMATION" -->
 </form>
 
 <form method="get" action="/cgi-bin/koha/circ/circulation.pl">
@@ -318,7 +329,6 @@ function refocus(calendar) {
 </form>
 
 </div></div>
-<!-- /TMPL_IF --> <!-- NEEDSCONFIRMATION -->
 
         <!-- TMPL_IF NAME="IMPOSSIBLE" -->
 <div class="yui-g">
@@ -418,7 +428,7 @@ No patron matched <span class="ex"><!-- TMPL_VAR name="message" --></span>
 <!-- BARCODE ENTRY -->
 
 <!-- TMPL_IF NAME="borrowernumber" -->
-<div class="yui-g">
+<div class="yui-g" id="mainform-container">
 <!-- TMPL_UNLESS NAME="noissues" -->
 <!-- TMPL_IF NAME="flagged" -->
 <div class="yui-u first">
@@ -437,7 +447,7 @@ No patron matched <span class="ex"><!-- TMPL_VAR name="message" --></span>
     <label for="barcode">Checking out to <!-- TMPL_VAR name="firstname" --> <!-- TMPL_VAR name="surname" --> (<!-- TMPL_VAR NAME="cardnumber" -->) </label>
 	<div class="hint">Enter item barcode:</div>
 
-	<input type="text" name="barcode" id="barcode" class="barcode focus" size="14" /> <input type="submit" value="Check Out" />
+	<input type="text" name="barcode" id="barcode" class="barcode focus" size="14" /> <button id="checkout-button">Check Out</button>
 
     <!-- TMPL_IF NAME="SpecifyDueDate" --><div class="date-select">
         <div class="hint">Specify Due Date:</div>
@@ -686,12 +696,13 @@ No patron matched <span class="ex"><!-- TMPL_VAR name="message" --></span>
         </tr>
 		</tfoot>
 	<tbody>
+<!-- TMPL_IF NAME="todayissues" -->
 
     <!-- TMPL_LOOP NAME="todayissues" -->
     <!-- TMPL_IF NAME="__odd__" -->
     <tr>
     <!-- TMPL_ELSE -->
-    <tr class="highlight">
+    <tr id="issuerow-<!-- TMPL_VAR NAME="issueid" -->" class="highlight">
     <!-- /TMPL_IF -->
         <td><!-- TMPL_VAR NAME="dd" --></td>
         <td><a href="/cgi-bin/koha/catalogue/detail.pl?biblionumber=<!-- TMPL_VAR NAME="biblionumber" -->&amp;type=intra"><strong><!-- TMPL_VAR NAME="title" escape="html" --></strong></a><!-- TMPL_IF NAME="author" -->, by <!-- TMPL_VAR NAME="author" --><!-- /TMPL_IF --><!-- TMPL_IF NAME="itemnotes" -->- <span class="circ-hlt"><!-- TMPL_VAR name="itemnotes" --></span><!-- /TMPL_IF --> <a href="/cgi-bin/koha/catalogue/moredetail.pl?biblionumber=<!-- TMPL_VAR NAME="biblionumber" -->&amp;itemnumber=<!-- TMPL_VAR NAME="itemnumber" -->#item<!-- TMPL_VAR NAME="itemnumber" -->"><!-- TMPL_VAR NAME="barcode" --></a></td>
@@ -744,6 +755,7 @@ No patron matched <span class="ex"><!-- TMPL_VAR name="message" --></span>
     <!-- /TMPL_LOOP --> <!-- /loop todayissues -->
     <!-- /if todayissues --><!-- /TMPL_IF -->
 	<tr id="todaysissues_last" class="hidden_row" colspan="7"></tr>
+	</tbody>
 <!-- TMPL_IF NAME="previssues" -->
 <!-- TMPL_IF NAME="todayissues" --><tr><th colspan="10"><a name="previous" id="previous"></a>Previous checkouts</th></tr><!-- TMPL_ELSE -->
 <tr><th class="{sorter: false}" colspan="10"><a name="previous" id="previous"></a>Previous checkouts</th></tr></thead>
@@ -753,7 +765,7 @@ No patron matched <span class="ex"><!-- TMPL_VAR name="message" --></span>
     <!-- TMPL_IF NAME="__odd__" -->
         <tr>
     <!-- TMPL_ELSE -->
-        <tr class="highlight">
+        <tr id="issuerow-<!-- TMPL_VAR NAME="issueid" -->" class="highlight">
     <!-- /TMPL_IF -->
         <!-- TMPL_IF NAME="od" --><td class="od"><!-- TMPL_ELSE --><td><!-- /TMPL_IF -->
         <!-- TMPL_VAR NAME="dd" -->
@@ -826,9 +838,12 @@ No patron matched <span class="ex"><!-- TMPL_VAR name="message" --></span>
         </fieldset>
     <!-- /TMPL_IF -->
 </form>
+<!-- TMPL_IF NAME="issuecount" -->
+<p id="noissues" style="display:none">
 <!-- TMPL_ELSE -->
-<p>Patron has nothing checked out.</p>
+<p id="noissues">
 <!-- /TMPL_IF -->
+Patron has nothing checked out.</p>
 </div>
 
 

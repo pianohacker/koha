@@ -126,3 +126,25 @@ function format(message, contents) {
         lookup
     );
 }
+
+function format_date (date_, format) {
+	function zeropad (n) { return n.toString().length == 2 ? n : '0' + parseInt(n); }
+
+	if (format === undefined) {
+		format = koha.dateformat;
+	}
+
+	var datearr = date_.split( /-|\// );
+
+	switch (format) {
+		case 'iso': return date_;
+		case 'us': return [zeropad(datearr[1]), zeropad(datearr[2]), datearr[0]].join( '/' );
+		case 'metric': return [zeropad(datearr[2]), zeropad(datearr[1]), datearr[0]].join( '/' );
+	}
+}
+
+function is_empty( obj ) {
+	for ( var i in obj ) { return false; }
+	return true;
+}
+
