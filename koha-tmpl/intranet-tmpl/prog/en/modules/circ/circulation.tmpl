@@ -138,6 +138,23 @@ function refocus(calendar) {
 </script>
 
 <!-- TMPL_INCLUDE NAME="calendar.inc" -->
+<!-- TMPL_INCLUDE NAME="ajax.inc" -->
+<!-- TMPL_IF NAME="ajax_circ" -->
+<script type="text/javascript">
+	var circ_impossible_str_tmpl  = new Array( stats => "Local Use Recorded" ,
+									invalid_date => "The due date is invalid" ,
+									unknown_barcode => "The barcode was not found" ,
+									not_for_loan => "Item not for loan" ,
+									wthdrawn => "Item has been withdrawn" ,
+									gna => "Patron's address is in doubt" ,
+									card_lost => "Patron's card is lost" ,
+									debarred => "Patron is restricted" ,
+									no_more_renewals => "No more renewals possible" ,
+									expired => "Patron's card is expired" ,
+									notsamebranch => "This item belongs to _var_ and cannot be issued from this location." 
+							);
+</script>
+    <!-- /TMPL_IF -->
 </head>
 <body>
 
@@ -210,7 +227,7 @@ function refocus(calendar) {
 <div id="circ_needsconfirmation" class="dialog alert">
 <h3>Please Confirm Checkout</h3>
 
-<ul>
+<ul id="confirm_list">
 <!-- TMPL_IF NAME="DEBT" -->
     <li>The patron has a debt of <!-- TMPL_VAR name="DEBT" --></li>
 <!-- /TMPL_IF -->
@@ -241,6 +258,18 @@ function refocus(calendar) {
 
 <!-- TMPL_IF NAME="NOT_FOR_LOAN_FORCING" -->
     <li>Item is normally not for loan.  Check out anyway?</li>
+<!-- /TMPL_IF -->
+<!-- TMPL_IF NAME="ajax_circ" -->
+	<script type="text/javascript">
+	var confirm_str_tmpl = new Array ( debt_str => "The patron has a debt of $" ,
+					renew_issue_str => "Item is currently checked out to this patron.  Renew?" ,
+					reserve_waiting_str => "Item is consigned for " ,
+					reserved => "Item is on reserve for " ,
+					issued_to_another_str => "Item checked out to _var_.  Check in and check out?" ,
+					too_many_str =>  "Too many checked out (already checked out / max : _var_)" 
+				);
+
+	</script>
 <!-- /TMPL_IF -->
 </ul>
 
@@ -582,14 +611,14 @@ No patron matched <span class="ex"><!-- TMPL_VAR name="message" --></span>
 
 <ul>
 <li>    <!--TMPL_IF NAME="issuecount"-->
-            <a href="/cgi-bin/koha/circ/circulation.pl#checkouts"><!-- TMPL_VAR NAME="issuecount"--> Checkout(s)</a>
+            <a href="/cgi-bin/koha/circ/circulation.pl#checkouts"><span id="issuecount"><!-- TMPL_VAR NAME="issuecount"--></span> Checkout(s)</a>
     <!-- TMPL_ELSE -->
-            <a href="/cgi-bin/koha/circ/circulation.pl#checkouts">0 Checkouts</a>
+            <a href="/cgi-bin/koha/circ/circulation.pl#checkouts"><span id="issuecount">0</span> Checkouts</a>
     <!-- /TMPL_IF --></li>
 <li><!-- TMPL_IF NAME="countreserv"-->
             <a href="/cgi-bin/koha/circ/circulation.pl#reserves"><!--TMPL_VAR NAME="countreserv"--> Hold(s)</a>
     <!-- TMPL_ELSE -->
-            <a href="/cgi-bin/koha/circ/circulation.pl#reserves">0 Holds</a>
+            <a href="/cgi-bin/koha/circ/circulation.pl#reserves"><span id="countreserv">0</span> Holds</a>
     <!-- /TMPL_IF --></li>
 
 </ul>
@@ -703,6 +732,7 @@ No patron matched <span class="ex"><!-- TMPL_VAR name="message" --></span>
     </tr>
     <!-- /TMPL_LOOP --> <!-- /loop todayissues -->
     <!-- /if todayissues --><!-- /TMPL_IF -->
+	<tr id="todaysissues_last" class="hidden_row" colspan="7"></tr> 
 <!-- TMPL_IF NAME="previssues" -->
 <!-- TMPL_IF NAME="todayissues" --><tr><th colspan="10"><a name="previous" id="previous"></a>Previous checkouts</th></tr><!-- TMPL_ELSE -->
 <tr><th class="{sorter: false}" colspan="10"><a name="previous" id="previous"></a>Previous checkouts</th></tr></thead>

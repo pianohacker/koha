@@ -839,7 +839,7 @@ sub CanBookBeIssued {
 "$resborrower->{'firstname'} $resborrower->{'surname'} ($resborrower->{'cardnumber'}, $branchname)";
         }
         elsif ( $restype eq "Reserved" ) {
-            # The item is on reserve for someone else.
+            # The item is on reserve for someone else. (assume RESERVE_WAITING means the patron has been notified, whereas this case suggests not notified.
             $needsconfirmation{RESERVED} =
 "$res->{'reservedate'} : $resborrower->{'firstname'} $resborrower->{'surname'} ($resborrower->{'cardnumber'})";
         }

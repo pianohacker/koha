@@ -86,7 +86,7 @@ my ( $template, $loggedinuser, $cookie ) = get_template_and_user (
     }
 );
 
-my $branches = GetBranches();
+
 
 my @failedrenews = $query->param('failedrenew');    # expected to be itemnumbers 
 my %renew_failed;
@@ -94,10 +94,9 @@ for (@failedrenews) { $renew_failed{$_} = 1; }
 
 my $findborrower = $query->param('findborrower');
 $findborrower =~ s|,| |g;
-#$findborrower =~ s|'| |g;
 my $borrowernumber = $query->param('borrowernumber');
 
-$branch  = C4::Context->userenv->{'branch'};  
+$branch  = C4::Context->userenv->{'branch'};
 $printer = C4::Context->userenv->{'branchprinter'};
 
 
@@ -409,7 +408,7 @@ if ($borrowernumber) {
     }
 
     # return result to the template
-    $template->param( 
+    $template->param(
         countreserv => scalar @reservloop,
         reservloop  => \@reservloop ,
         WaitingReserveLoop  => \@WaitingReserveLoop,
@@ -440,7 +439,12 @@ if ($borrower) {
             $it->{'itemnumber'}, $borrower->{'borrowernumber'}
         );
         $it->{'charge'} = sprintf("%.2f", $it->{'charge'});
+<<<<<<< HEAD:circ/circulation.pl
         my ($can_renew, $can_renew_error) = CanBookBeRenewed( 
+=======
+        my $can_renew_error;
+        ($it->{'can_renew'}, $can_renew_error) = CanBookBeRenewed(
+>>>>>>> b962a8e... Make starting AJAXCirc patches apply:circ/circulation.pl
             $borrower->{'borrowernumber'},$it->{'itemnumber'}
         );
         $it->{"renew_error_${can_renew_error}"} = 1 if defined $can_renew_error;
@@ -481,11 +485,13 @@ if ($borrower) {
     }
 }
 
-#### ADDED BY JF FOR COUNTS BY ITEMTYPE RULES
-# FIXME: This should utilize all the issuingrules options rather than just the defaults
-# and it should be moved to a module
-my $dbh = C4::Context->dbh;
+# FIXME :  This is no longer valid,
+# as issuingrules max qty's have changed in the db.   #### ADDED BY JF FOR COUNTS BY ITEMTYPE RULES
 
+#  Must be refactored to use API if it is to persist. # FIXME: This should utilize all the issuingrules options rather than just the defaults
+# and it should be moved to a module
+#my $dbh = C4::Context->dbh;
+#
 # how many of each is allowed?
 my $issueqty_sth = $dbh->prepare( "
 SELECT itemtypes.description AS description,issuingrules.itemtype,maxissueqty
@@ -513,8 +519,6 @@ while ( my $data = $issueqty_sth->fetchrow_hashref() ) {
         push @issued_itemtypes_count_loop, $data;
     }
 }
-
-#### / JF
 
 my @values;
 my %labels;
@@ -709,10 +713,6 @@ $template->param(
 if ($stickyduedate) {
     $session->param( 'stickyduedate', $duedatespec );
 }
-
-#if ($branchcookie) {
-#$cookie=[$cookie, $branchcookie, $printercookie];
-#}
 
 my ($picture, $dberror) = GetPatronImage($borrower->{'cardnumber'});
 $template->param( picture => 1 ) if $picture;
