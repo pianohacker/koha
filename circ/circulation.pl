@@ -439,12 +439,7 @@ if ($borrower) {
             $it->{'itemnumber'}, $borrower->{'borrowernumber'}
         );
         $it->{'charge'} = sprintf("%.2f", $it->{'charge'});
-<<<<<<< HEAD:circ/circulation.pl
         my ($can_renew, $can_renew_error) = CanBookBeRenewed( 
-=======
-        my $can_renew_error;
-        ($it->{'can_renew'}, $can_renew_error) = CanBookBeRenewed(
->>>>>>> b962a8e... Make starting AJAXCirc patches apply:circ/circulation.pl
             $borrower->{'borrowernumber'},$it->{'itemnumber'}
         );
         $it->{"renew_error_${can_renew_error}"} = 1 if defined $can_renew_error;
