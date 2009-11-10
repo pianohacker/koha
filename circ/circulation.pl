@@ -493,41 +493,6 @@ if ($borrower) {
     }
 }
 
-# FIXME :  This is no longer valid,
-# as issuingrules max qty's have changed in the db.   #### ADDED BY JF FOR COUNTS BY ITEMTYPE RULES
-
-#  Must be refactored to use API if it is to persist. # FIXME: This should utilize all the issuingrules options rather than just the defaults
-# and it should be moved to a module
-#my $dbh = C4::Context->dbh;
-#
-# how many of each is allowed?
-my $issueqty_sth = $dbh->prepare( "
-SELECT itemtypes.description AS description,issuingrules.itemtype,maxissueqty
-FROM issuingrules
-  LEFT JOIN itemtypes ON (itemtypes.itemtype=issuingrules.itemtype)
-  WHERE categorycode=?
-" );
-$issueqty_sth->execute("*");	# This is a literal asterisk, not a wildcard.
-
-while ( my $data = $issueqty_sth->fetchrow_hashref() ) {
-
-    # subtract how many of each this borrower has
-    $data->{'count'} = $issued_itemtypes_count->{ $data->{'description'} };  
-    $data->{'left'}  =
-      ( $data->{'maxissueqty'} -
-          $issued_itemtypes_count->{ $data->{'description'} } );
-
-    # can't have a negative number of remaining
-    if ( $data->{'left'} < 0 ) { $data->{'left'} = "0" }
-    $data->{'flag'} = 1 unless ( $data->{'maxissueqty'} > $data->{'count'} );
-    unless ( ( $data->{'maxissueqty'} < 1 )
-        || ( $data->{'itemtype'} eq "*" )
-        || ( $data->{'itemtype'} eq "CIRC" ) )
-    {
-        push @issued_itemtypes_count_loop, $data;
-    }
-}
-
 my @values;
 my %labels;
 my $CGIselectborrower;

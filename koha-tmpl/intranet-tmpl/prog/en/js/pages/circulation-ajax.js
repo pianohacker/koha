@@ -170,9 +170,9 @@ $.extend(circulation.checkout, {
     },
 
     failed: function( xhr, status, e ) {
-        if ( xhr.getResponseHeader( 'content-type' ) != 'application/json' ) {
+        if ( !/application\/json/.test( xhr.getResponseHeader( 'Content-Type' ) ) ) {
             // Something really failed
-            humanMsg.displayAlert( _( 'Internal Server Error' ) );
+            humanMsg.displayAlert( _( '<h3>Internal Server Error</h3><p>' ) + xhr.getResponseHeader('content-type') );
             setTimeout( window.location.reload, 500 );
             return;
         }
@@ -264,7 +264,7 @@ disabled = function () { return false; }
 
 $.extend( circulation.checkin, { 
     finished: function( xhr, status ) {
-        if ( xhr.getResponseHeader( 'content-type' ) != 'application/json' ) {
+        if ( !/application\/json/.test( xhr.getResponseHeader( 'Content-Type' ) ) ) {
             // Something really failed
             humanMsg.displayAlert( _( 'Internal Server Error' ) );
             setTimeout( window.location.reload, 500 );
@@ -380,7 +380,7 @@ $.extend( circulation.checkin, {
 
 $.extend( circulation.renew, { 
     finished: function( xhr, status ) {
-        if ( xhr.getResponseHeader( 'content-type' ) != 'application/json' ) {
+        if ( !/application\/json/.test( xhr.getResponseHeader( 'Content-Type' ) ) ) {
             // Something really failed
             humanMsg.displayAlert( _( 'Internal Server Error' ) );
             setTimeout( window.location.reload, 500 );
@@ -442,7 +442,7 @@ $.extend( circulation.renew, {
     },
 });
 
-$( function () {
+$( document ).ready( function () {
     $( '#mainform' ).submit( circulation.checkout );
 
     $( '#confirm_checkout' ).click( circulation.checkout.confirm_  );

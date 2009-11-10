@@ -890,7 +890,7 @@ AddIssue does the following things :
 sub AddIssue {
     my ( $borrower, $barcode, $datedue, $cancelreserve, $issuedate, $sipmode) = @_;
     my $dbh = C4::Context->dbh;
-    my ( $dateduef, $issueid );
+    my $issueid;
 	my $barcodecheck=CheckValidBarcode($barcode);
 
     # $issuedate defaults to today.
@@ -1057,7 +1057,7 @@ sub AddIssue {
     logaction("CIRCULATION", "ISSUE", $borrower->{'borrowernumber'}, $biblio->{'biblionumber'})
         if C4::Context->preference("IssueLog");
   }
-  return ($datedue);	# not necessarily the same as when it came in!
+  return ($issueid, $datedue); # not necessarily the same as when it came in!
 }
 
 =head2 GetLoanLength

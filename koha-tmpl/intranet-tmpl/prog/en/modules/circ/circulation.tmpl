@@ -163,7 +163,7 @@ function refocus(calendar) {
         <!-- /TMPL_LOOP -->
         }
         <!-- TMPL_UNLESS NAME="noItemTypeImages" -->koha.item_type_images = true;<!-- /TMPL_UNLESS -->
-        circulation.issuecount = <!-- TMPL_VAR NAME="issuecount" -->;
+        circulation.issuecount = <!-- TMPL_IF NAME="issuecount" --><!-- TMPL_VAR NAME="issuecount" --><!-- TMPL_ELSE -->0<!-- /TMPL_IF -->;
         circulation.branch = '<!-- TMPL_VAR NAME="branch" -->';
         //]]>
     </script>
@@ -292,7 +292,6 @@ function refocus(calendar) {
 
 <form method="post" action="/cgi-bin/koha/circ/circulation.pl" id="confirmation_form">
 
-<!-- TMPL_IF NAME="NEEDSCONFIRMATION" -->
 <!-- TMPL_IF NAME="RESERVED" -->
     <p>
     <input type="checkbox" id="cancelreserve" name="cancelreserve" value="1" />
@@ -309,22 +308,23 @@ function refocus(calendar) {
 
     <input type="hidden" name="barcode" value="<!-- TMPL_VAR NAME="barcode" -->" />
     <input type="hidden" name="borrowernumber" value="<!-- TMPL_VAR NAME="borrowernumber" -->" />
-    <!-- TMPL_IF NAME="DEBT" --><input type="hidden" name="debt_confirmed" value="1" /><!-- /TMPL_IF -->
+    <!-- TMPL_IF NAME="DEBT" -->
+    <input type="hidden" name="debt_confirmed" value="1" />
+    <!-- TMPL_ELSE -->
+    <input type="hidden" name="debt_confirmed" value="<!-- TMPL_VAR NAME="debt_confirmed" -->" />
+    <!-- /TMPL_IF -->
     <input type="hidden" name="duedatespec" value="<!-- TMPL_VAR NAME="duedatespec" -->" />
     <input type="hidden" name="stickyduedate" value="<!-- TMPL_VAR NAME="stickyduedate" -->" />
     <input type="hidden" name="branch" value="<!-- TMPL_VAR NAME="branch" -->" />
-<!-- TMPL_ELSE -->
-    <input type="hidden" name="debt_confirmed" value="0" id="debt_confirmed" />
-<!-- /TMPL_IF -->
     <input type="hidden" name="issueconfirmed" value="1" />
     <input id="confirm_checkout" type="submit" class="approve" value="Yes, Check Out (Y)" accesskey="y" />
-<!-- TMPL_IF NAME="NEEDSCONFIRMATION" -->
 </form>
 
 <form method="get" action="/cgi-bin/koha/circ/circulation.pl">
     <input type="hidden" name="borrowernumber" value="<!-- TMPL_VAR NAME="borrowernumber" -->" />
     <input type="hidden" name="duedatespec" value="<!-- TMPL_VAR NAME="duedatespec" -->" />
     <input type="hidden" name="stickyduedate" value="<!-- TMPL_VAR NAME="stickyduedate" -->" />
+    <input type="hidden" name="debt_confirmed" value="<!-- TMPL_VAR NAME="debt_confirmed" -->" />
     <input type="submit" class="deny" value="No, Don't Check Out (N)" accesskey="n" />
 </form>
 
@@ -438,7 +438,7 @@ No patron matched <span class="ex"><!-- TMPL_VAR name="message" --></span>
 <!-- /TMPL_IF -->
 
 
-<form method="post" action="/cgi-bin/koha/circ/circulation.pl" name="mainform">
+<form method="post" action="/cgi-bin/koha/circ/circulation.pl" name="mainform" id="mainform">
 <fieldset id="circ_circulation_issue">
     <!-- TMPL_IF NAME="DisplayClearScreenButton" -->
 	    <input type=button value="Clear Screen" onClick="window.location = '/cgi-bin/koha/circ/circulation.pl'">
@@ -648,6 +648,9 @@ No patron matched <span class="ex"><!-- TMPL_VAR name="message" --></span>
 <div id="checkouts">
 <!--TMPL_IF NAME="issuecount"-->
     <form action="/cgi-bin/koha/reserve/renewscript.pl" method="post" class="checkboxed">
+<!-- TMPL_ELSE -->
+    <form action="/cgi-bin/koha/reserve/renewscript.pl" method="post" class="checkboxed" style="display: none">
+<!-- /TMPL_IF -->
     <input type="hidden" value="circ" name="destination" />
     <input type="hidden" name="cardnumber" value="<!-- TMPL_VAR NAME="cardnumber" -->" />
     <input type="hidden" name="borrowernumber" value="<!-- TMPL_VAR NAME="borrowernumber" -->" />
@@ -664,7 +667,7 @@ No patron matched <span class="ex"><!-- TMPL_VAR name="message" --></span>
         <th scope="col">Renew <p class="column-tool"><a href="#" id="CheckAllitems">select all</a> | <a href="#" id="CheckNoitems">none</a></p></th>
         <th scope="col">Check in <p class="column-tool"><a href="#" id="CheckAllreturns">select all</a> | <a href="#" id="CheckNoreturns">none</a></p></th>
     </tr>
-<!-- TMPL_IF NAME="todayissues" --></thead>
+</thead>
 <tfoot>
 		<tr>
             <td colspan="5" style="text-align: right; font-weight:bold;">Totals:</td>
@@ -696,7 +699,6 @@ No patron matched <span class="ex"><!-- TMPL_VAR name="message" --></span>
         </tr>
 		</tfoot>
 	<tbody>
-<!-- TMPL_IF NAME="todayissues" -->
 
     <!-- TMPL_LOOP NAME="todayissues" -->
     <!-- TMPL_IF NAME="__odd__" -->
@@ -753,7 +755,6 @@ No patron matched <span class="ex"><!-- TMPL_VAR name="message" --></span>
 		<!-- /TMPL_IF -->
     </tr>
     <!-- /TMPL_LOOP --> <!-- /loop todayissues -->
-    <!-- /if todayissues --><!-- /TMPL_IF -->
     <tr id="todaysissues_last" class="hidden_row" colspan="7"></tr>
     </tbody>
 <!-- TMPL_IF NAME="previssues" -->
