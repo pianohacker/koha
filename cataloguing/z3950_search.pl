@@ -201,6 +201,9 @@ warn "query ".$query  if $DEBUG;
         last if $event == ZOOM::Event::ZEND;
     }
 
+    my $edition_empty = 1;
+    my $lccn_empty = 1;
+
     if ( $k != 0 ) {
         $k--;
         warn $serverhost[$k] if $DEBUG;
@@ -238,9 +241,13 @@ warn "query ".$query  if $DEBUG;
                             $imported,      $breedingid
                           )
                           = ImportBreeding( $marcdata, 2, $serverhost[$k], $encoding[$k], $random, 'z3950' );
+
+                        $lccn_empty = 0 if ( $oldbiblio->{lccn} );
+                        $edition_empty = 0 if ( $oldbiblio->{editionstatement} );
+
                         my %row_data;
                         $row_data{server}       = $servername[$k];
-                        $row_data{isbn}         = $oldbiblio->{isbn};
+                        $row_data{isbn}         = [ map( +{ value => $_ }, split( /\|/, $oldbiblio->{isbn} ) ) ];
                         $row_data{lccn}         = $oldbiblio->{lccn};
                         $row_data{title}        = $oldbiblio->{title};
                         $row_data{author}       = $oldbiblio->{author};
@@ -260,6 +267,9 @@ warn "query ".$query  if $DEBUG;
     $numberpending = $nremaining - 1;
     $template->param(
         breeding_loop => \@breeding_loop,
+        lccn_empty    => $lccn_empty,
+        edition_empty => $edition_empty,
+        column_backshift => ($lccn_empty ? 1 : 0) + ($edition_empty ? 1 : 0) + 0,
         server        => $servername[$k],
         numberpending => $numberpending,
         biblionumber  => $biblionumber,
