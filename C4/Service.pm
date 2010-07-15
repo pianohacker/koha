@@ -53,7 +53,7 @@ BEGIN {
     $debug = $ENV{DEBUG} || 0;
 }
 
-our ( $query, $cookie );
+our ( $query, $_cookie );
 
 =head1 METHODS
 
@@ -66,7 +66,7 @@ Initialize the service and check for the permissions in C<%needed_flags>.
 Also, check that the user is authorized and has a current session, and return an
 'auth' error if not.
 
-init() returns a C<CGI> object and a C<C4::Output::JSONStream>. The latter can
+init() returns a C<CGI> object, and a C<C4::Output::JSONStream>. The latter can
 be used for both flat scripts and those that use dispatch(), and should be
 passed to C<return_success()>.
 
@@ -77,9 +77,10 @@ sub init {
 
     our $query = new CGI;
 
-    my ( $status, $cookie_, $sessionID ) = check_api_auth( $query, \%needed_flags );
-
-    our $cookie = $cookie_; # I have no desire to offend the Perl scoping gods
+    my ( $status, $sessionID );
+    our $_cookie;
+    ( $status, $_cookie, $sessionID ) = check_api_auth( $query, \%needed_flags );
+    $_cookie = { CGI::Cookie->parse($_cookie) };
 
     $class->return_error( 'auth', $status ) if ( $status ne 'ok' );
 
@@ -110,10 +111,10 @@ sub return_error {
 
     my $response = new C4::Output::JSONStream;
 
-    $response->param( message => $error ) if ( $error );
     $response->param( type => $type, %flags );
+    $response->param( message => $error ) if ( $error );
 
-    output_with_http_headers $query, $cookie, $response->output, 'json', '400 Bad Request';
+    output_with_http_headers $query, $_cookie, $response->output, 'json', '400 Bad Request';
     exit;
 }
 
@@ -150,7 +151,7 @@ sub return_multi {
 
         foreach my $response ( @$responses ) {
             if ( ref( $response ) eq 'ARRAY' ) {
-                my ($type, $error, @error_flags) = @$response;
+                my ( $type, $error, @error_flags ) = @$response;
 
                 push @responses_formatted, { is_error => JSON::true, type => $type, message => $error, @error_flags };
             } else {
@@ -159,7 +160,7 @@ sub return_multi {
         }
 
         $response->param( 'multi' => JSON::true, responses => \@responses_formatted, @flags );
-        output_with_http_headers $query, $cookie, $response->output, 'json', '207 Multi-Status';
+        output_with_http_headers $query, $_cookie, $response->output, 'json', '207 Multi-Status';
     }
 
     exit;
@@ -177,7 +178,7 @@ exit with HTTP status 200.
 sub return_success {
     my ( $class, $response ) = @_;
 
-    output_with_http_headers $query, $cookie, $response->output, 'json';
+    output_with_http_headers $query, $_cookie, $response->output, 'json';
 }
 
 =head2 require_params
@@ -187,7 +188,7 @@ sub return_success {
 Check that each of of the parameters specified in @params was sent in the
 request, then return their values in that order.
 
-If a required parameter is not found, send a 'param' error to the browser.
+If a required parameter is not found, send an 'input.missing' error to the browser.
 
 =cut
 
@@ -197,7 +198,7 @@ sub require_params {
     my @values;
 
     for my $param ( @params ) {
-        $class->return_error( 'params', "Missing '$param'" ) if ( !defined( $query->param( $param ) ) );
+        $class->return_error( 'input', 'missing', field => $param ) if ( !defined( $query->param( $param ) ) );
         push @values, $query->param( $param );
     }
 
@@ -251,7 +252,23 @@ sub dispatch {
         return;
     }
 
-    $class->return_error( 'no_handler', '' );
+    $class->return_error( 'no_handler' );
+}
+
+=head2 cookie
+
+=over 4
+
+my $session_id = C4::Service->cookie->{'CGISESSID'}->value;
+
+=back
+
+Returns the cookie as parsed by C<CGI::Cookie->parse>.
+
+=cut
+
+sub cookie {
+    return $C4::Service::_cookie;
 }
 
 1;
