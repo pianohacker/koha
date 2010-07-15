@@ -126,6 +126,7 @@ BEGIN {
       &TransformHtmlToMarc2
       &TransformHtmlToMarc
       &TransformHtmlToXml
+      &TransformTextToMarc
       &PrepareItemrecordDisplay
       &GetNoZebraIndexes
     );
@@ -2063,6 +2064,258 @@ sub TransformHtmlToMarc {
 
     $record->append_fields(@fields);
     return $record;
+}
+
+=item TransformTextToMarc
+
+	$record = TransformTextToMarc($text[, existing_record => $existing_record, debug => $debug]);
+
+Parses a textual representation of MARC data into a MARC::Record. If an error
+occurs, will die(); this can be caught with eval { ... } if ($@) { ... }
+
+$text should be a series of lines with the following format:
+
+Control fields: 005 20080303040352.1
+Data fields: 245 10 $a The $1,000,000 problem / $c Robert Biggs.
+
+Indicators are optional. Subfields are delimited by | or $, and both of these
+characters are allowed in subfield contents as long as they are not followed by
+a number/digit and a space.
+
+If $existing_record is defined as a MARC::Record, TransformTextToMarc will place
+parsed fields into it and return it, rather than creating a new MARC::Record.
+
+If $debug is true, then the parser will output very verbose debugging
+information to stdout.
+
+=cut
+
+sub TransformTextToMarc {
+	# A non-deterministic-finite-state-machine based parser for a textual MARC
+	# format.
+	#
+	# Allowable contents of tag numbers, indicators and subfield codes are
+	# based on the MARCXML standard.
+	#
+	# While this is a mostly conventional FSM, it has two major peculiarities:
+	# * A buffer, separate from the current character, that is manually added
+	#   to by each state.
+	# * Two methods of transitioning between states; jumping, which preserves
+	#   the buffer, and switching, which does not.
+
+	our ($text, %options) = @_;
+
+	%options = ((
+		existing_record => MARC::Record->new(),
+		debug => 0,
+		strip_whitespace => 1,
+	), %options);
+
+	my $record = $options{'existing_record'};
+
+	$text =~ s/(\r\n)|\r/\n/g;
+
+	our $state = 'start';
+	our $last_state = '';
+	our $char = '';
+	our $line = 1;
+
+	our $field = undef;
+	our $buffer = '';
+	our $tag = '';
+	our $indicator = '';
+	our $subfield_code = '';
+
+	my %states = (
+		start => sub {
+			# Start of line. All buffers are empty.
+			if ($char =~ /[0-9]/) {
+				$buffer .= $char;
+				jump_state('tag_id');
+			} elsif ($char ne "\n") {
+				error("expected MARC tag number at start of line, got '$char'");
+			}
+		},
+		tag_id => sub {
+			# Jumped to from start, so buffer has first character of tag
+			# Allows letters in second and third digits of tag number
+			if (length($buffer) < 3) {
+				if ($char =~ /[0-9a-zA-Z]/) {
+					$buffer .= $char;
+				} else {
+					error("expected digit or letter, got '$char' in tag number");
+				}
+			} elsif ($char eq ' ') {
+				$tag = $buffer;
+				if ($tag =~ /^00/) {
+					set_state('control_field_content');
+				} else {
+					set_state('indicator');
+				}
+			} else {
+				error("expected whitespace after tag number, got '$char'");
+			}
+		},
+		indicator => sub {
+			# Parses optional indicator, composed of digits or lowercase letters
+			# Will consume leading $ or | of subfield if no indicator; otherwise
+			# expecting_subfield will do so
+			if (length($buffer) == 0) {
+				if ($char =~ /[\$\|]/) {
+					$indicator = '  ';
+					set_state('expecting_subfield_code');
+				} elsif ($char =~ /[0-9a-z_ ]/) {
+					$buffer .= $char;
+				} else {
+					error("expected either subfield or indicator after tag number, got '$char'");
+				}
+			} elsif (length($buffer) < 2) {
+				if ($char =~ /[0-9a-z_ ]/) {
+					$buffer .= $char;
+				} else {
+					error("expected digit, letter or blank in indicator, got '$char'");
+				}
+			} elsif ($char eq ' ') {
+				$indicator = $buffer;
+				$indicator =~ s/_/ /g;
+				set_state('expecting_subfield');
+			} else {
+				error("expected space after indicator, got '$char'");
+			}
+		},
+		expecting_subfield => sub {
+			if ($char =~ /[\$\|]/) {
+				set_state('expecting_subfield_code');
+			} else {
+				error("expected \$ or | after indicator or tag number, got '$char'");
+			}
+		},
+		expecting_subfield_code => sub {
+			if ($char =~ /[a-z0-9]/) {
+				$subfield_code = $char;
+				set_state('expecting_subfield_space');
+			} else {
+				error("expected number or letter in subfield code, got '$char'");
+			}
+		},
+		expecting_subfield_space => sub {
+			if ($char eq ' ') {
+				set_state('subfield_content');
+			} else {
+				error("expected space after subfield code, got '$char'");
+			}
+		},
+		control_field_content => sub {
+			if ($char eq "\n") {
+				if ($tag eq '000') {
+					$record->leader($buffer);
+				} else {
+					$record->append_fields(MARC::Field->new($tag, $buffer));
+				}
+				$tag = '';
+				set_state('start');
+			} else {
+				$buffer .= $char;
+			}
+		},
+		subfield_content => sub {
+			# Handles both additional subfields and inserting last subfield
+			if ($char =~ /[\$\|]/) {
+				$buffer .= $char;
+				jump_state('subfield_code');
+			} elsif ($char eq "\n") {
+				$buffer =~ s/(^\s+|\s+$)//g if ($options{'strip_whitespace'});
+				if ($field) {
+					$field->add_subfields($subfield_code, $buffer);
+				} else {
+					$field = MARC::Field->new($tag, substr($indicator, 0, 1), substr($indicator, 1), $subfield_code, $buffer);
+				}
+				$record->append_fields($field);
+
+				undef $field;
+				$tag = '';
+				$line++;
+
+				set_state('start');
+			} else {
+				$buffer .= $char;
+			}
+		},
+		# subfield_code and subfield_space both jump to subfield_content if
+		# they do not find the expected format, allowing strings like
+		# '245 $a The meaning of the $ sign' and '020 $a ... $c $10.00' to
+		# parse correctly
+		subfield_code => sub {
+			$buffer .= $char;
+
+			if ($char =~ /[a-z0-9]/) {
+				jump_state('subfield_space');
+			} elsif ($char eq "\n") {
+				error("Unexpected newline in subfield code");
+			} else {
+				jump_state('subfield_content');
+			}
+		},
+		subfield_space => sub {
+			# This has to do some manipulation of the buffer to ensure that the
+			# ending '$[a-z0-9] ' does not get inserted into the subfield
+			# contents
+			if ($char eq ' ') {
+				my $contents = substr($buffer, 0, -3);
+				$contents =~ s/(^\s+|\s+$)//g if ($options{'strip_whitespace'});
+				if ($field) {
+					$field->add_subfields($subfield_code, $contents);
+				} else {
+					$field = MARC::Field->new($tag, substr($indicator, 0, 1), substr($indicator, 1), $subfield_code, $contents);
+				}
+
+				$subfield_code = substr($buffer, -1);
+				set_state('subfield_content');
+			} else {
+				$buffer .= $char;
+				jump_state('subfield_content');
+			}
+		}
+	);
+
+	sub set_state {
+		my $new_state = shift;
+
+		print STDERR "$state -> $new_state (buffer was '$buffer'[" . length($buffer) . "])\n" if ($options{'debug'});
+
+		$buffer = '';
+		$last_state = $state;
+		$state = $new_state;
+	}
+
+	sub jump_state {
+		my $new_state = shift;
+
+		print STDERR "$state -- $new_state (buffer is '$buffer'[" . length($buffer) . "])\n" if ($options{'debug'});
+
+		$last_state = $state;
+		$state = $new_state;
+	}
+
+	sub error {
+		my $text = shift;
+		$text =~ s/\n/newline/gm;
+
+		die "Error on line $line: $text\n";
+	}
+
+	for $char (split '', $text) {
+		print STDERR "running $state with " . ($char eq "\n" ? "line-break" : "'$char'") . " and buffer '$buffer' (" . length($buffer) . " chars)\n" if ($options{'debug'} >= 2);
+		$states{$state}->();
+	}
+
+	if ($char ne "\n") {
+		print STDERR "running $state at end\n" if ($options{'debug'});
+		$char = "\n";
+		$states{$state}->();
+	}
+
+	return $record;
 }
 
 # cache inverted MARC field map
