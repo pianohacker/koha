@@ -63,6 +63,9 @@
 <script type="text/javascript" src="[% yuipath %]/container/container_core-min.js"></script> 
 <script type="text/javascript" src="[% yuipath %]/menu/menu-min.js"></script> 
 
+<script type="text/javascript">
+var koha = { themelang: '<!-- TMPL_VAR NAME="themelang" -->' };
+</script>
 <!-- koha core js -->
 <script type="text/javascript" src="[% themelang %]/js/staff-global.js"></script>
 [% IF ( intranetuserjs ) %]

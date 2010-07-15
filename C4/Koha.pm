@@ -38,7 +38,7 @@ BEGIN {
 		&slashifyDate
 		&subfield_is_koha_internal_p
 		&GetPrinters &GetPrinter
-		&GetItemTypes &getitemtypeinfo
+		&GetItemTypes &GetItemTypeList &getitemtypeinfo
 		&GetCcodes
 		&GetSupportName &GetSupportList
 		&get_itemtypeinfos_of
@@ -252,6 +252,22 @@ sub GetItemTypes {
         $itemtypes{ $IT->{'itemtype'} } = $IT;
     }
     return ( \%itemtypes );
+}
+
+sub GetItemTypeList {
+	my ( $selected ) = @_;
+    my $itemtypes = GetItemTypes;
+    my @itemtypesloop;
+
+    foreach my $itemtype ( sort { $itemtypes->{$a}->{'description'} cmp $itemtypes->{$b}->{'description'} } keys( %$itemtypes ) ) {
+        push @itemtypesloop, {
+			value => $itemtype,
+            selected => ( $itemtype eq $selected ),
+            description => $itemtypes->{$itemtype}->{'description'},
+        };
+    }
+
+	return \@itemtypesloop;
 }
 
 sub get_itemtypeinfos_of {
