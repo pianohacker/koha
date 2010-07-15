@@ -1883,3 +1883,9 @@ ul.budget_hierarchy li:last-child:after {
 ul.budget_hierarchy li:first-child:after {
     content: "";
 }
+
+#embedded_z3950 {
+	width: 100%;
+	height: 500px;
+	border: none;
+}
