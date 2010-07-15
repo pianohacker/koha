@@ -1,0 +1,120 @@
+#!/usr/bin/perl
+
+# Copyright 2009 Jesse Weaver
+#
+# This file is part of Koha.
+#
+# Koha is free software; you can redistribute it and/or modify it under the
+# terms of the GNU General Public License as published by the Free Software
+# Foundation; either version 2 of the License, or (at your option) any later
+# version.
+#
+# Koha is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
+# A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along with
+# Koha; if not, write to the Free Software Foundation, Inc., 59 Temple Place,
+# Suite 330, Boston, MA  02111-1307 USA
+
+use strict;
+use warnings;
+
+use CGI::Cookie;
+use C4::Service;
+use C4::Dates;
+use C4::Inventory;
+use C4::Auth;
+use C4::UploadedFile;
+use C4::Items;
+
+our ( $cgi, $response ) = C4::Service->init( tools => 'inventory' );
+
+sub _quickrender {
+    my ( $name, $data, %args ) = @_;
+
+    my ( $template ) = get_template_and_user( {
+        template_name => "tools/inventory/$name.tmpl",
+        type => 'intranet',
+        query => $cgi,
+        flagsrequired => { tools => 'inventory' },
+    } );
+    $template->param( $name => $data, %args );
+    my $output = $template->output();
+    $output =~ s/(^\s+|\s+$)//g;
+    return $output;
+}
+
+sub get_inventory {
+    my $file_id = $cgi->param( 'uploadedfileid' );
+    my $list = $cgi->param( 'list' );
+    my @branchcodes = $cgi->param( 'branchcode' );
+    my @itemtypes = $cgi->param( 'itemtype' );
+    my @locations = $cgi->param( 'location' );
+    my @collections = $cgi->param( 'collection' );
+    my $mincallnumber = $cgi->param( 'mincallnumber' );
+    my $maxcallnumber = $cgi->param( 'maxcallnumber' );
+    my $datelastseen = $cgi->param( 'datelastseen' );
+    my $render_as_html = $cgi->param( 'render_as_html' );
+
+    my %args;
+
+    if ( $list ) {
+        %args = ( items => GetInventoryListItems( $list ) );
+
+        C4::Service->return_error( 'input', 'not_found', field => 'list' ) unless ( $args{'items'} );
+    } else {
+        my $sessionID = C4::Service->cookie->{'CGISESSID'}->value;
+        my $uploaded_file = C4::UploadedFile->fetch($sessionID, $file_id);
+        C4::Service->return_error( 'input', 'not_found', field => 'uploadedfileid' ) unless ( $uploaded_file->fh() );
+        %args = ( barcodes_file => $uploaded_file->fh() );
+    }
+
+    my ( $nonexistent, $missing, $erroneous ) = CheckInventory(
+        branchcode => \@branchcodes,
+        itemtype => \@itemtypes,
+        location => \@locations,
+        collection => \@collections,
+        mincallnumber => $mincallnumber,
+        maxcallnumber => $maxcallnumber,
+        datelastseen => $datelastseen,
+        %args
+    );
+
+    if ( $render_as_html ) {
+        $response->param(
+            nonexistent => _quickrender( nonexistent => $nonexistent ),
+            missing => _quickrender( missing => $missing ),
+            erroneous => _quickrender( erroneous => $erroneous ),
+        );
+    } else {
+        $response->param(
+            nonexistent => $nonexistent,
+            missing => $missing,
+            erroneous => $erroneous,
+        );
+    }
+
+    C4::Service->return_success( $response );
+}
+
+sub mark_as_lost {
+    # This should be replaced with a more properly RESTful service at some future date.
+    my @items = $cgi->param( 'itemnumber' );
+    my $lostvalue = $cgi->param( 'lostvalue' );
+
+    foreach my $itemnumber ( @items ) {
+        ModItem( { itemlost => $lostvalue }, undef, $itemnumber );
+    }
+
+    C4::Service->return_success( $response );
+}
+
+sub create_list {
+}
+
+C4::Service->dispatch(
+    [ 'GET /', [], \&get_inventory ],
+    [ 'POST /', [ 'itemnumber', 'lostvalue' ], \&mark_as_lost ],
+    [ 'POST /lists/', [ 'uploadedfileid', 'name' ], \&create_list ],
+);
