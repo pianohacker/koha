@@ -111,6 +111,8 @@
             Error: <span class="error">[% error %]</span></div>
         [% END %]
     [% END %]
+    <iframe src="/cgi-bin/koha/cataloguing/z3950_search.pl" id="embedded_z3950">
+    </iframe>
 [% END %]
 
 [% IF ( query ) %]
