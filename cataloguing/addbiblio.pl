@@ -820,7 +820,7 @@ AND (authtypecode IS NOT NULL AND authtypecode<>\"\")|);
 
 # ========================
 #          MAIN
-#=========================
+#========================
 my $input = new CGI;
 my $error = $input->param('error');
 my $biblionumber  = $input->param('biblionumber'); # if biblionumber exists, it's a modif, not a new biblio.
@@ -833,6 +833,10 @@ my $redirect      = $input->param('redirect');
 my $dbh           = C4::Context->dbh;
 
 my $userflags = ($frameworkcode eq 'FA') ? "fast_cataloging" : "edit_catalogue";
+if (C4::Context->preference('MARCEditor') eq 'text') {
+	print $input->redirect('/cgi-bin/koha/cataloguing/addbiblio-text.pl?' . $ENV{'QUERY_STRING'});
+	exit;
+}
 
 $frameworkcode = &GetFrameworkCode($biblionumber)
   if ( $biblionumber and not($frameworkcode) );

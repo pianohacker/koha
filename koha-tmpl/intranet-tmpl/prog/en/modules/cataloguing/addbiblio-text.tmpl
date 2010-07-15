@@ -1,0 +1,153 @@
+<!-- TMPL_INCLUDE NAME="doc-head-open.inc" -->
+<title>Koha &rsaquo; Cataloging &rsaquo; <!-- TMPL_IF NAME="biblionumber" -->Editing <!-- TMPL_VAR NAME="title" escape="html" --> (Record Number <!-- TMPL_VAR name="biblionumber" -->)<!-- TMPL_ELSE -->Add MARC Record<!-- /TMPL_IF --></title>
+<!-- TMPL_INCLUDE NAME="doc-head-close.inc" -->
+<script type="text/javascript" src="<!-- TMPL_VAR name="themelang" -->/lib/yui/plugins/bubbling-min.js"></script>
+<style type="text/css">
+	.controls {clear: both}
+	#scratchpad {float: right; color: #888; display: none; width: 47%}
+	#record {float: left; width: 47%}
+	#close-scratchpad {display: none}
+</style>
+</head>
+<body>
+<div id="yui-cms-loading">
+      <div id="yui-cms-float">
+          Loading, please wait...
+      </div>
+  </div>
+<script type="text/javascript" src="<!-- TMPL_VAR name="themelang" -->/lib/yui/plugins/loading-min.js"></script>
+<script type="text/javascript">
+//<![CDATA[
+(function() {
+	// configuring the loading mask
+	YAHOO.widget.Loading.config({
+		opacity: 0.8
+	});
+})();
+//]]>
+</script>
+<!-- TMPL_INCLUDE NAME="header.inc" -->
+<div id="breadcrumbs"><a href="/cgi-bin/koha/mainpage.pl">Home</a> &rsaquo; <a href="/cgi-bin/koha/cataloguing/addbooks.pl">Cataloging</a>  &rsaquo; <!-- TMPL_IF NAME="biblionumber" -->Editing <em><!-- TMPL_VAR NAME="title" escape="html" --></em> (Record Number <!-- TMPL_VAR name="biblionumber" -->)<!-- TMPL_ELSE -->Add MARC Record<!-- /TMPL_IF --></div>
+
+<div id="doc" class="yui-t7">
+
+<div id="bd">
+        <div id="yui-main">
+        <div class="yui-g">
+
+
+
+<h1><!-- TMPL_IF NAME="biblionumber" -->Editing <em><!-- TMPL_VAR NAME="title" escape="html" --></em> (Record Number <!-- TMPL_VAR name="biblionumber" -->)</h1><!-- TMPL_ELSE -->Add MARC Record</h1><!-- /TMPL_IF -->
+
+<!-- TMPL_UNLESS name="number" -->
+    <!-- show duplicate warning on tab 0 only -->
+        <!-- TMPL_IF name="duplicatebiblionumber" -->
+                    <div class="dialog alert">
+                        <h4>Duplicate Record suspected</h4>
+                        <p>Is this a duplicate of <a href="/cgi-bin/koha/catalogue/MARCdetail.pl?biblionumber=<!-- TMPL_VAR name="duplicatebiblionumber" -->" onclick="openWindow('../MARCdetail.pl?biblionumber=<!-- TMPL_VAR name="duplicatebiblionumber" -->&amp;popup=1', 'Duplicate biblio'; return false;)"><!-- TMPL_VAR name="duplicatetitle" --></a>?</p>
+                        <form action="/cgi-bin/koha/cataloguing/additem.pl" method="get">
+                            <input type="hidden" name="biblionumber" value="<!-- TMPL_VAR name="duplicatebiblionumber" -->" />
+                            <input type="submit" class="edit" value="Yes: Edit existing items" />
+                        </form>
+                        <form action="/cgi-bin/koha/cataloguing/addbiblio-text.pl" method="get">
+                            <input type="submit" class="save" onclick="addbiblio.not_duplicate(); return false;" value="No: Save as New Record" />
+                        </form>
+                    </div>
+        <!-- /TMPL_IF -->
+    <!-- /TMPL_UNLESS -->
+
+<!--TMPL_IF Name="done"-->
+    <script type="text/javascript">
+        opener.document.forms['f'].biblionumber.value=<!--TMPL_VAR Name="biblionumber"-->;
+        opener.document.forms['f'].title.value='<!--TMPL_VAR Name="title" ESCAPE="HTML"-->';
+        window.close();
+    </script>
+<!--TMPL_ELSE-->
+    <form method="post" name="f" id="f" action="/cgi-bin/koha/cataloguing/addbiblio-text.pl" onsubmit="addbiblio.submit(); return false">
+	<input type="hidden" value="0" id="confirm_not_duplicate" name="confirm_not_duplicate" />
+<!-- /TMPL_IF -->
+	
+<div id="toolbar">
+
+<script type="text/javascript">
+	//<![CDATA[
+
+	// prepare DOM for YUI Toolbar
+
+	 $(document).ready(function() {
+		$("#z3950searchc").empty();
+	    yuiToolbar();
+	 });
+
+	// YUI Toolbar Functions
+
+	function yuiToolbar() {
+	    new YAHOO.widget.Button("addbiblio");
+		new YAHOO.widget.Button({
+                                            id: "z3950search", 
+                                            type: "button", 
+                                            label: _("z39.50 Search"), 
+                                            container: "z3950searchc",
+											onclick: {fn:function(){addbiblio.z3950_search()}}
+                                        });
+	}
+
+	//]]>
+	</script>
+
+		<ul class="toolbar">
+			<li><input id="addbiblio" type="submit" value="Save" /></li>
+			<li id="z3950searchc"><input type="button" id="z3950search" value="z39.50 Search" onclick="PopupZ3950(); return false;" /></li>
+			<li id="changeframework"><label for="Frameworks">Change framework: </label>
+			<select name="Frameworks" id="Frameworks" onchange="Changefwk(this);">
+			                <option value="">Default</option>                
+							<!-- TMPL_LOOP NAME="frameworkcodeloop" -->                                             
+                                <option value="<!-- TMPL_VAR NAME="value"-->" <!-- TMPL_VAR NAME="selected" -->>
+					             <!-- TMPL_VAR NAME="frameworktext" -->                                      
+                                 </option>                          
+					        <!-- /TMPL_LOOP -->
+			</select> 
+<input type="hidden" name="op" value="addbiblio" /></li>
+		</ul>
+</div>
+
+<!--TMPL_IF Name="popup"-->
+        <input type="hidden" name="mode" value="popup" />
+<!--/TMPL_IF-->
+        <input type="hidden" name="frameworkcode" value="<!-- TMPL_VAR NAME="frameworkcode" -->" />
+        <input type="hidden" name="biblionumber" value="<!-- TMPL_VAR NAME="biblionumber" -->" />
+        <input type="hidden" name="breedingid" value="<!-- TMPL_VAR NAME="breedingid" -->" />
+		<p>
+		<label for="itemtypes">Insert Item Type Code for: </label>
+		<select id="itemtypes">
+			<!-- TMPL_LOOP NAME="itemtypes" -->
+			<option value="<!-- TMPL_VAR NAME="value" -->"><!-- TMPL_VAR NAME="description" --></option>
+			<!-- /TMPL_LOOP -->
+		</select>
+		<button id="insert-itemtype">Insert</button>
+		</p>
+
+		<textarea name="record" id="record" rows="20"><!-- TMPL_VAR NAME="BIG_LOOP" --></textarea>	
+		<!-- TMPL_LOOP NAME="HIDDEN_LOOP" -->
+				<input type="hidden" name="tag_<!-- TMPL_VAR NAME="tag" -->_indicator1_<!-- TMPL_VAR NAME='index'--><!-- TMPL_VAR name="random" -->" value="" />
+				<input type="hidden" name="tag_<!-- TMPL_VAR NAME="tag" -->_indicator2_<!-- TMPL_VAR NAME='index'--><!-- TMPL_VAR name="random" -->" value="" />
+				<input type="hidden" name="tag_<!-- TMPL_VAR NAME='tag'-->_code_<!--  TMPL_VAR NAME='subfield'-->_<!-- TMPL_VAR NAME='index'-->_<!-- TMPL_VAR NAME='index_subfield'-->" value="<!-- TMPL_VAR NAME="subfield" -->" />
+				<input type="hidden" name="tag_<!-- TMPL_VAR NAME='tag'-->_subfield_<!--  TMPL_VAR NAME='subfield'-->_<!-- TMPL_VAR NAME='index'-->_<!-- TMPL_VAR NAME='index_subfield'-->" value="<!-- TMPL_VAR NAME="subfield_value" -->" />
+		<!-- /TMPL_LOOP -->
+
+</form>
+
+</div>
+</div>
+
+<script type="text/javascript" src="<!-- TMPL_VAR NAME="themelang" -->/lib/codemirror/js/codemirror.js"></script>
+<script type="text/javascript" src="<!-- TMPL_VAR name="themelang" -->/js/marc.js"></script>
+<script type="text/javascript" src="<!-- TMPL_VAR name="themelang" -->/js/pages/addbiblio-text.js"></script>
+<script type="text/javascript">
+	<!--
+	addbiblio.biblionumber = <!-- TMPL_VAR NAME="biblionumber" DEFAULT="0" -->;
+	// -->
+</script>
+<script type="text/javascript" src="/cgi-bin/koha/cataloguing/framework-jsonp.pl?prepend=addbiblio.mandatory%3D&amp;info=mandatory"></script>
+
+<!-- TMPL_INCLUDE NAME="intranet-bottom.inc" -->

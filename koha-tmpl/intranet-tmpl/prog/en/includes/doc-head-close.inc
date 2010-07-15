@@ -72,6 +72,9 @@
 <script type="text/javascript" src="<!-- TMPL_VAR NAME="yuipath" -->/container/container_core-min.js"></script> 
 <script type="text/javascript" src="<!-- TMPL_VAR NAME="yuipath" -->/menu/menu-min.js"></script> 
 
+<script type="text/javascript">
+var koha = { themelang: '<!-- TMPL_VAR NAME="themelang" -->' };
+</script>
 <!-- koha core js -->
 <script type="text/javascript" src="<!-- TMPL_VAR name="themelang" -->/js/staff-global.js"></script>
 <!-- TMPL_IF NAME="intranetuserjs" -->
