@@ -57,10 +57,10 @@ my $cardnumber = $input->param('cardnumber');
 #start the page and read in includes
 my $data;
 if ( $cardnumber ) {
-    $data = GetMember( $cardnumber, 'cardnumber');
+    $data = GetMember( cardnumber => $cardnumber );
     $borrowernumber = $data->{borrowernumber} if ( $data );
 } else {
-    $data = GetMember( $borrowernumber ,'borrowernumber');
+    $data = GetMember( borrowernumber => $borrowernumber );
 }
 
 my $branch=C4::Context->userenv->{'branch'};
