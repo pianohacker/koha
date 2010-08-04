@@ -77,6 +77,7 @@ var koha = { themelang: '<!-- TMPL_VAR NAME="themelang" -->' };
 </script>
 <!-- koha core js -->
 <script type="text/javascript" src="<!-- TMPL_VAR name="themelang" -->/js/staff-global.js"></script>
+<!-- TMPL_IF NAME="ColorizeCategories" --><script type="text/javascript" src="<!-- TMPL_VAR name="themelang" -->/js/colorize-categories.js"></script><!-- /TMPL_IF -->
 <!-- TMPL_IF NAME="intranetuserjs" -->
     <script type="text/javascript">
     //<![CDATA[

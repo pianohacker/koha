@@ -369,6 +369,7 @@ sub get_template_and_user {
             virtualshelves              => C4::Context->preference("virtualshelves"),
             StaffSerialIssueDisplayCount => C4::Context->preference("StaffSerialIssueDisplayCount"),
             NoZebra                     => C4::Context->preference('NoZebra'),
+            ColorizeCategories          => C4::Context->preference("ColorizeCategories"),
         );
     }
     else {
@@ -943,6 +944,7 @@ sub checkauth {
         TemplateEncoding   => C4::Context->preference("TemplateEncoding"),
         IndependantBranches=> C4::Context->preference("IndependantBranches"),
         AutoLocation       => C4::Context->preference("AutoLocation"),
+        ColorizeCategories => C4::Context->preference("ColorizeCategories"),
 		wrongip            => $info{'wrongip'}
     );
     $template->param( loginprompt => 1 ) unless $info{'nopermission'};

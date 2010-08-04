@@ -49,7 +49,11 @@
             <li> <span class="empty">No email stored.</span>    </li>
         <!-- /TMPL_IF -->
     <!-- /TMPL_IF -->
+    <!-- TMPL_IF NAME="cathashinfo" -->
+    <li class="colorized-category" data-cathashinfo="<!-- TMPL_VAR NAME="cathashinfo" -->">Category: <!-- TMPL_VAR NAME="categoryname" --> (<!-- TMPL_VAR NAME="categorycode" -->)</li>
+    <!-- TMPL_ELSE -->
     <li>Category: <!-- TMPL_VAR NAME="categoryname" --> (<!-- TMPL_VAR NAME="categorycode" -->)</li>
+    <!-- /TMPL_IF -->
     <li>Home Library: <!-- TMPL_IF NAME="branchname" --><!-- TMPL_VAR NAME="branchname" --><!-- TMPL_ELSE --><!-- TMPL_VAR NAME="branch" --><!-- /TMPL_IF --></li>
 </ul></div>
 <div id="menu">
