@@ -691,7 +691,7 @@ sub AddBill($;$) {
 	our $dbh = C4::Context->dbh;
 	my @letter;
 
-	my $borrower = C4::Members::GetMember($borrowernumber);
+	my $borrower = C4::Members::GetMember(borrowernumber => $borrowernumber);
 	die unless ($borrower and $borrower->{address});
 
 	push @letter, 'As of today, ' . $todaysdate->output() . ', you have the following fines on your account:', '';
