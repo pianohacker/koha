@@ -133,6 +133,7 @@ my $category_type = $data->{'category_type'};
 
 # in template <TMPL_IF name="I"> => instutitional (A for Adult& C for children) 
 $template->param( $data->{'categorycode'} => 1 ); 
+$template->param( cathashinfo => GetCategoryHashInfo( $data->{'categorycode'} ) ) if ( C4::Context->preference( 'ColorizeCategories' ) );
 
 $debug and printf STDERR "dates (enrolled,expiry,birthdate) raw: (%s, %s, %s)\n", map {$data->{$_}} qw(dateenrolled dateexpiry dateofbirth);
 foreach (qw(dateenrolled dateexpiry dateofbirth)) {

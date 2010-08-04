@@ -397,6 +397,7 @@ if ($borrowernumber) {
         WaitingReserveLoop  => \@WaitingReserveLoop,
     );
     $template->param( adultborrower => 1 ) if ( $borrower->{'category_type'} eq 'A' );
+    $template->param( cathashinfo => GetCategoryHashInfo( $borrower->{'categorycode'} ) ) if ( C4::Context->preference( 'ColorizeCategories' ) );
 }
 
 # make the issued books table.

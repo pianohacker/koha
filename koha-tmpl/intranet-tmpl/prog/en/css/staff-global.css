@@ -2031,4 +2031,10 @@ fieldset.rows+h3 {clear:both;padding-top:.5em;}
 	border : 1px solid #EEE;
 	padding : 0.3em 0.4em;
 }
-</style>
+
+.patroninfo li.colorized-category {
+    padding: 2px;
+    font-size: 1.05em;
+    margin-top: 2px;
+    margin-bottom: 2px;
+}

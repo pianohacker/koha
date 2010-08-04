@@ -305,7 +305,13 @@ Confirm Deletion of Category [% categorycode |html %][% END %]</legend>
 		[% ELSE %]
 			<tr>
 		[% END %]
-                        <td>[% loo.categorycode |html %]</td>
+                        [% IF ( cathashinfo ) %]
+                        <td class="colorized-category" data-cathashinfo="[% cathashinfo %]">
+                        [% ELSE %]
+                        <td>
+                        [% END %]
+                            [% loo.categorycode |html %]
+                        </td>
                         <td>
                             <a href="[% loo.script_name %]?op=add_form&amp;categorycode=[% loo.categorycode |url %]">[% loo.description |html %]</a>
                         </td>

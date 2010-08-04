@@ -74,6 +74,7 @@
 
 <!-- koha core js -->
 <script type="text/javascript" src="[% themelang %]/js/staff-global.js"></script>
+[% IF ( ColorizeCategories ) %]<script type="text/javascript" src="[% themelang %]/js/colorize-categories.js"></script>[% END %]
 [% IF ( intranetuserjs ) %]
     <script type="text/javascript">
     //<![CDATA[

@@ -44,6 +44,7 @@ use C4::Auth;
 use C4::Output;
 use C4::Dates;
 use C4::Form::MessagingPreferences;
+use C4::Koha qw( GetCategoryHashInfo );
 
 sub StringSearch  {
 	my ($searchstring,$type)=@_;
@@ -214,6 +215,7 @@ if ($op eq 'add_form') {
             my $brief_prefs = _get_brief_messaging_prefs($results->[$i]{'categorycode'});
             $row{messaging_prefs} = $brief_prefs if @$brief_prefs;
         }
+        $row{'cathashinfo'} = GetCategoryHashInfo( $results->[$i]{'categorycode'} ) if ( C4::Context->preference( 'ColorizeCategories' ) );
 		push @loop, \%row;
 	}
 	$template->param(loop => \@loop);

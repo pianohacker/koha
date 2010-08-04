@@ -378,6 +378,7 @@ sub get_template_and_user {
             virtualshelves              => C4::Context->preference("virtualshelves"),
             StaffSerialIssueDisplayCount => C4::Context->preference("StaffSerialIssueDisplayCount"),
             NoZebra                     => C4::Context->preference('NoZebra'),
+            ColorizeCategories          => C4::Context->preference("ColorizeCategories"),
         );
     }
     else {
@@ -975,7 +976,8 @@ sub checkauth {
         intranetuserjs     => C4::Context->preference("intranetuserjs"),
         IndependantBranches=> C4::Context->preference("IndependantBranches"),
         AutoLocation       => C4::Context->preference("AutoLocation"),
-		wrongip            => $info{'wrongip'},
+        ColorizeCategories => C4::Context->preference("ColorizeCategories"),
+		wrongip            => $info{'wrongip'}
     );
 
     $template->param( OpacPublic => C4::Context->preference("OpacPublic"));
