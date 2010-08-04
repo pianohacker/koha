@@ -107,23 +107,23 @@
 <thead><tr>
     <th>Due Date</th>
     <th>Patron</th>
-    <th>Library</th>
     <th>Title</th>
-    <th>Barcode</th>
     <th>Call number</th>
+    <th>Barcode</th>
 </tr></thead>
 
 <tbody>[% FOREACH overdueloo IN overdueloop %]
     <tr>
-        <td>[% overdueloo.duedate %]</td>
-        <td><a href="/cgi-bin/koha/members/moremember.pl?borrowernumber=[% overdueloo.borrowernumber %]">[% overdueloo.name %]</a>
+        <td>[% overdueloo.duedate %][% IF ( difference ) %]([% difference %][% IF ( loop.first ) %] days ago[% END %])[% END %]</td>
+        [% IF ( name ) %]
+        <td rowspan="[% rowspan %]"><a href="/cgi-bin/koha/members/moremember.pl?borrowernumber=[% overdueloo.borrowernumber %]">[% overdueloo.name %]</a>
         [% IF ( overdueloo.email ) %][<a href="mailto:[% overdueloo.email %]?subject=Overdue: [% overdueloo.title |html %]">email</a>][% END %]
         ([% IF ( overdueloo.phone ) %][% overdueloo.phone %][% ELSIF ( overdueloo.mobile ) %][% overdueloo.mobile %][% ELSIF ( overdueloo.phonepro ) %][% overdueloo.phonepro %][% END %])</td>
-        <td>[% overdueloo.branchcode %]</td>
+        [% END %]
         <td>[% INCLUDE 'biblio-default-view.inc' biblionumber = overdueloo.biblionumber %][% overdueloo.title |html %]  [% overdueloo.subtitle %]</a> [% IF ( overdueloo.author ) %], by [% overdueloo.author %][% END %]
         </td>
-		<td><a href="/cgi-bin/koha/catalogue/moredetail.pl?biblionumber=[% overdueloo.biblionumber %]&amp;itemnumber=[% overdueloo.itemnum %]#item[% overdueloo.itemnum %]">[% overdueloo.barcode %]</a></td>
 		<td>[% overdueloo.itemcallnumber %]</td>
+		<td><a href="/cgi-bin/koha/catalogue/moredetail.pl?biblionumber=[% overdueloo.biblionumber %]&amp;itemnumber=[% overdueloo.itemnum %]#item[% overdueloo.itemnum %]">[% overdueloo.barcode %]</a></td>
         </tr>
 [% END %]</tbody>
 </table>

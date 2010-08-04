@@ -4,22 +4,8 @@
 # Database Updater
 # This script checks for required updates to the database.
 
-# Parts copyright Catalyst IT 2011
-
-# Part of the Koha Library Software www.koha-community.org
-# Koha is free software; you can redistribute it and/or modify it under the
-# terms of the GNU General Public License as published by the Free Software
-# Foundation; either version 2 of the License, or (at your option) any later
-# version.
-#
-# Koha is distributed in the hope that it will be useful, but WITHOUT ANY
-# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
-# A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License along with
-# Koha; if not, write to the Free Software Foundation, Inc., 59 Temple Place,
-# Suite 330, Boston, MA  02111-1307 USA
-#
+# Part of the Koha Library Software www.koha.org
+# Licensed under the GPL.
 
 # Bugs/ToDo:
 # - Would also be a good idea to offer to do a backup at this time...
@@ -37,7 +23,6 @@ use Getopt::Long;
 # Koha modules
 use C4::Context;
 use C4::Installer;
-use C4::Dates;
 
 use MARC::Record;
 use MARC::File::XML ( BinaryEncoding => 'utf8' );
@@ -65,12 +50,12 @@ GetOptions(
 my $dbh = C4::Context->dbh;
 $|=1; # flushes output
 
+=item
 
-# Record the version we are coming from
+    Deal with virtualshelves
 
-my $original_version = C4::Context->preference("Version");
+=cut
 
-# Deal with virtualshelves
 my $DBversion = "3.00.00.001";
 if (C4::Context->preference("Version") < TransformToNum($DBversion)) {
     # update virtualshelves table to
@@ -867,7 +852,7 @@ if (C4::Context->preference("Version") < TransformToNum($DBversion)) {
     SetVersion ($DBversion);
 }
 
-$DBversion = "3.00.00.04";
+$DBversion = "3.00.00.042";
 if (C4::Context->preference("Version") < TransformToNum($DBversion)) {
     $dbh->do("ALTER TABLE aqbooksellers CHANGE name name mediumtext NOT NULL");
 	print "Upgrade to $DBversion done (disallow NULL in aqbooksellers.name; part of fix for bug 1251)\n";
@@ -2804,7 +2789,11 @@ if (C4::Context->preference("Version") < TransformToNum($DBversion)) {
 	print "Upgrade to $DBversion done ( Adding enddate to subscription)\n";
 }
 
-# Acquisitions update
+=item
+
+Acquisitions update
+
+=cut
 
 $DBversion = "3.01.00.072";
 if (C4::Context->preference("Version") < TransformToNum($DBversion)) {
@@ -2829,7 +2818,6 @@ if (C4::Context->preference("Version") < TransformToNum($DBversion)) {
 
 $DBversion = '3.01.00.073';
 if (C4::Context->preference("Version") < TransformToNum($DBversion)) {
-    $dbh->do('SET FOREIGN_KEY_CHECKS=0 ');
     $dbh->do(<<'END_SQL');
 CREATE TABLE IF NOT EXISTS `aqcontract` (
   `contractnumber` int(11) NOT NULL auto_increment,
@@ -2843,7 +2831,6 @@ CREATE TABLE IF NOT EXISTS `aqcontract` (
         REFERENCES `aqbooksellers` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;
 END_SQL
-    $dbh->do('SET FOREIGN_KEY_CHECKS=1 ');
     print "Upgrade to $DBversion done (adding aqcontract table)\n";
     SetVersion ($DBversion);
 }
@@ -2869,7 +2856,6 @@ if (C4::Context->preference("Version") < TransformToNum($DBversion)) {
 
 $DBversion = '3.01.00.076';
 if (C4::Context->preference("Version") < TransformToNum($DBversion)) {
-    $dbh->do('SET FOREIGN_KEY_CHECKS=0 ');
     $dbh->do("CREATE TABLE IF NOT EXISTS `aqbasketgroups` (
                          `id` int(11) NOT NULL auto_increment,
                          `name` varchar(50) default NULL,
@@ -2882,32 +2868,15 @@ if (C4::Context->preference("Version") < TransformToNum($DBversion)) {
     $dbh->do("ALTER TABLE aqbasket ADD COLUMN `basketgroupid` int(11)");
     $dbh->do("ALTER TABLE aqbasket ADD FOREIGN KEY (`basketgroupid`) REFERENCES `aqbasketgroups` (`id`) ON UPDATE CASCADE ON DELETE SET NULL");
     $dbh->do("INSERT INTO `systempreferences` (variable,value,explanation,options,type) VALUES ('pdfformat','pdfformat::layout2pages','Controls what script is used for printing (basketgroups)','','free')");
-    $dbh->do('SET FOREIGN_KEY_CHECKS=1 ');
     print "Upgrade to $DBversion done (adding basketgroups)\n";
     SetVersion ($DBversion);
 }
+
 $DBversion = '3.01.00.077';
 if (C4::Context->preference("Version") < TransformToNum($DBversion)) {
 
     $dbh->do("SET FOREIGN_KEY_CHECKS=0 ");
-    # create a mapping table holding the info we need to match orders to budgets
-    $dbh->do('DROP TABLE IF EXISTS fundmapping');
-    $dbh->do(
-        q|CREATE TABLE fundmapping AS
-        SELECT aqorderbreakdown.ordernumber, branchcode, bookfundid, budgetdate, entrydate
-        FROM aqorderbreakdown JOIN aqorders ON aqorderbreakdown.ordernumber = aqorders.ordernumber|);
-    # match the new type of the corresponding field
-    $dbh->do('ALTER TABLE fundmapping modify column bookfundid varchar(30)');
-    # System did not ensure budgetdate was valid historically
-    $dbh->do(q|UPDATE fundmapping SET budgetdate = entrydate WHERE budgetdate = '0000-00-00' OR budgetdate IS NULL|);
-    # We save the map in fundmapping in case you need later processing
-    $dbh->do(q|ALTER TABLE fundmapping add column aqbudgetid integer|);
-    # these can speed processing up
-    $dbh->do(q|CREATE INDEX fundmaporder ON fundmapping (ordernumber)|);
-    $dbh->do(q|CREATE INDEX fundmapid ON fundmapping (bookfundid)|);
-
     $dbh->do("DROP TABLE IF EXISTS `aqbudgetperiods` ");
-
     $dbh->do(qq|
                     CREATE TABLE `aqbudgetperiods` (
                     `budget_period_id` int(11) NOT NULL auto_increment,
@@ -3026,31 +2995,10 @@ BUDGETDROPDATES
                     ADD COLUMN `budgetgroup_id` int(11) NOT NULL,
                     ADD COLUMN  `sort1_authcat` varchar(10) default NULL,
                     ADD COLUMN  `sort2_authcat` varchar(10) default NULL" );
-                # We need to map the orders to the budgets
-                # For Historic reasons this is more complex than it should be on occasions
-                my $budg_arr = $dbh->selectall_arrayref(
-                    q|SELECT aqbudgets.budget_id, aqbudgets.budget_code, aqbudgetperiods.budget_period_startdate,
-                    aqbudgetperiods.budget_period_enddate
-                    FROM aqbudgets JOIN aqbudgetperiods ON aqbudgets.budget_period_id = aqbudgetperiods.budget_period_id
-                    ORDER BY budget_code, budget_period_startdate|, { Slice => {} });
-                # We arbitarily order on start date, this means if you have overlapping periods the order will be
-                # linked to the latest matching budget YMMV
-                my $b_sth = $dbh->prepare(
-                    'UPDATE fundmapping set aqbudgetid = ? where bookfundid =? AND budgetdate >= ? AND budgetdate <= ?');
-                for my $b ( @{$budg_arr}) {
-                    $b_sth->execute($b->{budget_id}, $b->{budget_code}, $b->{budget_period_startdate}, $b->{budget_period_enddate});
-                }
-                # move the budgetids to aqorders
-                $dbh->do(q|UPDATE aqorders, fundmapping SET aqorders.budget_id = fundmapping.aqbudgetid
-                    WHERE aqorders.ordernumber = fundmapping.ordernumber AND fundmapping.aqbudgetid IS NOT NULL|);
-                # NB fundmapping is left as an accontants trail also if you have budgetids that werent set
-                # you can decide what to do with them
 
-     $dbh->do(
-         q|UPDATE aqorders, aqbudgets SET aqorders.budgetgroup_id = aqbudgets.budget_period_id
-         WHERE aqorders.budget_id = aqbudgets.budget_id|);
                 # cannot do until aqorderbreakdown removed
 #    $dbh->do("DROP TABLE aqbookfund ");
+
 #    $dbh->do("ALTER TABLE aqorders  ADD FOREIGN KEY (`budget_id`) REFERENCES `aqbudgets` (`budget_id`) ON UPDATE CASCADE  " ); ????
     $dbh->do("SET FOREIGN_KEY_CHECKS=1 ");
 
@@ -3459,11 +3407,11 @@ if (C4::Context->preference("Version") < TransformToNum($DBversion)) {
     my $value = C4::Context->preference("XSLTResultsDisplay");
     $dbh->do(
         "INSERT INTO systempreferences (variable,value,type)
-         VALUES('OPACXSLTResultsDisplay',?,'YesNo')", {}, $value ? 1 : 0);
+         VALUES('OPACXSLTResultsDisplay',$value,'YesNo')");
     $value = C4::Context->preference("XSLTDetailsDisplay");
     $dbh->do(
         "INSERT INTO systempreferences (variable,value,type)
-         VALUES('OPACXSLTDetailsDisplay',?,'YesNo')", {}, $value ? 1 : 0);
+         VALUES('OPACXSLTDetailsDisplay',$value,'YesNo')");
     print "Upgrade done (added two new syspref: OPACXSLTResultsDisplay and OPACXSLTDetailDisplay). You may have to go in Admin > System preference to tweak XSLT related syspref both in OPAC and Search tabs.\n     ";
     SetVersion ($DBversion);
 }
@@ -3593,7 +3541,7 @@ if (C4::Context->preference("Version") < TransformToNum($DBversion)) {
 	$dbh->do("INSERT INTO systempreferences (variable,value,explanation,options,type) VALUES ('ILS-DI','0','Enable ILS-DI services. See http://your.opac.name/cgi-bin/koha/ilsdi.pl for online documentation.','','YesNo')");
 	$dbh->do("INSERT INTO systempreferences (variable,value,explanation,options,type) VALUES ('ILS-DI:AuthorizedIPs','127.0.0.1','A comma separated list of IP addresses authorized to access the web services.','','free')");
 	
-    print "Upgrade to $DBversion done (Adding ILS-DI updates and ILS-DI:AuthorizedIPs)\n";
+    print "Upgrade to $DBversion done (Adding ILS-DI updates and ILS-DI:Authorized_IPs)\n";
     SetVersion ($DBversion);
 }
 
@@ -3753,590 +3701,9 @@ if (C4::Context->preference("Version") < TransformToNum($DBversion)) {
     SetVersion ($DBversion);
 }
 
-$DBversion = '3.01.00.999';
-if (C4::Context->preference("Version") < TransformToNum($DBversion)) {
-    print "Upgrade to $DBversion done (3.2.0 release candidate)\n";
-    SetVersion ($DBversion);
-}
+=item DropAllForeignKeys($table)
 
-$DBversion = "3.02.00.000";
-if (C4::Context->preference("Version") < TransformToNum($DBversion)) {
-    my $value = $dbh->selectrow_array("SELECT value FROM systempreferences WHERE variable = 'HomeOrHoldingBranch'");
-    $dbh->do("INSERT INTO `systempreferences` (variable,value,explanation,options,type) VALUES('HomeOrHoldingBranchReturn','$value','Used by Circulation to determine which branch of an item to check checking-in items','holdingbranch|homebranch','Choice');");
-    print "Upgrade to $DBversion done (Add HomeOrHoldingBranchReturn system preference)\n";
-    SetVersion ($DBversion);
-}
-
-$DBversion = "3.02.00.001";
-if (C4::Context->preference("Version") < TransformToNum($DBversion)) {
-    $dbh->do(q{DELETE FROM systempreferences WHERE variable IN (
-                'holdCancelLength',
-                'PINESISBN',
-                'sortbynonfiling',
-                'TemplateEncoding',
-                'OPACSubscriptionDisplay',
-                'OPACDisplayExtendedSubInfo',
-                'OAI-PMH:Set',
-                'OAI-PMH:Subset',
-                'libraryAddress',
-                'kohaspsuggest',
-                'OrderPdfTemplate',
-                'marc',
-                'acquisitions',
-                'MIME')
-               }
-    );
-    print "Upgrade to $DBversion done (bug 3756: remove disused system preferences)\n";
-    SetVersion ($DBversion);
-}
-
-$DBversion = "3.02.00.002";
-if (C4::Context->preference("Version") < TransformToNum($DBversion)) {
-    $dbh->do(q{DELETE FROM systempreferences WHERE variable = 'OpacPrivacy'});
-    print "Upgrade to $DBversion done (bug 3881: remove unused OpacPrivacy system preference)\n";
-    SetVersion ($DBversion);
-}
-
-$DBversion = "3.02.00.003";
-if (C4::Context->preference("Version") < TransformToNum($DBversion)) {
-    $dbh->do(q{UPDATE systempreferences SET variable = 'ILS-DI:AuthorizedIPs' WHERE variable = 'ILS-DI:Authorized_IPs'});
-    print "Upgrade to $DBversion done (correct ILS-DI:AuthorizedIPs)\n";
-    SetVersion ($DBversion);
-}
-
-$DBversion = "3.02.00.004";
-if (C4::Context->preference("Version") < TransformToNum($DBversion)) {
-    print "Upgrade to $DBversion done (3.2.0 general release)\n";
-    SetVersion ($DBversion);
-}
-
-# This is the point where 3.2.x and master diverged, we can use $original_version to make sure we don't
-# apply updates that have already been done
-
-$DBversion = "3.03.00.001";
-if (C4::Context->preference("Version") < TransformToNum($DBversion) && $original_version < TransformToNum("3.02.00.005")) {
-    $dbh->do("DELETE FROM subscriptionroutinglist WHERE borrowernumber IS NULL;");
-    $dbh->do("ALTER TABLE subscriptionroutinglist MODIFY COLUMN `borrowernumber` int(11) NOT NULL;");
-    $dbh->do("DELETE FROM subscriptionroutinglist WHERE subscriptionid IS NULL;");
-    $dbh->do("ALTER TABLE subscriptionroutinglist MODIFY COLUMN `subscriptionid` int(11) NOT NULL;");
-    $dbh->do("CREATE TEMPORARY TABLE del_subscriptionroutinglist 
-              SELECT s1.routingid FROM subscriptionroutinglist s1
-              WHERE EXISTS (SELECT * FROM subscriptionroutinglist s2
-                            WHERE s2.borrowernumber = s1.borrowernumber
-                            AND   s2.subscriptionid = s1.subscriptionid 
-                            AND   s2.routingid < s1.routingid);");
-    $dbh->do("DELETE FROM subscriptionroutinglist
-              WHERE routingid IN (SELECT routingid FROM del_subscriptionroutinglist);");
-    $dbh->do("ALTER TABLE subscriptionroutinglist ADD UNIQUE (subscriptionid, borrowernumber);");
-    $dbh->do("ALTER TABLE subscriptionroutinglist 
-                ADD CONSTRAINT `subscriptionroutinglist_ibfk_1` FOREIGN KEY (`borrowernumber`) 
-                REFERENCES `borrowers` (`borrowernumber`)
-                ON DELETE CASCADE ON UPDATE CASCADE");
-    $dbh->do("ALTER TABLE subscriptionroutinglist 
-                ADD CONSTRAINT `subscriptionroutinglist_ibfk_2` FOREIGN KEY (`subscriptionid`) 
-                REFERENCES `subscription` (`subscriptionid`)
-                ON DELETE CASCADE ON UPDATE CASCADE");
-    print "Upgrade to $DBversion done (Make subscriptionroutinglist more strict)\n";
-    SetVersion ($DBversion);
-}
-
-$DBversion = '3.03.00.002';
-if (C4::Context->preference("Version") < TransformToNum($DBversion) && $original_version < TransformToNum("3.02.00.006")) {
-    $dbh->do("UPDATE language_rfc4646_to_iso639 SET iso639_2_code='arm' WHERE rfc4646_subtag='hy';");
-    $dbh->do("UPDATE language_rfc4646_to_iso639 SET iso639_2_code='eng' WHERE rfc4646_subtag='en';");
-    $dbh->do("INSERT INTO language_rfc4646_to_iso639(rfc4646_subtag,iso639_2_code) VALUES( 'fi','fin');");
-    $dbh->do("UPDATE language_rfc4646_to_iso639 SET iso639_2_code='fre' WHERE rfc4646_subtag='fr';");
-    $dbh->do("INSERT INTO language_rfc4646_to_iso639(rfc4646_subtag,iso639_2_code) VALUES( 'lo','lao');");
-    $dbh->do("UPDATE language_rfc4646_to_iso639 SET iso639_2_code='ita' WHERE rfc4646_subtag='it';");
-    $dbh->do("INSERT INTO language_rfc4646_to_iso639(rfc4646_subtag,iso639_2_code) VALUES( 'sr','srp');");
-    $dbh->do("INSERT INTO language_rfc4646_to_iso639(rfc4646_subtag,iso639_2_code) VALUES( 'tet','tet');");
-    $dbh->do("INSERT INTO language_rfc4646_to_iso639(rfc4646_subtag,iso639_2_code) VALUES( 'ur','urd');");
-
-    print "Upgrade to $DBversion done (Correct language mappings)\n";
-    SetVersion ($DBversion);
-}
-
-$DBversion = '3.03.00.003';
-if (C4::Context->preference("Version") < TransformToNum($DBversion) && $original_version < TransformToNum("3.02.00.007")) {
-    $dbh->do("INSERT INTO `systempreferences` (variable,value,explanation,options,type) VALUES('UseTablesortForCirc','0','If on, use the JQuery tablesort function on the list of current borrower checkouts on the circulation page. Note that the use of this function may slow down circ for patrons with may checkouts.','','YesNo');");
-    print "Upgrade to $DBversion done (Add UseTablesortForCirc syspref)\n";
-    SetVersion ($DBversion);
-}
-
-$DBversion = '3.03.00.004';
-if (C4::Context->preference("Version") < TransformToNum($DBversion) && $original_version < TransformToNum("3.02.01.001")) {
-    my $count = $dbh->selectrow_array('SELECT COUNT(*) FROM letter WHERE module = ? AND code = ?', {}, 'suggestions', 'ACCEPTED');
-    $dbh->do(q/
-INSERT INTO `letter`
-(module, code, name, title, content)
-VALUES
-('suggestions','ACCEPTED','Suggestion accepted', 'Purchase suggestion accepted','Dear <<borrowers.firstname>> <<borrowers.surname>>,\n\nYou have suggested that the library acquire <<suggestions.title>> by <<suggestions.author>>.\n\nThe library has reviewed your suggestion today. The item will be ordered as soon as possible. You will be notified by mail when the order is completed, and again when the item arrives at the library.\n\nIf you have any questions, please email us at <<branches.branchemail>>.\n\nThank you,\n\n<<branches.branchname>>')
-/) unless $count > 0;
-    $count = $dbh->selectrow_array('SELECT COUNT(*) FROM letter WHERE module = ? AND code = ?', {}, 'suggestions', 'AVAILABLE');
-    $dbh->do(q/
-INSERT INTO `letter`
-(module, code, name, title, content)
-VALUES
-('suggestions','AVAILABLE','Suggestion available', 'Suggested purchase available','Dear <<borrowers.firstname>> <<borrowers.surname>>,\n\nYou have suggested that the library acquire <<suggestions.title>> by <<suggestions.author>>.\n\nWe are pleased to inform you that the item you requested is now part of the collection.\n\nIf you have any questions, please email us at <<branches.branchemail>>.\n\nThank you,\n\n<<branches.branchname>>')
-/) unless $count > 0;
-    $count = $dbh->selectrow_array('SELECT COUNT(*) FROM letter WHERE module = ? AND code = ?', {}, 'suggestions', 'ORDERED');
-    $dbh->do(q/
-INSERT INTO `letter`
-(module, code, name, title, content)
-VALUES
-('suggestions','ORDERED','Suggestion ordered', 'Suggested item ordered','Dear <<borrowers.firstname>> <<borrowers.surname>>,\n\nYou have suggested that the library acquire <<suggestions.title>> by <<suggestions.author>>.\n\nWe are pleased to inform you that the item you requested has now been ordered. It should arrive soon, at which time it will be processed for addition into the collection.\n\nYou will be notified again when the book is available.\n\nIf you have any questions, please email us at <<branches.branchemail>>\n\nThank you,\n\n<<branches.branchname>>')
-/) unless $count > 0;
-    $count = $dbh->selectrow_array('SELECT COUNT(*) FROM letter WHERE module = ? AND code = ?', {}, 'suggestions', 'REJECTED');
-    $dbh->do(q/
-INSERT INTO `letter`
-(module, code, name, title, content)
-VALUES
-('suggestions','REJECTED','Suggestion rejected', 'Purchase suggestion declined','Dear <<borrowers.firstname>> <<borrowers.surname>>,\n\nYou have suggested that the library acquire <<suggestions.title>> by <<suggestions.author>>.\n\nThe library has reviewed your request today, and has decided not to accept the suggestion at this time.\n\nThe reason given is: <<suggestions.reason>>\n\nIf you have any questions, please email us at <<branches.branchemail>>.\n\nThank you,\n\n<<branches.branchname>>')
-/) unless $count > 0;
-    print "Upgrade to $DBversion done (bug 5127: add default templates for suggestion status change notifications)\n";
-    SetVersion ($DBversion);
-};
-
-$DBversion = '3.03.00.005';
-if (C4::Context->preference("Version") < TransformToNum($DBversion)) {
-    $dbh->do("update `systempreferences` set options='whitespace|T-prefix|cuecat|libsuite8' where variable='itemBarcodeInputFilter'");
-    print "Upgrade to $DBversion done (Add itemBarcodeInputFilter choice libsuite8)\n";
-}
-
-$DBversion = '3.03.00.006';
-if (C4::Context->preference("Version") < TransformToNum($DBversion) && $original_version < TransformToNum("3.02.01.002")) {
-    $dbh->do("ALTER TABLE deletedborrowers ADD `privacy` int(11) AFTER smsalertnumber;");
-    $dbh->do("ALTER TABLE deletedborrowers CHANGE `cardnumber` `cardnumber` varchar(16);");
-    print "Upgrade to $DBversion done (Fix differences between borrowers and deletedborrowers)\n";
-    SetVersion ($DBversion);
-}
-
-$DBversion = '3.03.00.007';
-if (C4::Context->preference("Version") < TransformToNum($DBversion)) {
-    $dbh->do("ALTER table suggestions ADD quantity SMALLINT(6) default NULL,
-		ADD currency VARCHAR(3) default NULL,
-		ADD price DECIMAL(28,6) default NULL,
-		ADD total DECIMAL(28,6) default NULL;
-		");
-    print "Upgrade to $DBversion done (Added acq related columns to suggestions)\n";
-    SetVersion ($DBversion);
-}
-
-$DBversion = '3.03.00.008';
-if (C4::Context->preference('Version') < TransformToNum($DBversion)){
-    $dbh->do("INSERT INTO systempreferences (variable,value,explanation,options,type) VALUES ('OPACNoResultsFound','','Display this HTML when no results are found for a search in the OPAC','70|10','Textarea')");
-    print "Upgrade to $DBversion done adding syspref OPACNoResultsFound to control what displays when no results are found for a search in the OPAC.";
-    SetVersion ($DBversion);
-}
-
-$DBversion = '3.03.00.009';
-if (C4::Context->preference("Version") < TransformToNum($DBversion) && $original_version < TransformToNum("3.02.01.003")) {
-    $dbh->do("INSERT INTO `systempreferences` (variable,value,explanation,options,type) VALUES('IntranetUserCSS','','Add CSS to be included in the Intranet',NULL,'free')");
-    print "Upgrade to $DBversion done (Add IntranetUserCSS syspref)\n";
-    SetVersion ($DBversion);
-}
-
-$DBversion = "3.03.00.010";
-if (C4::Context->preference("Version") < TransformToNum($DBversion) && $original_version < TransformToNum("3.02.02.001")) {
-    $dbh->do("UPDATE `marc_subfield_structure` SET liblibrarian = 'Distance from earth' WHERE liblibrarian = 'Distrance from earth' AND tagfield = '034' AND tagsubfield = 'r';");
-    $dbh->do("UPDATE `marc_subfield_structure` SET libopac = 'Distance from earth' WHERE libopac = 'Distrance from earth' AND tagfield = '034' AND tagsubfield = 'r';");
-    print "Upgrade to $DBversion done (Fix misspelled 034r subfield in MARC21 Frameworks)\n";
-    SetVersion ($DBversion);
-}
-
-$DBversion = "3.03.00.011";
-if (C4::Context->preference("Version") < TransformToNum($DBversion)) {
-    $dbh->do("UPDATE aqbooksellers SET gstrate=NULL WHERE gstrate=0.0");
-    print "Upgrade to $DBversion done (Bug 5186: allow GST rate to be set to 0)\n";
-    SetVersion ($DBversion);
-}
-
-$DBversion = "3.03.00.012";
-if (C4::Context->preference("Version") < TransformToNum($DBversion)) {
-   $dbh->do("INSERT INTO `systempreferences` (variable,value,explanation,options,type) VALUES('maxItemsInSearchResults',20,'Specify the maximum number of items to display for each result on a page of results',NULL,'free')");
-   print "Upgrade to $DBversion done (Bug 2142: maxItemsInSearchResults syspref resurrected)\n";
-   SetVersion ($DBversion);
-}
-
-$DBversion = "3.03.00.013";
-if (C4::Context->preference("Version") < TransformToNum($DBversion)) {
-    $dbh->do("INSERT INTO systempreferences (variable,value,explanation,options,type) VALUES ('OpacPublic','1','If set to OFF and user is not logged in, all  OPAC pages require authentication, and OPAC searchbar is removed)','','YesNo')");
-    print "Upgrade to $DBversion done (added 'OpacPublic' syspref)\n";
-   SetVersion ($DBversion);
-}
-
-$DBversion = "3.03.00.014";
-if (C4::Context->preference("Version") < TransformToNum($DBversion)) {
-    $dbh->do("INSERT INTO `systempreferences` (variable,value,explanation,options,type) VALUES ('ShelfBrowserUsesLocation','1','Use the item location when finding items for the shelf browser.','1','YesNo')");
-    $dbh->do("INSERT INTO `systempreferences` (variable,value,explanation,options,type) VALUES ('ShelfBrowserUsesHomeBranch','1','Use the item home branch when finding items for the shelf browser.','1','YesNo')");
-    $dbh->do("INSERT INTO `systempreferences` (variable,value,explanation,options,type) VALUES ('ShelfBrowserUsesCcode','0','Use the item collection code when finding items for the shelf browser.','1','YesNo')");
-    print "Upgrade to $DBversion done (Add flexible shelf browser constraints)\n";
-    SetVersion ($DBversion);
-}
-
-$DBversion = "3.03.00.015";
-if (C4::Context->preference("Version") < TransformToNum($DBversion)) {
-    my $sth = $dbh->prepare("INSERT INTO `marc_subfield_structure` (`tagfield`, `tagsubfield`, `liblibrarian`, `libopac`, `repeatable`, `mandatory`, `kohafield`, 
-                             `tab`, `authorised_value`, `authtypecode`, `value_builder`, `isurl`, `hidden`, `frameworkcode`, `seealso`, `link`, `defaultvalue`)
-                             VALUES ( ?, '9', '9 (RLIN)', '9 (RLIN)', 0, 0, '', 6, '', '', '', 0, -5, '', '', '', NULL)");
-    $sth->execute('648');
-    $sth->execute('654');
-    $sth->execute('655');
-    $sth->execute('656');
-    $sth->execute('657');
-    $sth->execute('658');
-    $sth->execute('662');
-    $sth->finish;
-    print "Upgrade to $DBversion done (Bug 5619: Add subfield 9 to marc21 648,654,655,656,657,658,662)\n";
-    SetVersion ($DBversion);
-}
-
-$DBversion = '3.03.00.016';
-if (C4::Context->preference("Version") < TransformToNum($DBversion)) {
-    # reimplement OpacPrivacy system preference
-    $dbh->do("INSERT INTO systempreferences (variable,value,explanation,options,type) VALUES('OpacPrivacy', '0', 'if ON, allows patrons to define their privacy rules (reading history)',NULL,'YesNo')");
-    $dbh->do("ALTER TABLE `borrowers` ADD `privacy` INTEGER NOT NULL DEFAULT 1;");
-    $dbh->do("ALTER TABLE `deletedborrowers` ADD `privacy` INTEGER NOT NULL DEFAULT 1;");
-    print "Upgrade to $DBversion done (OpacPrivacy reimplementation)\n";
-    SetVersion($DBversion);
-};
-
-$DBversion = '3.03.00.017';
-if (C4::Context->preference("Version") < TransformToNum($DBversion) && $original_version < TransformToNum("3.02.03.001")) {
-    $dbh->do("ALTER TABLE  `currency` CHANGE `rate` `rate` FLOAT( 15, 5 ) NULL DEFAULT NULL;");
-    print "Upgrade to $DBversion done (Enable currency rates >= 100)\n";
-    SetVersion ($DBversion);
-}
-
-$DBversion = '3.03.00.018';
-if (C4::Context->preference("Version") < TransformToNum($DBversion) && $original_version < TransformToNum("3.02.03.002")) {
-    $dbh->do( q|update language_descriptions set description = 'Nederlands' where lang = 'nl' and subtag = 'nl'|);
-    $dbh->do( q|update language_descriptions set description = 'Dansk' where lang = 'da' and subtag = 'da'|);
-    print "Upgrade to $DBversion done (Correct language descriptions)\n";
-    SetVersion ($DBversion);
-}
-
-$DBversion = '3.03.00.019';
-if (C4::Context->preference("Version") < TransformToNum($DBversion) && $original_version < TransformToNum("3.02.03.003")) {
-    # Fix bokmål
-    $dbh->do("UPDATE language_subtag_registry SET description = 'Norwegian bokm&#229;l' WHERE subtag = 'nb';");
-    $dbh->do("INSERT INTO language_rfc4646_to_iso639(rfc4646_subtag,iso639_2_code) VALUES( 'nb','nob');");
-    $dbh->do("UPDATE language_descriptions SET description = 'Norsk bokm&#229;l' WHERE subtag = 'nb' AND lang = 'nb';");
-    $dbh->do("UPDATE language_descriptions SET description = 'Norwegian bokm&#229;l' WHERE subtag = 'nb' AND lang = 'en';");
-    $dbh->do("UPDATE language_descriptions SET description = 'Norvégien bokm&#229;l' WHERE subtag = 'nb' AND lang = 'fr';");
-    # Add nynorsk
-    $dbh->do("INSERT INTO language_subtag_registry( subtag, type, description, added) VALUES ( 'nn', 'language', 'Norwegian nynorsk','2011-02-14' )");
-    $dbh->do("INSERT INTO language_rfc4646_to_iso639(rfc4646_subtag,iso639_2_code) VALUES( 'nn','nno')");
-    $dbh->do("INSERT INTO language_descriptions(subtag, type, lang, description) VALUES( 'nn', 'language', 'nb', 'Norsk nynorsk')");
-    $dbh->do("INSERT INTO language_descriptions(subtag, type, lang, description) VALUES( 'nn', 'language', 'nn', 'Norsk nynorsk')");
-    $dbh->do("INSERT INTO language_descriptions(subtag, type, lang, description) VALUES( 'nn', 'language', 'en', 'Norwegian nynorsk')");
-    $dbh->do("INSERT INTO language_descriptions(subtag, type, lang, description) VALUES( 'nn', 'language', 'fr', 'Norvégien nynorsk')");
-    print "Upgrade to $DBversion done (Correct language descriptions for Norwegian)\n";
-    SetVersion ($DBversion);
-}
-
-$DBversion = '3.03.00.020';
-if (C4::Context->preference("Version") < TransformToNum($DBversion)) {
-    $dbh->do("INSERT INTO `systempreferences` (variable,value,explanation,options,type) VALUES ('AllowFineOverride','0','If on, staff will be able to issue books to patrons with fines greater than noissuescharge.','0','YesNo')");
-    $dbh->do("INSERT INTO `systempreferences` (variable,value,explanation,options,type) VALUES ('AllFinesNeedOverride','1','If on, staff will be asked to override every fine, even if it is below noissuescharge.','0','YesNo')");
-    print "Upgrade to $DBversion done (Bug 5811: Add sysprefs controlling overriding fines)\n";
-    SetVersion($DBversion);
-};
-
-$DBversion = '3.03.00.021';
-if (C4::Context->preference("Version") < TransformToNum($DBversion) && $original_version < TransformToNum("3.02.05.001")) {
-    $dbh->do("ALTER TABLE items MODIFY enumchron TEXT");
-    $dbh->do("ALTER TABLE deleteditems MODIFY enumchron TEXT");
-    print "Upgrade to $DBversion done (bug 5642: longer serial enumeration)\n";
-    SetVersion ($DBversion);
-}
-
-$DBversion = '3.03.00.022';
-if (C4::Context->preference("Version") < TransformToNum($DBversion)) {
-    $dbh->do("INSERT INTO `systempreferences` (variable,value,explanation,options,type) VALUES ('AuthoritiesLog','0','If ON, log edit/create/delete actions on authorities.','','YesNo');");
-    print "Upgrade to $DBversion done (Add AuthoritiesLog syspref)\n";
-    SetVersion ($DBversion);
-}
-
-# due to a mismatch in kohastructure.sql some koha will have missing columns in aqbasketgroup
-# this attempts to fix that
-$DBversion = '3.03.00.023';
-if (C4::Context->preference("Version") < TransformToNum($DBversion) && $original_version < TransformToNum("3.02.05.002")) {
-    my $sth = $dbh->prepare("SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'aqbasketgroups' AND COLUMN_NAME = 'billingplace'");
-    $sth->execute;
-    $dbh->do("ALTER TABLE aqbasketgroups ADD billingplace VARCHAR(10)") if ! $sth->fetchrow_hashref;
-    $sth = $dbh->prepare("SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'aqbasketgroups' AND COLUMN_NAME = 'deliveryplace'");
-    $sth->execute;
-    $dbh->do("ALTER TABLE aqbasketgroups ADD deliveryplace VARCHAR(10)") if ! $sth->fetchrow_hashref;
-    $sth = $dbh->prepare("SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'aqbasketgroups' AND COLUMN_NAME = 'deliverycomment'");
-    $sth->execute;
-    $dbh->do("ALTER TABLE aqbasketgroups ADD deliverycomment VARCHAR(255)") if ! $sth->fetchrow_hashref;
-    print "Upgrade to $DBversion done (Reconcile aqbasketgroups)\n";
-    SetVersion ($DBversion);
-}
-
-$DBversion = '3.03.00.024';
-if (C4::Context->preference("Version") < TransformToNum($DBversion)) {
-    $dbh->do("INSERT INTO `systempreferences` (variable,value,explanation,options,type) VALUES ('TraceCompleteSubfields','0','Force subject tracings to only match complete subfields.','0','YesNo')");
-    $dbh->do("INSERT INTO `systempreferences` (variable,value,explanation,options,type) VALUES ('UseAuthoritiesForTracings','1','Use authority record numbers for subject tracings instead of heading strings.','0','YesNo')");
-    print "Upgrade to $DBversion done (Add syspref to force whole-subfield matching on subject tracings)\n";
-    SetVersion($DBversion);
-};
-
-$DBversion = "3.03.00.025";
-if (C4::Context->preference("Version") < TransformToNum($DBversion)) {
-    $dbh->do("INSERT INTO systempreferences (variable,value,explanation,options,type) VALUES ('OPACAllowUserToChooseBranch', 1, 'Allow the user to choose the branch they want to pickup their hold from','1','YesNo')");
-    print "Upgrade to $DBversion done (Add syspref to control if user can choose pickup branch for holds)\n";
-    SetVersion ($DBversion);
-}
-
-$DBversion = '3.03.00.026';
-if (C4::Context->preference("Version") < TransformToNum($DBversion) && $original_version < TransformToNum("3.02.05.003")) {
-    $dbh->do("UPDATE `message_attributes` SET message_name='Item Due' WHERE message_attribute_id=1 AND message_name LIKE 'Item DUE'");
-	print "Upgrade to $DBversion done ( fix capitalization in message type )\n";
-    SetVersion ($DBversion);
-}
-
-$DBversion = '3.03.00.027'; 
-if (C4::Context->preference("Version") < TransformToNum($DBversion)) {
-    $dbh->do("INSERT INTO systempreferences (variable,value,explanation,options,type) VALUES('displayFacetCount', '0', NULL, NULL, 'YesNo')");
-    $dbh->do("INSERT INTO systempreferences (variable,value,explanation,options,type) VALUES('maxRecordsForFacets', '20', NULL, NULL, 'Integer')");
-    print "Upgrade to $DBversion done (Preferences for facet count)\n";
-    SetVersion ($DBversion);
-}
-
-$DBversion = "3.03.00.028";
-if (C4::Context->preference("Version") < TransformToNum($DBversion)) {
-    $dbh->do("INSERT INTO systempreferences (variable,value,explanation,options,type) VALUES ('FacetLabelTruncationLength', 20, 'Truncate facets length to','','free')");
-    print "Upgrade to $DBversion done (Add FacetLabelTruncationLength syspref to control facets displayed length)\n";
-    SetVersion ($DBversion);
-}
-
-$DBversion = "3.03.00.029";
-if (C4::Context->preference("Version") < TransformToNum($DBversion)) {
-    $dbh->do("INSERT INTO systempreferences (variable,value,explanation,options,type) VALUES ('AllowPurchaseSuggestionBranchChoice', 0, 'Allow user to choose branch when making a purchase suggestion','1','YesNo')");
-    print "Upgrade to $DBversion done (Add syspref to control if user can choose branch when making purchase suggestion)\n";
-    SetVersion ($DBversion);
-}
-
-$DBversion = "3.03.00.030";
-if (C4::Context->preference("Version") < TransformToNum($DBversion)) {
-    $dbh->do("INSERT INTO `systempreferences` (variable,value,explanation,options,type) VALUES('OpacFavicon','','Enter a complete URL to an image to replace the default Koha favicon on the OPAC','','free')");
-    $dbh->do("INSERT INTO `systempreferences` (variable,value,explanation,options,type) VALUES('IntranetFavicon','','Enter a complete URL to an image to replace the default Koha favicon on the Staff client','','free')");
-    print "Upgrade to $DBversion done (Add sysprefs to control custom favicons)\n";
-    SetVersion ($DBversion);
-}
-
-$DBversion = "3.03.00.031";
-if (C4::Context->preference("Version") < TransformToNum($DBversion)) {
-    $dbh->do("INSERT INTO `systempreferences` (variable,value,explanation,options,type) VALUES('FineNotifyAtCheckin',0,'If ON notify librarians of overdue fines on the items they are checking in.',NULL,'YesNo');");
-    print "Upgrade to $DBversion done (Add syspref FineNotifyAtCheckin)\n";
-    SetVersion ($DBversion);    
-}
-
-$DBversion = '3.03.00.032';
-if (C4::Context->preference("Version") < TransformToNum($DBversion)) {
-    $dbh->do("INSERT INTO systempreferences (variable,value,explanation,options,type) VALUES ('TraceSubjectSubdivisions', 1, 'Create searches on all subdivisions for subject tracings.','1','YesNo')");
-    print "Upgrade to $DBversion done ( include subdivisions when generating subject tracing searches )\n";
-}
-
-
-$DBversion = '3.03.00.033';
-if (C4::Context->preference("Version") < TransformToNum($DBversion)) {
-    $dbh->do("INSERT INTO systempreferences (variable,value,explanation,options,type) VALUES('StaffAuthorisedValueImages', '1', '', NULL, 'YesNo')");
-    print "Upgrade to $DBversion done (System pref StaffAuthorisedValueImages)\n";
-    SetVersion ($DBversion);
-}
-
-$DBversion = '3.03.00.034';
-if (C4::Context->preference("Version") < TransformToNum($DBversion)) {
-    $dbh->do("ALTER TABLE `categories` ADD `hidelostitems` tinyint(1) NOT NULL default '0' AFTER `reservefee`");
-    print "Upgrade to $DBversion done (Add hidelostitems preference to borrower categories)\n";
-    SetVersion ($DBversion);
-}
-
-$DBversion = '3.03.00.035';
-if (C4::Context->preference("Version") < TransformToNum($DBversion)) {
-    $dbh->do("ALTER TABLE `issuingrules` ADD hardduedate date default NULL AFTER issuelength");
-    $dbh->do("ALTER TABLE `issuingrules` ADD hardduedatecompare tinyint NOT NULL default 0 AFTER hardduedate");
-    my $duedate;
-    if (C4::Context->preference("globalDueDate")) {
-      $duedate = C4::Dates::format_date_in_iso(C4::Context->preference("globalDueDate"));
-      $dbh->do("UPDATE `issuingrules` SET hardduedate = '$duedate', hardduedatecompare = 0");
-    } elsif (C4::Context->preference("ceilingDueDate")) {
-      $duedate = C4::Dates::format_date_in_iso(C4::Context->preference("ceilingDueDate"));
-      $dbh->do("UPDATE `issuingrules` SET hardduedate = '$duedate', hardduedatecompare = -1");
-    }
-    $dbh->do("DELETE FROM `systempreferences` WHERE variable = 'globalDueDate' OR variable = 'ceilingDueDate'");
-    print "Upgrade to $DBversion done (Move global and ceiling due dates to Circ Rules level)\n";
-    SetVersion ($DBversion);
-}
-
-$DBversion = '3.03.00.036';
-if (C4::Context->preference("Version") < TransformToNum($DBversion)) {
-    $dbh->do("INSERT INTO systempreferences (variable,value,explanation,options,type) VALUES ('COinSinOPACResults', 1, 'If ON, use COinS in OPAC search results page.  NOTE: this can slow down search response time significantly','','YesNo')");
-    print "Upgrade to $DBversion done ( Make COinS optional in OPAC search results )\n";
-    SetVersion ($DBversion);
-}
-
-$DBversion = '3.03.00.037';
-if (C4::Context->preference("Version") < TransformToNum($DBversion)) {
-    $dbh->do("INSERT INTO `systempreferences` (variable,value,explanation,options,type) VALUES('OPACDisplay856uAsImage','OFF','Display the URI in the 856u field as an image, the corresponding OPACXSLT option must be on','OFF|Details|Results|Both','Choice')");
-    $dbh->do("INSERT INTO `systempreferences` (variable,value,explanation,options,type) VALUES('Display856uAsImage','OFF','Display the URI in the 856u field as an image, the corresponding Staff Client XSLT option must be on','OFF|Details|Results|Both','Choice')");
-    print "Upgrade to $DBversion done (Add 'Display856uAsImage' and 'OPACDisplay856uAsImage' syspref)\n";
-    SetVersion ($DBversion);
-}
-
-$DBversion = '3.03.00.038';
-if (C4::Context->preference("Version") < TransformToNum($DBversion)) {
-    $dbh->do("INSERT INTO `systempreferences` (variable,value,explanation,options,type) VALUES ('SelfCheckTimeout',120,'Define the number of seconds before the Web-based Self Checkout times out a patron','','Integer')");
-    $dbh->do("INSERT INTO `systempreferences` (variable,value,explanation,options,type) VALUES ('AllowSelfCheckReturns',0,'If enabled, patrons may return items through the Web-based Self Checkout','','YesNo')");
-    $dbh->do("INSERT INTO `systempreferences` (variable,value,explanation,options,type) VALUES ('SelfCheckHelpMessage','','Enter HTML to include under the basic Web-based Self Checkout instructions on the Help page','70|10','Textarea')");
-    print "Upgrade to $DBversion done ( Add Self-checkout by Login system preferences )\n";
-}
-
-$DBversion = "3.03.00.039";
-if (C4::Context->preference("Version") < TransformToNum($DBversion)) {
-    $dbh->do("INSERT INTO `systempreferences` (variable,value,explanation,options,type) VALUES('ShowReviewer',1,'If ON, name of reviewer will be shown above comments in OPAC',NULL,'YesNo');");
-    print "Upgrade to $DBversion done (Add syspref ShowReviewer)\n";
-}
-    
-$DBversion = "3.03.00.040";
-if (C4::Context->preference("Version") < TransformToNum($DBversion)) {
-    $dbh->do("INSERT INTO `systempreferences` (variable,value,explanation,options,type) VALUES('UseControlNumber',0,'If ON, record control number (w subfields) and control number (001) are used for linking of bibliographic records.','','YesNo');");
-    print "Upgrade to $DBversion done (Add syspref UseControlNumber)\n";
-}
-
-$DBversion = "3.03.00.041";
-if (C4::Context->preference("Version") < TransformToNum($DBversion)) {
-    $dbh->do("INSERT INTO `systempreferences` (variable,value,explanation,options,type) VALUES('AlternateHoldingsField','','The MARC field/subfield that contains alternate holdings information for bibs taht do not have items attached (e.g. 852abchi for libraries converting from MARC Magician).',NULL,'free')");
-    $dbh->do("INSERT INTO `systempreferences` (variable,value,explanation,options,type) VALUES('AlternateHoldingsSeparator','','The string to use to separate subfields in alternate holdings displays.',NULL,'free')");
-    print "Upgrade to $DBversion done (Add sysprefs to control alternate holdings information display)\n";
-    SetVersion ($DBversion);
-}
-
-$DBversion = '3.03.00.042';
-if (C4::Context->preference("Version") < TransformToNum($DBversion) && $original_version < TransformToNum("3.02.06.001")) {
-    $dbh->do("ALTER TABLE `items` DROP INDEX `itemsstocknumberidx`;");
-    $dbh->do("ALTER TABLE items ADD INDEX itemstocknumberidx (stocknumber);");
-    print "Upgrade to $DBversion done (Change items.stocknumber to be not unique)\n";
-    SetVersion ($DBversion);
-}
-
-$DBversion = "3.03.00.043";
-if (C4::Context->preference("Version") < TransformToNum($DBversion)) {
-
-    $dbh->do("INSERT INTO authorised_values (category,authorised_value,lib,lib_opac) VALUES ('YES_NO','0','No','No')");
-    $dbh->do("INSERT INTO authorised_values (category,authorised_value,lib,lib_opac) VALUES ('YES_NO','1','Yes','Yes')");
-
-	print "Upgrade to $DBversion done ( add generic boolean YES_NO authorised_values pair )\n";
-	SetVersion ($DBversion);
-}
-
-$DBversion = '3.03.00.044';
-if ( C4::Context->preference("Version") < TransformToNum($DBversion) ) {
-    $dbh->do("ALTER TABLE `aqbasketgroups` ADD `freedeliveryplace` TEXT NULL AFTER `deliveryplace`;");
-    print "Upgrade to $DBversion done (adding freedeliveryplace to basketgroups)\n";
-}
-
-$DBversion = '3.03.00.045';
-if (C4::Context->preference("Version") < TransformToNum($DBversion)) {
-    #Remove obsolete columns from aqbooksellers if needed
-    my $a = $dbh->selectall_hashref('SHOW columns from aqbooksellers','Field');
-    my $sqldrop="ALTER TABLE aqbooksellers DROP COLUMN ";
-    foreach(qw/deliverydays followupdays followupscancel invoicedisc nocalc specialty/) {
-      $dbh->do($sqldrop.$_) if exists $a->{$_};
-    }
-    #Remove obsolete column from aqbudgets if needed
-    #The correct column is budget_notes
-    $a = $dbh->selectall_hashref('SHOW columns from aqbudgets','Field');
-    if(exists $a->{budget_description}) {
-      $dbh->do("ALTER TABLE aqbudgets DROP COLUMN budget_description");
-    }
-    print "Upgrade to $DBversion done (Remove obsolete columns from aqbooksellers and aqbudgets if needed)\n";
-    SetVersion ($DBversion);
-}
-
-$DBversion = "3.03.00.046";
-if ( C4::Context->preference("Version") < TransformToNum($DBversion) ) {
-    $dbh->do("ALTER TABLE overduerules ALTER delay1 SET DEFAULT NULL, ALTER delay2 SET DEFAULT NULL, ALTER delay3 SET DEFAULT NULL");
-    print "Upgrade to $DBversion done (Setting NULL default value for delayn columns in table overduerules)\n";
-    SetVersion($DBversion);
-}
-
-$DBversion = '3.03.00.047';
-if (C4::Context->preference("Version") < TransformToNum($DBversion)) {
-    $dbh->do("ALTER TABLE borrowers ADD `state` mediumtext AFTER city;");
-    $dbh->do("ALTER TABLE borrowers ADD `B_state` mediumtext AFTER B_city;");
-    $dbh->do("ALTER TABLE borrowers ADD `altcontactstate` mediumtext AFTER altcontactaddress3;");
-    $dbh->do("ALTER TABLE deletedborrowers ADD `state` mediumtext AFTER city;");
-    $dbh->do("ALTER TABLE deletedborrowers ADD `B_state` mediumtext AFTER B_city;");
-    $dbh->do("ALTER TABLE deletedborrowers ADD `altcontactstate` mediumtext AFTER altcontactaddress3;");
-    print "Upgrade to $DBversion done (Add state field to patron's addresses)\n";
-}
-
-$DBversion = '3.03.00.048';
-if (C4::Context->preference("Version") < TransformToNum($DBversion)) {
-    $dbh->do("ALTER TABLE branches ADD `branchstate` mediumtext AFTER `branchcity`;");
-    print "Upgrade to $DBversion done (Add state to branch address)\n";
-    SetVersion ($DBversion);
-}
-
-$DBversion = '3.03.00.049';
-if ( C4::Context->preference("Version") < TransformToNum($DBversion) ) {
-    $dbh->do("ALTER TABLE `accountlines` ADD `note` text NULL default NULL");
-    $dbh->do("ALTER TABLE `accountlines` ADD `manager_id` int( 11 ) NULL ");
-    print "Upgrade to $DBversion done (adding note and manager_id fields in accountlines table)\n";
-    SetVersion($DBversion);
-}
-
-$DBversion = "3.03.00.050";
-if ( C4::Context->preference("Version") < TransformToNum($DBversion) ) {
-    $dbh->do("
-	INSERT IGNORE INTO `systempreferences` (variable,value,explanation,options,type) VALUES('OpacHiddenItems','','This syspref allows to define custom rules for hiding specific items at opac. See docs/opac/OpacHiddenItems.txt for more informations.','','Textarea');
-	");
-    print "Upgrade to $DBversion done (Adding OpacHiddenItems syspref)\n";
-    SetVersion($DBversion);
-}
-
-$DBversion = "3.03.00.051";
-if (C4::Context->preference("Version") < TransformToNum($DBversion)) {
-    print "Upgrade to $DBversion done (Remove spaces and dashes from message_attribute names)\n";
-    $dbh->do("UPDATE message_attributes SET message_name = 'Item_Due' WHERE message_name='Item Due'");
-    $dbh->do("UPDATE message_attributes SET message_name = 'Advance_Notice' WHERE message_name='Advance Notice'");
-    $dbh->do("UPDATE message_attributes SET message_name = 'Hold_Filled' WHERE message_name='Hold Filled'");
-    $dbh->do("UPDATE message_attributes SET message_name = 'Item_Check_in' WHERE message_name='Item Check-in'");
-    $dbh->do("UPDATE message_attributes SET message_name = 'Item_Checkout' WHERE message_name='Item Checkout'");    
-    SetVersion ($DBversion);
-}
-
-$DBversion = "3.03.00.052";
-if (C4::Context->preference("Version") < TransformToNum($DBversion)) {
-    $dbh->do("INSERT INTO `systempreferences` (variable,value,explanation,options,type) VALUES('WaitingNotifyAtCheckin',0,'If ON, notify librarians of waiting holds for the patron whose items they are checking in.',NULL,'YesNo');");
-    print "Upgrade to $DBversion done (Add syspref WaitingNotifyAtCheckin)\n";
-    SetVersion ($DBversion);
-}
-
-$DBversion = "3.04.00.000";
-if (C4::Context->preference("Version") < TransformToNum($DBversion)) {
-    print "Upgrade to $DBversion done Koha 3.4.0 release \n";
-    SetVersion ($DBversion);
-}
-
-$DBversion = "3.05.00.001";
-if ( C4::Context->preference("Version") < TransformToNum($DBversion) ) {
-    $dbh->do(qq{
-    INSERT INTO `systempreferences` (variable,value,explanation,options,type) VALUES('numSearchRSSResults',50,'Specify the maximum number of results to display on a RSS page of results',NULL,'Integer');
-    });
-    print "Upgrade to $DBversion done (Adds New System preference numSearchRSSResults)\n";
-    SetVersion($DBversion);
-}
-
-=head1 FUNCTIONS
-
-=head2 DropAllForeignKeys($table)
-
-Drop all foreign keys of the table $table
+  Drop all foreign keys of the table $table
 
 =cut
 
@@ -4363,10 +3730,10 @@ sub DropAllForeignKeys {
 }
 
 
-=head2 TransformToNum
+=item TransformToNum
 
-Transform the Koha version from a 4 parts string
-to a number, with just 1 .
+  Transform the Koha version from a 4 parts string
+  to a number, with just 1 .
 
 =cut
 
@@ -4377,9 +3744,9 @@ sub TransformToNum {
     return $version;
 }
 
-=head2 SetVersion
+=item SetVersion
 
-set the DBversion in the systempreferences
+    set the DBversion in the systempreferences
 
 =cut
 

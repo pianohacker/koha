@@ -26,9 +26,10 @@ use C4::Output;
 use CGI qw(-oldstyle_urls);
 use C4::Auth;
 use C4::Branch;
+use C4::Calendar qw();
 use C4::Debug;
 use C4::Dates qw/format_date format_date_in_iso/;
-use Date::Calc qw/Today/;
+use Date::Calc qw( Today Delta_Days );
 use Text::CSV_XS;
 
 my $input = new CGI;
@@ -248,6 +249,7 @@ if ($noreport) {
         borrowers.email,
         issues.itemnumber,
         items.barcode,
+        items.itemcallnumber,
         biblio.title,
         biblio.author,
         borrowers.borrowernumber,
@@ -287,6 +289,8 @@ if ($noreport) {
     $sth->execute();
 
     my @overduedata;
+    my $prevbor = -1;
+    my $prevrow;
     while (my $data = $sth->fetchrow_hashref) {
 
         # most of the overdue report data is linked to the database schema, i.e. things like borrowernumber and phone
@@ -301,30 +305,43 @@ if ($noreport) {
             push @patron_attr_value_loop, { value => join(', ', sort { lc $a cmp lc $b } @displayvalues) };
         }
 
-        push @overduedata, {
-            duedate                => format_date($data->{date_due}),
-            borrowernumber         => $data->{borrowernumber},
-            barcode                => $data->{barcode},
-            itemnum                => $data->{itemnumber},
-            borrowertitle          => $data->{borrowertitle},
-            name                   => $data->{borrower},
-            streetnumber           => $data->{streetnumber},                   
-            streettype             => $data->{streettype},                     
-            address                => $data->{address},                        
-            address2               => $data->{address2},                       
-            city                   => $data->{city},                   
-            zipcode                => $data->{zipcode},                        
-            country                => $data->{country},
-            phone                  => $data->{phone},
-            email                  => $data->{email},
-            biblionumber           => $data->{biblionumber},
-            title                  => $data->{title},
-            author                 => $data->{author},
-            branchcode             => $data->{branchcode},
+        my $row = {
+            rowspan        => 1,
+            duedate        => format_date($data->{date_due}),
+            difference     => C4::Context->preference( 'ShowDifferenceOnOverdueReport' ) ? GetDaysOverdue( $data->{'branchcode'}, $data->{'date_due'} ) : 0,
+            borrowernumber => $data->{borrowernumber},
+            barcode        => $data->{barcode},
+            itemnum        => $data->{itemnumber},
+            borrowertitle  => $data->{borrowertitle},
+            streetnumber   => $data->{streetnumber},                   
+            streettype     => $data->{streettype},                     
+            address        => $data->{address},                        
+            address2       => $data->{address2},                       
+            city           => $data->{city},                   
+            zipcode        => $data->{zipcode},                        
+            country        => $data->{country},
+            phone          => $data->{phone},
+            biblionumber   => $data->{biblionumber},
+            title          => $data->{title},
+            author         => $data->{author},
+            itemcallnumber => $data->{itemcallnumber},
+            branchcode     => $data->{branchcode},
             itemcallnumber         => $data->{itemcallnumber},
             replacementprice       => $data->{replacementprice},
             patron_attr_value_loop => \@patron_attr_value_loop,
         };
+
+        if ( $prevbor eq $data->{'borrowernumber'} && $op ne 'csv' ) {
+            $prevrow->{'rowspan'}++;
+        } else {
+            $row->{'email'} = $data->{'email'};
+            $row->{'phone'} = $data->{'phone'} || '&nbsp;';
+            $row->{'name'} = $data->{'borrower'};
+            $prevrow = $row;
+            $prevbor = $row->{'borrowernumber'};
+        }
+
+        push ( @overduedata, $row );
     }
 
     my ($attrorder) = $order =~ /patron_attr_(.*)$/; 
@@ -403,4 +420,17 @@ sub build_csv {
     }
 
     return join("\n", @lines) . "\n";
+}
+
+our %calendars;
+
+sub GetDaysOverdue {
+    my ( $branchcode, $date_due ) = @_;
+
+    if ( C4::Context->preference( 'useDaysMode' ) eq 'Calendar' && $branchcode ) {
+        my $calendar = defined( $calendars{$branchcode} ) ? $calendars{$branchcode} : ( $calendars{$branchcode} = C4::Calendar->new( branchcode => $branchcode ) );
+        return $calendars{$branchcode}->daysBetween( C4::Dates->new( $date_due, 'iso' ), C4::Dates->new() );
+    } else {
+        return Delta_Days( split( "-", $date_due ), Today() );
+    }
 }

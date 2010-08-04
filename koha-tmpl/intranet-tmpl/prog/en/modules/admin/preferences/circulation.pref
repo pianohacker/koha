@@ -78,6 +78,12 @@ Circulation:
                   yes: Require
                   no: "Don't require"
             - staff to choose which checkouts to show before running the overdues report.
+        -
+            - pref: ShowDifferenceOnOverdueReport
+              choices:
+                  yes: Show
+                  no: "Don't show"
+            - the number of days that each item is overdue on the overdues report.
         -            
             - pref: DisplayClearScreenButton
               choices:
