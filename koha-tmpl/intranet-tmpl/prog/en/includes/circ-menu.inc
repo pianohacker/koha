@@ -48,7 +48,11 @@
             <li> <span class="empty">No email stored.</span>    </li>
         [% END %]
     [% END %]
+    [% IF ( cathashinfo ) %]
+    <li class="colorized-category" data-cathashinfo="[% cathashinfo %]">Category: [% categoryname %] ([% categorycode %])</li>
+    [% ELSE %]
     <li>Category: [% categoryname %] ([% categorycode %])</li>
+    [% END %]
     <li>Home Library: [% IF ( branchname ) %][% branchname %][% ELSE %][% branch %][% END %]</li>
 </ul></div>
 <div id="menu">
