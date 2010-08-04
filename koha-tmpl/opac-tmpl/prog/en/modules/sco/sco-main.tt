@@ -7,7 +7,7 @@
 <script type="text/javascript">//<![CDATA[
 function sco_init(valid_session) {
     if (valid_session == 1) {
-        setTimeout("location.href='/cgi-bin/koha/sco/sco-main.pl?op=logout';",[% SelfCheckTimeout %]); 
+        setTimeout("location.href='/cgi-bin/koha/sco/sco-main.pl?op=timedout';",[% SelfCheckTimeout %]); 
     }
 }
 function dofocus() {    // named function req'd for body onload event by some FF and IE7 security models
@@ -26,7 +26,7 @@ function checkout_confirm(patronid) {
     if (this.valid_session == 0) {
         // probably should force logout like above ? --atz 6/09
         if (confirm('Session has expired.  Click \'OK\' to continue processing this item.  Click Cancel if you are not ' + patronid)){
-            this.op.value='logout';
+            this.op.value='timedout';
             this.patronid.value='';
         }
     }
@@ -56,6 +56,9 @@ $(document).ready(function() {
             [% UNLESS ( nofines ) %], 4: { sorter: false }[% END %]
         }
     });
+    [% IF ( print_receipt ) %]
+    window.open('/cgi-bin/koha/sco/sco-receipt.pl?cardnumber=[% patronid %]', 'receipt', 'width=400,height=600,menubar=no,toolbar=no,location=no,personalbar=no');
+    [% END %]
 });
 //]]>
 </script>
@@ -187,7 +190,13 @@ Sorry, This Self-Checkout Station has lost authentication.  Please contact the a
 	<input type="hidden" name="valid_session" value="1" />
 	<input type="submit" value="Submit" class="submit" /></fieldset>
 	</form>
-	<div><form method="post" action="/cgi-bin/koha/sco/sco-main.pl?op=logout" ><input type="submit" value="Finish" class="finish" /></form></div>
+	<div>
+        <form method="post" action="/cgi-bin/koha/sco/sco-main.pl" >
+            <input type="hidden" name="op" value="logout" />
+            <input type="hidden" name="patronid" value="[% patronid %]" />
+            <input type="submit" value="Finish" class="finish" />
+        </form>
+    </div>
 	</div> <!-- sco_entry --> <!-- newcheckout -->
 
 	<div id="borrowerdetails">

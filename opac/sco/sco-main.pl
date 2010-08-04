@@ -102,8 +102,15 @@ my $confirm_required = 0;
 my $return_only = 0;
 #warn "issuer cardnumber: " .   $issuer->{cardnumber};
 #warn "patron cardnumber: " . $borrower->{cardnumber};
-if ($op eq "logout") {
+if ($op eq "timedout" || $op eq "logout") {
     $query->param( patronid => undef, patronlogin => undef, patronpw => undef );
+
+    if ($op eq 'logout') {
+        $template->param(
+            patronid => $patronid,
+            print_receipt => 1
+        );
+    }
 }
 elsif ( $op eq "returnbook" && $allowselfcheckreturns ) {
     my ($doreturn) = AddReturn( $barcode, $branch );
