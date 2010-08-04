@@ -266,7 +266,11 @@ Confirm Deletion of Category <!-- TMPL_VAR NAME="categorycode" escape="html" -->
 			<tr>
 		<!-- /TMPL_UNLESS -->
                         <td><!-- TMPL_VAR NAME="categorycode" escape="html" --></td>
+                        <!-- TMPL_IF NAME="cathashinfo" -->
+                        <td class="colorized-category" data-cathashinfo="<!-- TMPL_VAR NAME="cathashinfo" -->">
+                        <!-- TMPL_ELSE -->
                         <td>
+                        <!-- /TMPL_IF -->
                             <a href="<!-- TMPL_VAR NAME="script_name" -->?op=add_form&amp;categorycode=<!-- TMPL_VAR NAME="categorycode" escape="url" -->"><!-- TMPL_VAR NAME="description" escape="html" --></a>
                         </td>
                         <td>

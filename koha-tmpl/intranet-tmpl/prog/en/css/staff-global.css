@@ -1889,3 +1889,10 @@ ul.budget_hierarchy li:first-child:after {
 	height: 500px;
 	border: none;
 }
+
+.patroninfo li.colorized-category {
+    padding: 2px;
+    font-size: 1.05em;
+    margin-top: 2px;
+    margin-bottom: 2px;
+}

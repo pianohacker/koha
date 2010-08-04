@@ -56,6 +56,7 @@ BEGIN {
 		&GetKohaAuthorisedValues
 		&GetKohaAuthorisedValuesFromField
 		&GetAuthValCode
+        &GetCategoryHashInfo
 		&GetNormalizedUPC
 		&GetNormalizedISBN
 		&GetNormalizedEAN
@@ -1064,6 +1065,25 @@ sub GetAuthValCode {
 	$sth->execute($kohafield,$fwcode);
 	my ($authvalcode) = $sth->fetchrow_array;
 	return $authvalcode;
+}
+
+=head2 GetCategoryHashInfo
+
+  my $info = GetCategoryHashInfo( $categorycode );
+
+Returns a short info string giving all the information the JS category-
+coloring algorithm needs (e.g., "C|Children").
+
+=cut
+
+sub GetCategoryHashInfo {
+    my ( $categorycode ) = @_;
+
+    my $dbh = C4::Context->dbh;
+    my $category = $dbh->selectrow_hashref( "SELECT category_type, description FROM categories WHERE categorycode = ?", {}, $categorycode );
+    return "" unless ( $category );
+
+    return $category->{'category_type'} . "|" . $category->{'description'};
 }
 
 =head2 GetAuthValCodeFromField
