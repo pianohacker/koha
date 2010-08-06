@@ -140,6 +140,10 @@ if ($op eq "action") {
 			my $return = DelItemCheck(C4::Context->dbh, $itemdata->{'biblionumber'}, $itemdata->{'itemnumber'});
 			if ($return == 1) {
 			    $deleted_items++;
+
+                unless ( %{ C4::Items::get_itemnumbers_of( $itemdata->{'biblionumber'} ) } ) {
+                    DelBiblio( $itemdata->{'biblionumber'} );
+                }
 			} else {
 			    $not_deleted_items++;
 			    push @not_deleted, { biblionumber => $itemdata->{'biblionumber'}, itemnumber => $itemdata->{'itemnumber'}, barcode => $itemdata->{'barcode'}, title => $itemdata->{'title'}, $return => 1 };
