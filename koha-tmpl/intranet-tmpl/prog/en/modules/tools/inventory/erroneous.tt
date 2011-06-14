@@ -1,0 +1,79 @@
+[% IF ( erroneous ) %]
+<h2>Unexpected items</h2>
+<div class="help">
+    <p>
+    The following items were scanned, but should have not have been on the shelf:
+    </p>
+</div>
+<table>
+    <thead>
+        <tr><th class="tool">&nbsp;</th><th>Call Number</th><th>Title</th><th>Barcode</th><th>Problems</th></tr>
+    </thead>
+    <tbody>
+        [% FOREACH erroneou IN erroneous %]
+        <tr>
+            <td class="tool">
+                [% IF ( erroneou.is_checked_out ) %]
+                <a href="/cgi-bin/koha/circ/returns.pl?barcode=[% erroneou.barcode %]" class="checkin">Check In</a>
+                [% ELSE %]
+                [% IF ( erroneou.CAN_user_editcatalogue ) %]
+                <a href="/cgi-bin/koha/cataloguing/additem.pl?biblionumber=[% erroneou.biblionumber %]&amp;op=edititem&amp;itemnumber=[% erroneou.itemnumber %]">Edit Item</a>
+                [% END %]
+                [% END %]
+            </td>
+            <td>
+                [% IF ( erroneou.callnumber_wrong ) %]
+                <strong>[% erroneou.itemcallnumber %]</strong>
+                [% ELSE %]
+                [% erroneou.itemcallnumber %]
+                [% END %]
+            </td>
+            <td>
+                <a href="/cgi-bin/koha/catalogue/detail.pl?biblionumber=[% erroneou.biblionumber %]"><cite>[% erroneou.title %]</cite></a>
+                [% IF ( erroneou.author ) %]by [% erroneou.author %][% END %]
+            </td>
+            <td>
+                <a href="/cgi-bin/koha/catalogue/moredetail.pl?biblionumber=[% erroneou.biblionumber %]&amp;itemnumber=[% erroneou.itemnumber %]">[% erroneou.barcode %]</a>
+            </td>
+            <td>
+                <ul>
+                    [% IF ( erroneou.callnumber_wrong ) %]<li>Call number is outside the range you selected</li>[% END %]
+                    [% IF ( erroneou.is_lost ) %]<li>Is: <strong>[% erroneou.lost_description %]</strong></li>[% END %]
+                    [% IF ( erroneou.is_damaged ) %]<li>Is: <strong>[% erroneou.damaged_description %]</strong></li>[% END %]
+                    [% IF ( erroneou.is_wthdrawn ) %]<li>Is: <strong>[% erroneou.wthdrawn_description %]</strong></li>[% END %]
+                    [% IF ( erroneou.is_checked_out ) %]<li><strong>Checked out</strong></li>[% END %]
+                    [% IF ( erroneou.branchcode_wrong ) %]
+                    <li>
+                        [% IF ( erroneou.holdingbranch_description ) %]
+                        At <strong>[% erroneou.holdingbranch_description %]</strong>, not
+                        [% FOREACH branchcode_possible_value IN erroneou.branchcode_possible_values %][% IF ( branchcode_possible_value.__inner__ ) %], [% ELSIF ( loop.last ) %][% UNLESS ( loop.first ) %] or [% END %][% END %][% branchcode_possible_value.description %][% END %]
+                        [% ELSE %]
+                        Holding library is <strong>not set</strong>
+                        [% END %]
+                    </li>
+                    [% END %]
+                    [% IF ( erroneou.itemtype_wrong ) %]
+                    <li>
+                        In "<strong>[% erroneou.itemtype_description %]</strong>", not
+                        [% FOREACH itemtype_possible_value IN erroneou.itemtype_possible_values %][% IF ( itemtype_possible_value.__inner__ ) %], [% ELSIF ( loop.last ) %][% UNLESS ( loop.first ) %] or [% END %][% END %]"[% itemtype_possible_value.description %]"[% END %]
+                    </li>
+                    [% END %]
+                    [% IF ( erroneou.location_wrong ) %]
+                    <li>
+                        In the "<strong>[% erroneou.location_description %]</strong>" location, not
+                        [% FOREACH location_possible_value IN erroneou.location_possible_values %][% IF ( location_possible_value.__inner__ ) %], [% ELSIF ( loop.last ) %][% UNLESS ( loop.first ) %] or [% END %][% END %]"[% location_possible_value.description %]"[% END %]
+                    </li>
+                    [% END %]
+                    [% IF ( erroneou.collection_wrong ) %]
+                    <li>
+                        In the "<strong>[% erroneou.ccode_description %]</strong>" collection, not
+                        [% FOREACH collection_possible_value IN erroneou.collection_possible_values %][% IF ( collection_possible_value.__inner__ ) %], [% ELSIF ( loop.last ) %][% UNLESS ( loop.first ) %] or [% END %][% END %]"[% collection_possible_value.description %]"[% END %]
+                    </li>
+                    [% END %]
+                </ul>
+            </td>
+        </tr>
+        [% END %]
+    </tbody>
+</table>
+[% END %]
