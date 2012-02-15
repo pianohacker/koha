@@ -892,7 +892,7 @@ sub checkauth {
             my ( $return, $cardnumber );
 
             # If shib is enabled and we have a shib login, does the login match a valid koha user
-            if ( $shib && $shib_login && $type eq 'opac' ) {
+            if ( $shib && $shib_login ) {
                 my $retuserid;
 
                 # Do not pass password here, else shib will not be checked in checkpw.
