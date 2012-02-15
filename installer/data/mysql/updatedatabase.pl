@@ -6949,6 +6949,7 @@ if ( CheckVersion($DBversion) ) {
     SetVersion ($DBversion);
 }
 
+<<<<<<< HEAD
 $DBversion = "3.12.07.001";
 if(CheckVersion($DBversion)) {
     $dbh->do("ALTER TABLE deleteditems MODIFY materials text;");
@@ -6971,6 +6972,14 @@ if ( CheckVersion($DBversion) ) {
 $DBversion = "3.12.10.000";
 if ( CheckVersion($DBversion) ) {
     print "Upgrade to $DBversion done (3.12.10 release)\n";
+    SetVersion ($DBversion);
+}
+
+$DBversion = "3.13.00.XXX";
+if (C4::Context->preference("Version") < TransformToNum($DBversion)) {
+    $dbh->do("INSERT INTO `systempreferences` (variable,value,options,explanation,type) VALUES('shibbolethAuthentication','','','Enable or disable Shibboleth authentication','YesNo')");
+    $dbh->do("INSERT INTO `systempreferences` (variable,value,options,explanation,type) VALUES('shibbolethLoginAttribute','','','Which shibboleth user attribute should be used to match koha user login?','')");
+    print "Upgrade to $DBversion done (Adds shibbolethAuthentication and shibbolethLoginAttribute preferences)\n";
     SetVersion ($DBversion);
 }
 

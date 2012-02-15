@@ -113,3 +113,14 @@ Administration:
                 Solr: Solr
                 Zebra: Zebra
             - is the search engine used.
+    Shibboleth Authentication:
+        -
+            - pref: shibbolethAuthentication
+              default: 0
+              choices:
+                  yes: Use
+                  no: "Don't use"
+            - Shibboleth for login authentication.
+        -
+            - Which shibboleth user attribute should be used to match koha user login?
+            - pref: shibbolethLoginAttribute

@@ -33,7 +33,7 @@ use POSIX qw/strftime/;
 use List::MoreUtils qw/ any /;
 
 # use utf8;
-use vars qw($VERSION @ISA @EXPORT @EXPORT_OK %EXPORT_TAGS $debug $ldap $cas $caslogout);
+use vars qw($VERSION @ISA @EXPORT @EXPORT_OK %EXPORT_TAGS $debug $ldap $cas $caslogout $shib);
 
 BEGIN {
     sub psgi_env { any { /^psgi\./ } keys %ENV }
@@ -52,11 +52,16 @@ BEGIN {
     %EXPORT_TAGS = ( EditPermissions => [qw(get_all_subpermissions get_user_subpermissions)] );
     $ldap        = C4::Context->config('useldapserver') || 0;
     $cas         = C4::Context->preference('casAuthentication');
+    $shib        = C4::Context->preference('shibbolethAuthentication');
     $caslogout   = C4::Context->preference('casLogout');
     require C4::Auth_with_cas;             # no import
+    require C4::Auth_with_Shibboleth;
     if ($ldap) {
     require C4::Auth_with_ldap;
     import C4::Auth_with_ldap qw(checkpw_ldap);
+    }
+    if ($shib) {
+        import C4::Auth_with_Shibboleth qw(checkpw_shib logout_shib login_shib_url);
     }
     if ($cas) {
         import  C4::Auth_with_cas qw(check_api_auth_cas checkpw_cas login_cas logout_cas login_cas_url);
@@ -684,6 +689,10 @@ sub checkauth {
         if ($cas and $caslogout) {
         logout_cas($query);
         }
+        if ( $shib and $type eq 'opac') {
+        # (Note: $type eq 'opac' condition should be removed when shibboleth authentication for intranet will be implemented)
+            logout_shib($query);
+        }
         }
         elsif ( !$lasttime || ($lasttime < time() - $timeout) ) {
             # timed logout
@@ -740,6 +749,7 @@ sub checkauth {
             $pki_field = 'None';
         }
         if (   ( $cas && $query->param('ticket') )
+            || $shib
             || $userid
             || $pki_field ne 'None'
             || $persona )
@@ -747,7 +757,15 @@ sub checkauth {
             my $password = $query->param('password');
 
             my ( $return, $cardnumber );
-            if ( $cas && $query->param('ticket') ) {
+            if ($shib && $type eq 'opac' && !$password) {
+                my $attributename = C4::Context->preference('shibbolethLoginAttribute');
+                my $attributevalue = $ENV{$attributename};
+                my $retuserid;
+                ( $return, $cardnumber, $retuserid ) = checkpw( $dbh, $userid, $password, $query );
+                $userid = $retuserid;
+                $info{'invalidShibLogin'} = 1 unless ($return || $attributename);
+
+            } elsif ( $cas && $query->param('ticket') ) {
                 my $retuserid;
                 ( $return, $cardnumber, $retuserid ) =
                   checkpw( $dbh, $userid, $password, $query );
@@ -992,6 +1010,7 @@ sub checkauth {
         login                => 1,
         INPUTS               => \@inputs,
         casAuthentication    => C4::Context->preference("casAuthentication"),
+        shibbolethAuthentication => C4::Context->preference("shibbolethAuthentication"),
         suggestion           => C4::Context->preference("suggestion"),
         virtualshelves       => C4::Context->preference("virtualshelves"),
         LibraryName          => "" . C4::Context->preference("LibraryName"),
@@ -1061,6 +1080,12 @@ sub checkauth {
     $template->param(
             invalidCasLogin => $info{'invalidCasLogin'}
         );
+    }
+
+    if ($shib) {
+            $template->param(
+                shibbolethLoginUrl    => login_shib_url($query),
+            );
     }
 
     my $self_url = $query->url( -absolute => 1 );
@@ -1489,7 +1514,25 @@ sub checkpw {
     return 0;
     }
 
-    # INTERNAL AUTH
+    if ($shib && !$password) {
+
+        $debug and print STDERR "## checkpw - checking Shibboleth\n";
+        # In case of a Shibboleth authentication, we expect a shibboleth user attribute (defined in the shibbolethLoginAttribute)
+        # to contain the login of the shibboleth-authenticated user
+
+        # Shibboleth attributes are mapped into http environmement variables,
+        # so we're getting the login of the user this way
+        my $attributename = C4::Context->preference('shibbolethLoginAttribute');
+        my $attributevalue = $ENV{$attributename};
+
+        # Then, we check if it matches a valid koha user
+        if ($attributevalue) {
+            my ( $retval, $retcard, $retuserid ) = C4::Auth_with_Shibboleth::checkpw_shib( $dbh, $attributevalue, $attributename );    # EXTERNAL AUTH
+            ($retval) and return ( $retval, $retcard, $retuserid );
+            return 0;
+        }
+    }
+
     my $sth =
       $dbh->prepare(
 "select password,cardnumber,borrowernumber,userid,firstname,surname,branchcode,flags from borrowers where userid=?"
