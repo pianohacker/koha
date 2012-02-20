@@ -32,7 +32,7 @@ BEGIN {
     $VERSION = 3.03;                                                                    # set the version for version checking
     $debug   = $ENV{DEBUG};
     @ISA     = qw(Exporter);
-    @EXPORT  = qw(logout_shib login_shib_url checkpw_shib);
+    @EXPORT  = qw(logout_shib login_shib_url checkpw_shib get_login_shib);
 }
 my $context = C4::Context->new() or die 'C4::Context->new failed';
 
@@ -52,15 +52,30 @@ sub login_shib_url {
     return $uri;
 }
 
+# Returns shibboleth user login
+sub get_login_shib {
+
+    # In case of a Shibboleth authentication, we expect a shibboleth user attribute (defined in the shibbolethLoginAttribute)
+    # to contain the login of the shibboleth-authenticated user
+
+    # Shibboleth attributes are mapped into http environmement variables,
+    # so we're getting the login of the user this way
+
+    my $shibbolethLoginAttribute = C4::Context->preference('shibbolethLoginAttribute');
+    $debug and warn "shibbolethLoginAttribute value: $shibbolethLoginAttribute";
+    $debug and warn "$shibbolethLoginAttribute value: " . $ENV{$shibbolethLoginAttribute};
+
+    return $ENV{$shibbolethLoginAttribute};
+}
 
 # Checks for password correctness
 # In our case : does the given username matches one of our users ?
 sub checkpw_shib {
     $debug and warn "checkpw_shib";
 
-    my ( $dbh, $userid, $attributename ) = @_;
+    my ( $dbh, $userid ) = @_;
     my $retnumber;
-    $debug and warn "User Shibboleth authenticated as: $userid (from attribute $attributename)";
+    $debug and warn "User Shibboleth-authenticated as: $userid";
 
     # Does it match one of our users ?
     my $sth = $dbh->prepare("select cardnumber from borrowers where userid=?");
