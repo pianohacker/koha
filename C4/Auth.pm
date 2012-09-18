@@ -629,7 +629,16 @@ sub checkauth {
     # when using authentication against multiple CAS servers, as configured in Auth_cas_servers.yaml
     my $casparam = $query->param('cas');
 
-    if ( $userid = $ENV{'REMOTE_USER'} ) {
+    # Basic authentication is incompatible with the use of Shibboleth,
+    # as Shibboleth may return REMOTE_USER as a Shibboleth attribute,
+    # and it may not be the attribute we want to use to match the koha login.
+    #
+    # Also, do not consider an empty REMOTE_USER.
+    #
+    # Finally, after those tests, we can assume (although if it would be better with
+    # a syspref) that if we get a REMOTE_USER, that's from basic authentication,
+    # and we can affect it to $userid.
+    if ( !$shib and $ENV{'REMOTE_USER'} ne '' and $userid = $ENV{'REMOTE_USER'} ) {
             # Using Basic Authentication, no cookies required
         $cookie = $query->cookie(
             -name     => 'CGISESSID',
