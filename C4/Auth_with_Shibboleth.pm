@@ -40,7 +40,7 @@ my $context = C4::Context->new() or die 'C4::Context->new failed';
 sub logout_shib {
     my ($query) = @_;
     my $uri = C4::Context->preference('OPACBaseURL');
-    print $query->redirect( $uri . "/Shibboleth.sso/Logout" );
+    print $query->redirect( $uri . "/Shibboleth.sso/Logout?return=$uri" );
 }
 
 # Returns Shibboleth login URL with callback to the requesting URL
