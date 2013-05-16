@@ -2968,3 +2968,12 @@ padding: 0.1em 0;
 .thumbnail-shelfbrowser span {
     margin: 0px auto;
 }
+
+#overdrive-results {
+    font-weight: bold;
+    padding-left: 1em;
+}
+
+.throbber {
+    vertical-align: middle;
+}
