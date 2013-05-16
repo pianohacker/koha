@@ -2960,3 +2960,12 @@ padding: 0.1em 0;
 .notesrow textarea {
     width: 100%;
 }
+
+#overdrive-results {
+    font-weight: bold;
+    padding-left: 1em;
+}
+
+.throbber {
+    vertical-align: middle;
+}
