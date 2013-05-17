@@ -250,6 +250,7 @@ $(document).ready(function(){
 
 [% IF ( query_desc ) %]
     var query_desc = "[% query_desc |replace("'", "\'") |replace('\n', '\\n') |replace('\r', '\\r') |html %]";
+    var querystring = "[% querystring |replace("'", "\'") |replace('\n', '\\n') |replace('\r', '\\r') |html %]";
     [% IF ( OpacHighlightedWords ) %]
         q_array = query_desc.split(" ");
         // ensure that we don't have "" at the end of the array, which can
@@ -263,7 +264,7 @@ $(document).ready(function(){
     [% END %]
     [% IF ( OverDriveEnabled ) %]
         KOHA.OverDrive.token = "[% OverDriveToken %]";
-        KOHA.OverDrive.Search( "[% OverDriveLibraryID %]", query_desc, function(data) {
+        KOHA.OverDrive.Search( "[% OverDriveLibraryID %]", querystring, function(data) {
             console.log( data );
         } );
     [% END %]

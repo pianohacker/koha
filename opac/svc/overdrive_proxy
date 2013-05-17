@@ -60,7 +60,7 @@ if ( !IsOverDriveEnabled() || !( $token = GetOverDriveToken() ) ) {
     exit;
 }
 
-my $request = HTTP::Request::Common::GET( "https://api.overdrive.com/v1" . $query->path_info, %{ $query->Vars } );
+my $request = HTTP::Request::Common::GET( "https://api.overdrive.com/v1" . $query->path_info . '?' . $query->query_string );
 $request->header( Authorization => $token );
 
 my $ua = LWP::UserAgent->new( "Koha " . C4::Context->KOHAVERSION );

@@ -3,23 +3,21 @@ if ( typeof KOHA == "undefined" || !KOHA ) {
 }
 
 KOHA.OverDrive = ( function() {
-    var library_base_url = 'https://api.overdrive.com/v1/libraries/';
-    function _oauth_get( url, params, callback ) {
+    var proxy_base_url = '/cgi-bin/koha/svc/overdrive_proxy';
+    var library_base_url = 'http://api.overdrive.com/v1/libraries/';
+    function _get( url, params, callback ) {
         $.ajax({
             type: 'GET',
-            url: url,
+            url: url.replace(/https?:\/\/api.overdrive.com\/v1/, proxy_base_url),
             dataType: 'json',
-            params: params,
-            beforeSend: function(xhr) {
-                xhr.setRequestHeader('Authorization', KOHA.OverDrive.token);
-            },
+            data: params,
             success: callback
         });
     }
 
     return {
         GetCollectionURL: function( library_id, callback ) {
-            _oauth_get(
+            _get(
                 library_base_url + library_id,
                 {},
                 function (data) {
@@ -29,7 +27,7 @@ KOHA.OverDrive = ( function() {
         },
         Search: function( library_id, q, callback ) {
             KOHA.OverDrive.GetCollectionURL( library_id, function( collection_url ) {
-                _oauth_get(
+                _get(
                     collection_url,
                     {q: q},
                     callback
