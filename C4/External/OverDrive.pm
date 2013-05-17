@@ -22,8 +22,8 @@ use warnings;
 
 use JSON;
 use Koha::Cache;
-use HTTP:Request;
-use HTTP:Request::Common;
+use HTTP::Request;
+use HTTP::Request::Common;
 use LWP::Authen::Basic;
 use LWP::UserAgent;
 
@@ -32,8 +32,8 @@ BEGIN {
     our $VERSION = 3.07.00.049;
     our @ISA = qw( Exporter ) ;
     our @EXPORT = qw(
+        IsOverDriveEnabled
         GetOverDriveToken
-        SearchOverDrive
     );
 }
 
@@ -41,15 +41,16 @@ sub _request {
     my ( $request ) = @_;
     my $ua = LWP::UserAgent->new( "Koha " . C4::Context->KOHAVERSION );
 
+    my $response;
     eval {
-        my $response = $ua->request( $request ) ;
-    }
+        $response = $ua->request( $request ) ;
+    };
     if ( $@ )  {
         warn "OverDrive request failed: $@";
         return;
     }
 
-    $response;
+    return $response;
 }
 
 =head1 NAME
@@ -98,7 +99,8 @@ sub GetOverDriveToken {
 
     eval { $cache = Koha::Cache->new() };
 
-    $cache && my $token = $cache->get_from_cache( "overdrive_token" ) and return $token;
+    my $token;
+    $cache and $token = $cache->get_from_cache( "overdrive_token" ) and return $token;
 
     my $request = HTTP::Request::Common::POST( 'https://oauth.overdrive.com/token', [
         grant_type => 'client_credentials'
