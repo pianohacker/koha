@@ -11,6 +11,13 @@ KOHA.OverDrive = ( function() {
             url: url.replace(/https?:\/\/api.overdrive.com\/v1/, proxy_base_url),
             dataType: 'json',
             data: params,
+            error: function(xhr, error) { 
+                try {
+                    callback(JSON.parse(xhr.responseText));
+                } catch ( e ) {
+                    callback({error: xhr.responseText || true});
+                }
+            },
             success: callback
         });
     }
@@ -21,14 +28,24 @@ KOHA.OverDrive = ( function() {
                 library_base_url + library_id,
                 {},
                 function (data) {
+                    if (data.error) {
+                        callback(data);
+                        return;
+                    }
+
                     callback(data.links.products.href);
                 }
             );
         },
         Search: function( library_id, q, callback ) {
-            KOHA.OverDrive.GetCollectionURL( library_id, function( collection_url ) {
+            KOHA.OverDrive.GetCollectionURL( library_id, function( data ) {
+                if (data.error) {
+                    callback(data);
+                    return;
+                }
+
                 _get(
-                    collection_url,
+                    data,
                     {q: q},
                     callback
                 );

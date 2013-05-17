@@ -65,16 +65,13 @@ $request->header( Authorization => $token );
 
 my $ua = LWP::UserAgent->new( "Koha " . C4::Context->KOHAVERSION );
 
-my $response;
-eval {
-    $response = $ua->request( $request ) ;
-};
-if ( $@ )  {
+my $response = $ua->request( $request ) ;
+if ( $response->code eq '500' ) {
     print $query->header(
-        -status => '400 Bad Request',
-        -content
+        -status => '500 Internal Server Error'
     );
 
+    warn "OverDrive request failed: " . $response->message;
     print to_json({
         error => 'invalid_client',
         error_description => 'OverDrive request failed'

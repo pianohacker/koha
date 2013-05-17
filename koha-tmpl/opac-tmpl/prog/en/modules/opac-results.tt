@@ -263,9 +263,21 @@ $(document).ready(function(){
         $("#highlight_toggle_off").show().click(function() {highlightOff();});
     [% END %]
     [% IF ( OverDriveEnabled ) %]
-        KOHA.OverDrive.token = "[% OverDriveToken %]";
+        var $overdrive_results = $('<span id="overdrive-results">Searching OverDrive... <img class="throbber" src="/opac-tmpl/lib/jquery/plugins/themes/classic/throbber.gif" /></span>');
+        $('#breadcrumbs p')
+            .append(' ')
+            .append($overdrive_results);
         KOHA.OverDrive.Search( "[% OverDriveLibraryID %]", querystring, function(data) {
-            console.log( data );
+            if (data.error) {
+                $overdrive_results.html('Error searching OverDrive collection');
+                return;
+            }
+
+            if (data.totalItems) {
+                $overdrive_results.html('Found <a href="/cgi-bin/koha/opac-overdrive-search.pl?q=' + escape(querystring) + '">' + data.totalItems + ' results</a> in OverDrive collection');
+            } else {
+                $overdrive_results.remove();
+            }
         } );
     [% END %]
 [% END %]

@@ -108,6 +108,10 @@ sub GetOverDriveToken {
     $request->header( Authorization => LWP::Authen::Basic->auth_header( $key, $secret ) );
 
     my $response = _request( $request ) or return;
+    if ( $response->header('Content-Type') !~ m,application/json, ) {
+        warn "Could not connect to OverDrive: " . $response->message;
+        return;
+    }
     my $contents = from_json( $response->decoded_content );
 
     if ( $response->code ne '200' ) {

@@ -900,7 +900,6 @@ $template->{VARS}->{IDreamBooksResults} = C4::Context->preference('IDreamBooksRe
 
 if ($offset == 0 && IsOverDriveEnabled()) {
     $template->param(OverDriveEnabled => 1);
-    $template->param(OverDriveToken => GetOverDriveToken());
     $template->param(OverDriveLibraryID => C4::Context->preference('OverDriveLibraryID'));
 }
 

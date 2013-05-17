@@ -2946,3 +2946,12 @@ a.reviewlink,a.reviewlink:visited {
 float:left;
 padding: 0.1em 0;
 }
+
+#overdrive-results {
+    font-weight: bold;
+    padding-left: 1em;
+}
+
+#overdrive-results .throbber {
+    vertical-align: middle;
+}
