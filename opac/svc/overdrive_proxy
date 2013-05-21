@@ -35,7 +35,7 @@ JS side from having to deal with cross-origin/authentication issues.
 use strict;
 use warnings;
 
-use CGI;
+use CGI qw(-oldstyle_urls);
 use JSON;
 
 use C4::Context;
@@ -60,6 +60,8 @@ if ( !IsOverDriveEnabled() || !( $token = GetOverDriveToken() ) ) {
     exit;
 }
 
+warn $query->path_info;
+warn $query->query_string;
 my $request = HTTP::Request::Common::GET( "https://api.overdrive.com/v1" . $query->path_info . '?' . $query->query_string );
 $request->header( Authorization => $token );
 

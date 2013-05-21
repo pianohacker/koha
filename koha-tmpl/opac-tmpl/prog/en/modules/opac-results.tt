@@ -267,7 +267,7 @@ $(document).ready(function(){
         $('#breadcrumbs p')
             .append(' ')
             .append($overdrive_results);
-        KOHA.OverDrive.Search( "[% OverDriveLibraryID %]", querystring, function(data) {
+        KOHA.OverDrive.Search( "[% OverDriveLibraryID %]", querystring, 1, 0, function(data) {
             if (data.error) {
                 $overdrive_results.html('Error searching OverDrive collection');
                 return;

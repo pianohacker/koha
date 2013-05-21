@@ -336,5 +336,4 @@ Enhanced Content:
         -
             - "Show items from the OverDrive catalog of library #"
             - pref: OverDriveLibraryID
-              options: 20
             - .

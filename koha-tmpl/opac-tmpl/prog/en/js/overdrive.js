@@ -37,7 +37,7 @@ KOHA.OverDrive = ( function() {
                 }
             );
         },
-        Search: function( library_id, q, callback ) {
+        Search: function( library_id, q, limit, offset, callback ) {
             KOHA.OverDrive.GetCollectionURL( library_id, function( data ) {
                 if (data.error) {
                     callback(data);
@@ -46,7 +46,7 @@ KOHA.OverDrive = ( function() {
 
                 _get(
                     data,
-                    {q: q},
+                    {q: q, limit: limit, offset: offset},
                     callback
                 );
             } );
