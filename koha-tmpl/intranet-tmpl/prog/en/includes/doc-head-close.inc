@@ -3,11 +3,7 @@
 <link rel="stylesheet" type="text/css" href="[% interface %]/lib/jquery/jquery-ui.css" />
 <link rel="stylesheet" type="text/css" href="[% interface %]/lib/bootstrap/bootstrap.min.css" />
 <link rel="stylesheet" type="text/css" media="print" href="[% themelang %]/css/print.css" />
-[% IF ( intranetstylesheet ) %]
-    <link rel="stylesheet" type="text/css" href="[% intranetstylesheet %]" />
-[% ELSE %]
-    <link rel="stylesheet" type="text/css" href="[% themelang %]/css/staff-global.css" />
-[% END %]
+[% INCLUDE intranetstylesheet.inc %]
 [% IF ( bidi ) %]
    <link rel="stylesheet" type="text/css" href="[% themelang %]/css/right-to-left.css" />
 [% END %]
@@ -25,11 +21,6 @@
 [% END %]
 [% IF ( wizard ) %]
     <link rel="stylesheet" type="text/css" href="[% themelang %]/css/wizard.css" />
-[% END %]
-
-<!-- local colors -->
-[% IF ( intranetcolorstylesheet ) %]
-    <link rel="stylesheet" type="text/css" href="[% themelang %]/css/[% intranetcolorstylesheet %]" />
 [% END %]
 
 <!-- yui js --> 

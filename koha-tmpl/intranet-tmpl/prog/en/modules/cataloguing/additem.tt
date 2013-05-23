@@ -10,7 +10,7 @@ $(document).ready(function(){
             window.close();
         [% END %]
     [% END %]
-		$("fieldset.rows input").keydown(function(e){ return checkEnter(e); });
+            $("fieldset.rows input").addClass("noEnterSubmit");
 		/* Inline edit/delete links */
 		var biblionumber = $("input[name='biblionumber']").attr("value");
         $("tr.editable td").click(function(event){
@@ -100,6 +100,8 @@ $(document).ready(function() {
 </head>
 <body id="cat_additem" class="cat">
 [% INCLUDE 'header.inc' %]
+[% INCLUDE 'cataloging-search.inc' %]
+
 <div id="breadcrumbs">
           <a href="/cgi-bin/koha/mainpage.pl">Home</a>
  &rsaquo; <a href="/cgi-bin/koha/cataloguing/addbooks.pl">Cataloging</a>
@@ -192,7 +194,7 @@ $(document).ready(function() {
                 <input type="hidden" name="mandatory" value="[% ite.mandatory %]" />
                 [% IF ( ite.repeatable ) %]
                     <a href="#" class="buttonPlus" onclick="CloneItemSubfield(this.parentNode); return false;">
-                        <img src="/intranet-tmpl/prog/img/clone-subfield.png" alt="Clone" title="Clone this subfield" />
+                        <img src="[% interface %]/[% theme %]/img/clone-subfield.png" alt="Clone" title="Clone this subfield" />
                     </a>
                 [% END %]
                 [% IF ( ite.mandatory ) %] <span class="required">Required</span>[% END %]

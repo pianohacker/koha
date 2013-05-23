@@ -41,6 +41,7 @@ use C4::XSLT;
 use C4::Images;
 use Koha::DateUtils;
 use C4::HTML5Media;
+use C4::CourseReserves qw(GetItemCourseReservesInfo);
 
 # use Smart::Comments;
 
@@ -267,6 +268,10 @@ foreach my $item (@items) {
 
     if (defined($item->{'materials'}) && $item->{'materials'} =~ /\S/){
 	$materials_flag = 1;
+    }
+
+    if ( C4::Context->preference('UseCourseReserves') ) {
+        $item->{'course_reserves'} = GetItemCourseReservesInfo( itemnumber => $item->{'itemnumber'} );
     }
 
     if ($currentbranch and $currentbranch ne "NO_LIBRARY_SET"

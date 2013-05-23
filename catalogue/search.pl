@@ -224,7 +224,7 @@ if($cgi->cookie("holdfor")){
 my $branches = GetBranches();
 
 # Populate branch_loop with all branches sorted by their name.  If
-# independantbranches is activated, set the default branch to the borrower
+# IndependentBranches is activated, set the default branch to the borrower
 # branch, except for superlibrarian who need to search all libraries.
 my $user = C4::Context->userenv;
 my @branch_loop = map {
@@ -412,7 +412,8 @@ my @operands = $cgi->param('q');
 my @limits = $cgi->param('limit');
 
 if($params->{'multibranchlimit'}) {
-    push @limits, '('.join( " or ", map { "branch: $_ " } @{ GetBranchesInCategory( $params->{'multibranchlimit'} ) } ).')';
+    my $multibranch = '('.join( " or ", map { "branch: $_ " } @{ GetBranchesInCategory( $params->{'multibranchlimit'} ) } ).')';
+    push @limits, $multibranch if ($multibranch ne  '()');
 }
 
 my $available;

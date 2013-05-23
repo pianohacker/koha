@@ -426,7 +426,7 @@ foreach my $biblionumber (@biblionumbers) {
 
             # if independent branches is on we need to check if the person can reserve
             # for branches they arent logged in to
-            if ( C4::Context->preference("IndependantBranches") ) {
+            if ( C4::Context->preference("IndependentBranches") ) {
                 if (! C4::Context->preference("canreservefromotherbranches")){
                     # cant reserve items so need to check if item homebranch and userenv branch match if not we cant reserve
                     my $userenv = C4::Context->userenv;
@@ -571,7 +571,7 @@ foreach my $biblionumber (@biblionumbers) {
         $reserve{'suspend'} = $res->{'suspend'};
         $reserve{'suspend_until'} = $res->{'suspend_until'};
 
-        if ( C4::Context->preference('IndependantBranches') && $flags->{'superlibrarian'} != 1 ) {
+        if ( C4::Context->preference('IndependentBranches') && $flags->{'superlibrarian'} != 1 ) {
               $reserve{'branchloop'} = [ GetBranchDetail($res->{'branchcode'}) ];
         } else {
               $reserve{'branchloop'} = GetBranchesLoop($res->{'branchcode'});

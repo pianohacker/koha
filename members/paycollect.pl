@@ -19,6 +19,7 @@
 
 use strict;
 use warnings;
+use URI::Escape;
 use C4::Context;
 use C4::Auth;
 use C4::Output;
@@ -55,6 +56,7 @@ my $individual   = $input->param('pay_individual');
 my $writeoff     = $input->param('writeoff_individual');
 my $select_lines = $input->param('selected');
 my $select       = $input->param('selected_accts');
+my $payment_note = uri_unescape $input->param('payment_note');
 my $accountno;
 my $accountlines_id;
 if ( $individual || $writeoff ) {
@@ -85,12 +87,14 @@ if ( $individual || $writeoff ) {
         description       => $description,
         notify_id         => $notify_id,
         notify_level      => $notify_level,
+        payment_note    => $payment_note,
     );
 } elsif ($select_lines) {
     $total_due = $input->param('amt');
     $template->param(
         selected_accts => $select_lines,
-        amt            => $total_due
+        amt            => $total_due,
+        selected_accts_notes => $input->param('notes'),
     );
 }
 
@@ -104,10 +108,10 @@ if ( $total_paid and $total_paid ne '0.00' ) {
         if ($individual) {
             if ( $total_paid == $total_due ) {
                 makepayment( $accountlines_id, $borrowernumber, $accountno, $total_paid, $user,
-                    $branch );
+                    $branch, $payment_note );
             } else {
                 makepartialpayment( $accountlines_id, $borrowernumber, $accountno, $total_paid,
-                    $user, $branch );
+                    $user, $branch, $payment_note );
             }
             print $input->redirect(
                 "/cgi-bin/koha/members/pay.pl?borrowernumber=$borrowernumber");
@@ -117,8 +121,8 @@ if ( $total_paid and $total_paid ne '0.00' ) {
                     $select = $1;    # ensure passing no junk
                 }
                 my @acc = split /,/, $select;
-                recordpayment_selectaccts( $borrowernumber, $total_paid,
-                    \@acc );
+                my $note = $input->param('selected_accts_notes');
+                recordpayment_selectaccts( $borrowernumber, $total_paid, \@acc, $note );
             } else {
                 recordpayment( $borrowernumber, $total_paid );
             }

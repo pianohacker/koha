@@ -10,8 +10,8 @@
 [% END %]
 [% INCLUDE 'doc-head-close.inc' %]
 <link rel="alternate" type="application/rss+xml" title="[% LibraryName |html %] Search RSS Feed" href="[% OPACBaseURL %]/cgi-bin/koha/opac-search.pl?[% query_cgi |html %][% limit_cgi |html %]&amp;count=[% countrss |html %]&amp;sort_by=acqdate_dsc&amp;format=rss2" />
-[% IF ( OpacStarRatings == 'all' ) %]<script type="text/javascript" src="/opac-tmpl/prog/en/lib/jquery/plugins/jquery.rating.js"></script>
-<link rel="stylesheet" type="text/css" href="/opac-tmpl/prog/en/css/jquery.rating.css" />[% END %]
+[% IF ( OpacStarRatings == 'all' ) %]<script type="text/javascript" src="[% themelang %]/lib/jquery/plugins/jquery.rating.js"></script>
+<link rel="stylesheet" type="text/css" href="[% themelang %]/css/jquery.rating.css" />[% END %]
 
 <script type="text/javascript" src="[% themelang %]/js/overdrive.js"></script>
 <script type="text/javascript" src="[% themelang %]/lib/jquery/plugins/jquery.checkboxes.min.js"></script>
@@ -670,7 +670,7 @@ $(document).ready(function(){
                     [% IF ( loggedinusername ) %]
                         <a class="tag_add" id="tag_add[% SEARCH_RESULT.biblionumber %]" href="#">Add tag</a>
                         <span id="tagform[% SEARCH_RESULT.biblionumber %]" class="tag_results_input" style="display:none;">
-                          <label for="newtag[% SEARCH_RESULT.biblionumber %]">New tag(s):</label>
+                          <label for="newtag[% SEARCH_RESULT.biblionumber %]">New tag(s), separated by a comma:</label>
                           <input name="newtag[% SEARCH_RESULT.biblionumber %]" id="newtag[% SEARCH_RESULT.biblionumber %]" maxlength="100" />
                           <input name="tagbutton" class="tagbutton" title="[% SEARCH_RESULT.biblionumber %]" type="submit" value="Add" />
                           <a class="cancel_tag_add" id="cancel[% SEARCH_RESULT.biblionumber %]" href="#">(done)</a>

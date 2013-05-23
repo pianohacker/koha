@@ -23,13 +23,13 @@ function formatDate(myDate) {
     var d = new Array( myDate.getFullYear(), myDate.getMonth() + 1 ,myDate.getDate());
     if(d[1].toString().length == 1) { d[1] = '0'+d[1] };
     if(d[2].toString().length == 1) { d[2] = '0'+d[2] };
-    [% IF ( dateformat_us ) %]
+    [% IF ( dateformat == "us" ) %]
         return(d[1] + '/' + d[2] + '/' + d[0]) ;
-    [% ELSIF ( dateformat_metric ) %]
+    [% ELSIF ( dateformat == "metric" ) %]
         return(d[2] + '/' + d[1] + '/' + d[0]) ;
     [% ELSE %]
         return(''+d[0] + '-' + d[1] + '-' + d[2]) ;
-    [% END %]    
+    [% END %]
 }
 
 Date.prototype.addDays = function(days) {
@@ -1033,7 +1033,7 @@ $(document).ready(function() {
             <label for="branchcode">Library:</label>
             
                 <select name="branchcode" id="branchcode" style="width: 20em;">
-                    [% UNLESS ( Independantbranches ) %]<option value="">None</option>[% END %]
+                    [% UNLESS ( IndependentBranches ) %]<option value="">None</option>[% END %]
                     [% FOREACH branchloo IN branchloop %][% IF ( branchloo.selected ) %]<option value="[% branchloo.value %]" selected="selected">[% branchloo.branchname %]</option>
 				[% ELSE %]
 				<option value="[% branchloo.value %]">[% branchloo.branchname %]</option>
@@ -1216,7 +1216,7 @@ $(document).ready(function() {
                 [% END %]
 
                 [% IF ( periodicity9 ) %]
-                    <option value="9" selected="selected">2/years</option>
+                    <option value="9" selected="selected">2/year</option>
                 [% ELSE %]
                     <option value="9">2/year</option>
                 [% END %]

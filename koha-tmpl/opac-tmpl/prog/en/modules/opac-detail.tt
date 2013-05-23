@@ -1,6 +1,20 @@
 [% USE KohaDates %]
+[% USE AuthorisedValues %]
 [% SET TagsShowEnabled = ( TagsEnabled && TagsShowOnDetail ) %]
 [% SET TagsInputEnabled = ( opacuserlogin && TagsEnabled && TagsInputOnDetail ) %]
+
+[% ShowCourseReservesHeader = 0 %]
+[% IF UseCourseReserves %]
+    [% FOREACH ITEM_RESULT IN itemloop %]
+       [% IF ITEM_RESULT.course_reserves %]
+           [% FOREACH r IN ITEM_RESULT.course_reserves %]
+               [% IF r.course.enabled == 'yes' %]
+                   [% ShowCourseReservesHeader = 1 %]
+               [% END %]
+           [% END %]
+        [% END %]
+    [% END %]
+[% END %]
 
 [% INCLUDE 'doc-head-open.inc' %][% IF ( LibraryNameTitle ) %][% LibraryNameTitle %][% ELSE %]Koha online[% END %] catalog &rsaquo; Details for: [% title |html %][% FOREACH subtitl IN subtitle %], [% subtitl.subfield |html %][% END %]
 [% INCLUDE 'doc-head-close.inc' %]
@@ -13,8 +27,8 @@
     </script>
     <script type="text/javascript">!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0];if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src="//platform.twitter.com/widgets.js";fjs.parentNode.insertBefore(js,fjs);}}(document,"script","twitter-wjs");</script>
 [% END %]
-[% IF ( OpacStarRatings != 'disable' ) %]<script type="text/javascript" src="/opac-tmpl/prog/en/lib/jquery/plugins/jquery.rating.js"></script>
-<link rel="stylesheet" type="text/css" href="/opac-tmpl/prog/en/css/jquery.rating.css" />[% END %]
+[% IF ( OpacStarRatings != 'disable' ) %]<script type="text/javascript" src="[% themelang %]/lib/jquery/plugins/jquery.rating.js"></script>
+<link rel="stylesheet" type="text/css" href="[% themelang %]/css/jquery.rating.css" />[% END %]
 
 [% IF ( OpacHighlightedWords ) %]<script type="text/javascript" src="[% themelang %]/lib/jquery/plugins/jquery.highlight-3.js"></script>[% END %]
 [% IF ( bidi ) %]
@@ -583,7 +597,7 @@ YAHOO.util.Event.onContentReady("furtherm", function () {
                     href="/cgi-bin/koha/opac-search.pl?q=[% FOREACH link_loo IN MARCAUTHOR_SUBFIELDS_LOO.link_loop %][% link_loo.operator |url %][% link_loo.limit |url %]:[% link_loo.link |url %][% END %]">[% MARCAUTHOR_SUBFIELDS_LOO.value %]</a>
             [% END %]
             [% IF (MARCAUTHOR.authoritylink) %]
-                <a class='authlink' href="/cgi-bin/koha/opac-authoritiesdetail.pl?authid=[% MARCAUTHOR.authoritylink %]"><img style="vertical-align:middle" height="15" width="15" src="/opac-tmpl/prog/images/filefind.png"></a>
+                <a class='authlink' href="/cgi-bin/koha/opac-authoritiesdetail.pl?authid=[% MARCAUTHOR.authoritylink %]"><img style="vertical-align:middle" height="15" width="15" src="[% interface %]/[% theme %]/images/filefind.png"></a>
             [% END %]
             [% UNLESS ( loop.last ) %]|[% END %]
         [% END %]
@@ -688,7 +702,7 @@ YAHOO.util.Event.onContentReady("furtherm", function () {
                     <a title="$[% SUBFIELD.code %] [% SUBFIELD.value %]" href="/cgi-bin/koha/opac-search.pl?q=[% FOREACH link_loo IN SUBFIELD.link_loop %][% link_loo.operator |url %][% link_loo.limit |url %]:[% link_loo.link |url %][% END %]" onclick="showSubjects(this, [% subjectsloop.count %], [% loop.count %]); return false;">[% SUBFIELD.value %]</a>
                 [% END %]
                 [% IF (MARCSUBJCT.authoritylink) %]
-                    <a class="authlink" href="/cgi-bin/koha/opac-authoritiesdetail.pl?authid=[% MARCSUBJCT.authoritylink %]"><img style="vertical-align:middle" height="15" width="15" src="/opac-tmpl/prog/images/filefind.png" /></a>
+                    <a class="authlink" href="/cgi-bin/koha/opac-authoritiesdetail.pl?authid=[% MARCSUBJCT.authoritylink %]"><img style="vertical-align:middle" height="15" width="15" src="[% interface %]/[% theme %]/images/filefind.png" /></a>
                 [% END %]
                 [% UNLESS ( loop.last ) %] | [% END %]
             [% END %]
@@ -785,7 +799,7 @@ YAHOO.util.Event.onContentReady("furtherm", function () {
         [% IF ( loggedinusername ) %]
             <a class="tag_add" id="tag_add[% biblionumber %]" href="#">Add</a>
             <form id="tagform[% biblionumber %]" method="post" action="/cgi-bin/koha/opac-tags.pl" style="display:none;">
-                <label for="newtag[% biblionumber %]">New tag(s):</label>
+                <label for="newtag[% biblionumber %]">New tag(s), separated by a comma:</label>
                 <input name="newtag[% biblionumber %]" id="newtag[% biblionumber %]" maxlength="100" type="text"/>
                 <input name="tagbutton" class="input tagbutton" title="[% biblionumber %]" type="submit" value="Add" />
                 <a class="cancel_tag_add" id="cancel[% biblionumber %]" href="#">(done)</a>
@@ -1475,6 +1489,7 @@ YAHOO.util.Event.onContentReady("furtherm", function () {
         [% ELSIF show_priority %]
             <th>Item hold queue priority</th>
         [% END %]
+        [% IF ( ShowCourseReservesHeader ) %]<th id="item_coursereserves">Course Reserves</th>[% END %]
         </tr></thead>
 	    <tbody>[% FOREACH ITEM_RESULT IN items %]
       [% IF ITEM_RESULT.this_branch %]<tr class="highlight-row-detail">[% ELSE %]<tr>[% END %]
@@ -1521,6 +1536,22 @@ YAHOO.util.Event.onContentReady("furtherm", function () {
                 [% END %]
             [% END %]
                 </td>
+        [% END %]
+        [% IF ShowCourseReservesHeader %]
+            <td>
+                [% IF ITEM_RESULT.course_reserves %]
+                    [% FOREACH r IN ITEM_RESULT.course_reserves %]
+                        <p>
+                            <a href="opac-course-details.pl?course_id=[% r.course.course_id %]">
+                                [% r.course.course_name %]
+                                <!--[% IF r.course.course_number %] [% r.course.course_number %] [% END %]-->
+                                [% IF r.course.section %] [% r.course.section %] [% END %]
+                                [% IF r.course.term %] [% AuthorisedValues.GetByCode( 'TERM', r.course.term ) %] [% END %]
+                            </a>
+                        </p>
+                    [% END %]
+                [% END %]
+            </td>
         [% END %]
 	    </tr>
 	    [% END %]</tbody>

@@ -134,6 +134,7 @@
 
 <div id="moresearches">
 <a href="/cgi-bin/koha/opac-search.pl">Advanced search</a>
+[% IF ( UseCourseReserves ) %]<span class="pipe"> | </span><a href="/cgi-bin/koha/opac-course-reserves.pl">Course Reserves</a>[% END %]
 [% IF ( OpacBrowser ) %]<span class="pipe"> | </span><a href="/cgi-bin/koha/opac-browser.pl">Browse by hierarchy</a>[% END %]
 [% IF ( OpacAuthorities ) %]<span class="pipe"> | </span><a href="/cgi-bin/koha/opac-authorities-home.pl">Authority search</a>[% END %]
 [% IF ( opacuserlogin && reviewson && OpacShowRecentComments ) %]<span class="pipe"> | </span><a href="/cgi-bin/koha/opac-showreviews.pl">Recent comments</a>[% END %]
@@ -194,12 +195,12 @@
 </div>
 <div id="breadcrumbs" class="yui-g">
 [% IF ( searchdesc ) %]<p>[% IF ( total ) %]<strong>Your search returned [% total |html %] results.</strong> [% IF ( related ) %] (related searches: [% FOREACH relate IN related %][% relate.related_search %][% END %]). [% END %]
-<a href="[% OPACBaseURL %]/cgi-bin/koha/opac-search.pl?[% query_cgi |html |url %][% limit_cgi |html | url %]&amp;count=[% countrss |html %]&amp;sort_by=acqdate_dsc&amp;format=rss2" class="rsssearchlink"><img src="/opac-tmpl/prog/images/feed-icon-16x16.png" alt="Subscribe to this search" title="Subscribe to this search" class="rsssearchicon"/></a>
+<a href="[% OPACBaseURL %]/cgi-bin/koha/opac-search.pl?[% query_cgi |html |url %][% limit_cgi |html | url %]&amp;count=[% countrss |html %]&amp;sort_by=acqdate_dsc&amp;format=rss2" class="rsssearchlink"><img src="[% interface %]/[% theme %]/images/feed-icon-16x16.png" alt="Subscribe to this search" title="Subscribe to this search" class="rsssearchicon"/></a>
 [% ELSE %]
 <strong>No results found!</strong>
 <p>
     [% IF ( searchdesc ) %]
-    No results found for that in [% LibraryName %] catalog. <a href="[% OPACBaseURL %]/cgi-bin/koha/opac-search.pl?[% query_cgi | html | url %][% limit_cgi | html | url %]&amp;format=rss2" class="rsssearchlink"><img src="/opac-tmpl/prog/images/feed-icon-16x16.png" alt="Subscribe to this search" title="Subscribe to this search" border="0" class="rsssearchicon"/></a>
+    No results found for that in [% LibraryName %] catalog. <a href="[% OPACBaseURL %]/cgi-bin/koha/opac-search.pl?[% query_cgi | html | url %][% limit_cgi | html | url %]&amp;format=rss2" class="rsssearchlink"><img src="[% interface %]/[% theme %]/images/feed-icon-16x16.png" alt="Subscribe to this search" title="Subscribe to this search" border="0" class="rsssearchicon"/></a>
     [% ELSE %]
     You did not specify any search criteria.
     [% END %]

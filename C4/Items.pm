@@ -1253,7 +1253,7 @@ sub GetItemsInfo {
             $data->{firstname}     = $idata->{firstname};
             $data->{lastreneweddate} = $idata->{lastreneweddate};
             $datedue                = $idata->{'date_due'};
-        if (C4::Context->preference("IndependantBranches")){
+        if (C4::Context->preference("IndependentBranches")){
         my $userenv = C4::Context->userenv;
         if ( ($userenv) && ( $userenv->{flags} % 2 != 1 ) ) { 
             $data->{'NOTSAMEBRANCH'} = 1 if ($idata->{'bcode'} ne $userenv->{branch});
@@ -1284,8 +1284,8 @@ sub GetItemsInfo {
 
         # get restricted status and description if applicable
         if ( my $code = C4::Koha::GetAuthValCode( 'items.restricted', $data->{frameworkcode} ) ) {
-            $data->{restricted}     = C4::Koha::GetKohaAuthorisedValueLib( $code, $data->{restricted} );
             $data->{restrictedopac} = C4::Koha::GetKohaAuthorisedValueLib( $code, $data->{restricted}, 1 );
+            $data->{restricted}     = C4::Koha::GetKohaAuthorisedValueLib( $code, $data->{restricted} );
         }
 
         # my stack procedures
@@ -2214,7 +2214,7 @@ sub DelItemCheck {
         $error = "book_on_loan" 
     }
     elsif ( !( C4::Context->userenv->{flags} & 1 )
-        and C4::Context->preference("IndependantBranches")
+        and C4::Context->preference("IndependentBranches")
         and ( C4::Context->userenv->{branch} ne $item->{'homebranch'} ) )
     {
         $error = "not_same_branch";
@@ -2689,7 +2689,7 @@ sub PrepareItemrecordDisplay {
                     # builds list, depending on authorised value...
                     #---- branch
                     if ( $tagslib->{$tag}->{$subfield}->{'authorised_value'} eq "branches" ) {
-                        if (   ( C4::Context->preference("IndependantBranches") )
+                        if (   ( C4::Context->preference("IndependentBranches") )
                             && ( C4::Context->userenv->{flags} % 2 != 1 ) ) {
                             my $sth = $dbh->prepare( "SELECT branchcode,branchname FROM branches WHERE branchcode = ? ORDER BY branchname" );
                             $sth->execute( C4::Context->userenv->{branch} );

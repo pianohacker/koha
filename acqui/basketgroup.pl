@@ -157,16 +157,19 @@ sub displaybasketgroups {
     if (scalar @$basketgroups != 0) {
         foreach my $basketgroup (@$basketgroups){
             my $i = 0;
+            my $basketsqty = 0;
             while($i < scalar(@$baskets)){
                 my $basket = @$baskets[$i];
                 if($basket->{'basketgroupid'} && $basket->{'basketgroupid'} == $basketgroup->{'id'}){
                     $basket->{total} = BasketTotal($basket->{basketno}, $bookseller);
                     push(@{$basketgroup->{'baskets'}}, $basket);
                     splice(@$baskets, $i, 1);
+                    ++$basketsqty;
                     --$i;
                 }
                 ++$i;
             }
+            $basketgroup -> {'basketsqty'} = $basketsqty;
         }
         $template->param(basketgroups => $basketgroups);
     }

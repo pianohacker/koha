@@ -204,6 +204,7 @@ sub get_template_and_user {
             $template->param( CAN_user_reports          => 1 );
             $template->param( CAN_user_staffaccess      => 1 );
             $template->param( CAN_user_plugins          => 1 );
+            $template->param( CAN_user_coursereserves   => 1 );
             foreach my $module (keys %$all_perms) {
                 foreach my $subperm (keys %{ $all_perms->{$module} }) {
                     $template->param( "CAN_user_${module}_${subperm}" => 1 );
@@ -302,16 +303,7 @@ sub get_template_and_user {
      }
 
     if(C4::Context->preference('dateformat')){
-        $template->param( dateformat => C4::Context->preference('dateformat') );
-        if(C4::Context->preference('dateformat') eq "metric"){
-            $template->param(dateformat_metric => 1);
-        } elsif(C4::Context->preference('dateformat') eq "us"){
-            $template->param(dateformat_us => 1);
-        } else {
-            $template->param(dateformat_iso => 1);
-        }
-    } else {
-        $template->param(dateformat_iso => 1);
+        $template->param(dateformat => C4::Context->preference('dateformat'))
     }
 
     # these template parameters are set the same regardless of $in->{'type'}
@@ -337,6 +329,7 @@ sub get_template_and_user {
             noItemTypeImages             => C4::Context->preference("noItemTypeImages"),
             marcflavour                  => C4::Context->preference("marcflavour"),
             persona                      => C4::Context->preference("persona"),
+            UseCourseReserves            => C4::Context->preference("UseCourseReserves"),
     );
     if ( $in->{'type'} eq "intranet" ) {
         $template->param(
@@ -346,7 +339,7 @@ sub get_template_and_user {
             CalendarFirstDayOfWeek      => (C4::Context->preference("CalendarFirstDayOfWeek") eq "Sunday")?0:1,
             CircAutocompl               => C4::Context->preference("CircAutocompl"),
             FRBRizeEditions             => C4::Context->preference("FRBRizeEditions"),
-            IndependantBranches         => C4::Context->preference("IndependantBranches"),
+            IndependentBranches         => C4::Context->preference("IndependentBranches"),
             IntranetNav                 => C4::Context->preference("IntranetNav"),
             IntranetmainUserblock       => C4::Context->preference("IntranetmainUserblock"),
             LibraryName                 => C4::Context->preference("LibraryName"),
@@ -882,7 +875,7 @@ sub checkauth {
                         $branchname = GetBranchName($branchcode);
                     }
                     my $branches = GetBranches();
-                    if (C4::Context->boolean_preference('IndependantBranches') && C4::Context->boolean_preference('Autolocation')){
+                    if (C4::Context->boolean_preference('IndependentBranches') && C4::Context->boolean_preference('Autolocation')){
                         # we have to check they are coming from the right ip range
                         my $domain = $branches->{$branchcode}->{'branchip'};
                         if ($ip !~ /^$domain/){
@@ -1027,7 +1020,7 @@ sub checkauth {
         IntranetNav        => C4::Context->preference("IntranetNav"),
         IntranetFavicon    => C4::Context->preference("IntranetFavicon"),
         intranetuserjs     => C4::Context->preference("intranetuserjs"),
-        IndependantBranches=> C4::Context->preference("IndependantBranches"),
+        IndependentBranches=> C4::Context->preference("IndependentBranches"),
         AutoLocation       => C4::Context->preference("AutoLocation"),
         wrongip            => $info{'wrongip'},
         PatronSelfRegistration => C4::Context->preference("PatronSelfRegistration"),
