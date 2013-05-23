@@ -5,6 +5,22 @@
 <script type="text/javascript">
 var querystring = "[% q |replace("'", "\'") |replace('\n', '\\n') |replace('\r', '\\r') |html %]";
 
+function fetch_availability(availability_url, $tr) {
+    var $availability_summary = $('<span class="results_summary"></span>');
+    $tr.find('.info').append($availability_summary);
+    $availability_summary.html('<span class="label">Availability: </span> Loading...');
+
+    KOHA.OverDrive.Get(
+        availability_url,
+        {},
+        function ( data ) {
+            if (data.error) return;
+
+            $availability_summary.html('<span class="label">Copies available: </span><span class="available"><strong>' +  data.copiesAvailable + '</strong> out of ' + data.copiesOwned + '</span>');
+        }
+    );
+}
+
 function search(offset) {
     $('#overdrive-status').html('Searching OverDrive... <img class="throbber" src="/opac-tmpl/lib/jquery/plugins/themes/classic/throbber.gif" /></span>');
     $('#results tbody').empty();
@@ -48,6 +64,8 @@ function search(offset) {
             results.push('</tr>');
             var $tr = $(results.join(''));
             $('#results tbody').append($tr);
+
+            fetch_availability(prod.links.availability.href, $tr);
         }
 
         $('#results tr:odd').addClass('highlight');
