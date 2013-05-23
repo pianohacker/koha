@@ -17,6 +17,10 @@ function fetch_availability( availability_url, $tr ) {
             if ( data.error ) return;
 
             $availability_summary.html( '<span class="label">Copies available: </span><span class="available"><strong>' +  data.copiesAvailable + '</strong> out of ' + data.copiesOwned + '</span>' );
+
+            if ( data.numberOfHolds ) {
+                $availability_summary.find( '.available' ).append( ', waiting holds: <strong>' + data.numberOfHolds + '</strong>' );
+            }
         }
     );
 }
