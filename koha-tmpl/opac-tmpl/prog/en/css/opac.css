@@ -2952,6 +2952,6 @@ padding: 0.1em 0;
     padding-left: 1em;
 }
 
-#overdrive-results .throbber {
+.throbber {
     vertical-align: middle;
 }

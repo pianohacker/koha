@@ -264,7 +264,7 @@ $(document).ready(function(){
     [% END %]
     [% IF ( OverDriveEnabled ) %]
         var $overdrive_results = $( '<span id="overdrive-results">Searching OverDrive... <img class="throbber" src="/opac-tmpl/lib/jquery/plugins/themes/classic/throbber.gif" /></span>' );
-        $( '#breadcrumbs p' )
+        $( '#breadcrumbs p' ).eq(0)
             .append( ' ' )
             .append( $overdrive_results );
         KOHA.OverDrive.Search( "[% OverDriveLibraryID %]", querystring, 1, 0, function( data ) {
