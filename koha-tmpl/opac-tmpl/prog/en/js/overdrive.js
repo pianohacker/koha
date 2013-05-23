@@ -24,6 +24,11 @@ KOHA.OverDrive = ( function() {
 
     return {
         GetCollectionURL: function( library_id, callback ) {
+            if (KOHA.OverDrive.collection_url) {
+                callback(KOHA.OverDrive.collection_url);
+                return;
+            }
+
             _get(
                 library_base_url + library_id,
                 {},
@@ -32,6 +37,8 @@ KOHA.OverDrive = ( function() {
                         callback(data);
                         return;
                     }
+
+                    KOHA.OverDrive.collection_url = data.links.products.href;
 
                     callback(data.links.products.href);
                 }
