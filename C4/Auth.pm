@@ -26,6 +26,7 @@ use CGI::Session;
 
 require Exporter;
 use C4::Context;
+use C4::External::OverDrive qw( IsOverDriveEnabled );
 use C4::Templates;    # to get the template
 use C4::Branch; # GetBranches
 use C4::VirtualShelves;
@@ -471,6 +472,7 @@ sub get_template_and_user {
             OPACLocalCoverImages         => C4::Context->preference("OPACLocalCoverImages"),
             PatronSelfRegistration       => C4::Context->preference("PatronSelfRegistration"),
             PatronSelfRegistrationDefaultCategory => C4::Context->preference("PatronSelfRegistrationDefaultCategory"),
+            OverDriveEnabled             => IsOverDriveEnabled(),
         );
 
         $template->param(OpacPublic => '1') if ($user || C4::Context->preference("OpacPublic"));

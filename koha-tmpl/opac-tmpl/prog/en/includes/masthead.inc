@@ -104,6 +104,9 @@
                  [% END %]
              </optgroup>
          [% END %]
+         [% IF ( OverDriveEnabled ) %]
+             <option value="@overdrive">OverDrive</option>
+         [% END %]
       </select>
    [% ELSE %]
       [% IF ( opac_limit_override ) %]
