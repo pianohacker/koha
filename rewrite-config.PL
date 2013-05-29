@@ -136,8 +136,8 @@ $prefix = $ENV{'INSTALL_BASE'} || "/usr";
   "__INSTALL_ZEBRA__" => 'yes',
   "__INSTALL_SRU__" => 'yes',
   "__INSTALL_PAZPAR2__" => 'no',
-  "__PAZPAR2_TOGGLE_XML_PRE__" => '<!--',
-  "__PAZPAR2_TOGGLE_XML_POST__" => '-->',
+  "__PAZPAR2_TOGGLE_HTTPD_PRE__" => '<IfDefine PAZPAR2_IS_DISABLED>',
+  "__PAZPAR2_TOGGLE_HTTPD_POST__" => '</IfDefine>',
   "__AUTH_INDEX_MODE__" => 'grs1',
   "__BIB_INDEX_MODE__" => 'grs1',
   "__RUN_DATABASE_TESTS__" => 'no',
@@ -157,8 +157,8 @@ foreach $key (keys %configuration) {
 # munge commenting out the PazPar2 mergeserver
 # entry in koha-conf.xml if necessary
 if ($configuration{'__INSTALL_PAZPAR2__'} eq 'yes') {
-    $configuration{'__PAZPAR2_TOGGLE_XML_PRE__'} = '';
-    $configuration{'__PAZPAR2_TOGGLE_XML_POST__'} = '';
+    $configuration{'__PAZPAR2_TOGGLE_HTTPD_PRE__'} = '';
+    $configuration{'__PAZPAR2_TOGGLE_HTTPD_POST__'} = '';
 }
 
 $fname = $ARGV[0];

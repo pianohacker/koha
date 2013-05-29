@@ -1,0 +1,180 @@
+[% INCLUDE 'doc-head-open.inc' %]
+[% IF op == 'show' %]
+<title>Koha &rsaquo; Administration &rsaquo; External targets</title>
+[% ELSIF op == 'add' %]
+<title>Koha &rsaquo; Administration &rsaquo; External targets &rsaquo; Create an external target</title>
+[% ELSIF op == 'edit' %]
+<title>Koha &rsaquo; Administration &rsaquo; External targets &rsaquo; Editing '[% target.name %]'</title>
+[% END %]
+[% INCLUDE 'doc-head-close.inc' %]
+<link rel="stylesheet" type="text/css" href="[% themelang %]/css/datatables.css" />
+<script type="text/javascript" src="[% themelang %]/lib/jquery/plugins/jquery.dataTables.min.js"></script>
+[% INCLUDE 'datatables-strings.inc' %]
+<script type="text/javascript" src="[% themelang %]/js/datatables.js"></script>
+<script type="text/javascript">
+//<![CDATA[
+ $(document).ready(function() {
+    [% IF ( targets.size ) %]
+    var dTable = $("#targets").dataTable( $.extend( true, {}, dataTablesDefaults, {
+        aoColumnDefs: [
+            { aTargets: [ 1,2,3,4,5 ], bSortable: false, bSearchable: false },
+        ],
+        asStripeClasses: [ '', 'highlight' ],
+        bPaginate: false,
+    } ) );
+
+    [% IF saved_id %]
+    $( '#targets tr[data-targetid=[% saved_id %]]' ).addClass( 'updated' );
+    [% END %]
+
+    $( '#targets .delete' ).click( function() {
+        return confirm( _( 'Are you sure you wish to delete this target?' ) );
+    } );
+    [% END %]
+ });
+//]]>
+</script>
+
+</head>
+<body id="admin_z3950servers" class="admin">
+[% INCLUDE 'header.inc' %]
+[% INCLUDE 'cat-search.inc' %]
+
+[% IF op == 'show' %]
+
+<div id="breadcrumbs"><a href="/cgi-bin/koha/mainpage.pl">Home</a> &rsaquo; <a href="/cgi-bin/koha/admin/admin-home.pl">Administration</a> &rsaquo; External targets</div>
+
+[% ELSIF op == 'add' %]
+
+<div id="breadcrumbs"><a href="/cgi-bin/koha/mainpage.pl">Home</a> &rsaquo; <a href="/cgi-bin/koha/admin/admin-home.pl">Administration</a> &rsaquo; <a href="/cgi-bin/koha/admin/external_targets.pl">External targets</a> &rsaquo; Create an external target</div>
+
+[% ELSIF op == 'edit' %]
+
+<div id="breadcrumbs"><a href="/cgi-bin/koha/mainpage.pl">Home</a> &rsaquo; <a href="/cgi-bin/koha/admin/admin-home.pl">Administration</a> &rsaquo; <a href="/cgi-bin/koha/admin/external_targets.pl">External targets</a> &rsaquo; Editing '[% target.name %]'</div>
+
+[% END %]
+
+<div id="doc3" class="yui-t2">
+<div id="bd">
+
+<div id="yui-main"><div class="yui-b">
+
+[% IF op == 'show' %]
+
+[% IF deleted_name %]
+<div class="alert">
+    <p>Deleted target '[% deleted_name %]'</p>
+</div>
+[% END %]
+
+<div id="toolbar" class="btn-toolbar">
+    <a id="newtarget" class="btn btn-small" href="/cgi-bin/koha/admin/external_targets.pl?op=add"><i class="icon-plus"></i> New external target</a>
+</div>
+
+<p>These Z39.50 targets are searched in the OPAC using the "external targets" feature. Note that Pazpar2 must be installed and configured for this to work.</p>
+
+[% IF targets.size %]
+<table id="targets">
+    <thead><tr><th>Name</th><th>Connection</th><th>Login</th><th>Syntax</th><th>Encoding</th><th>&nbsp;</th><th>&nbsp;</th></tr></thead>
+    <tbody>
+        [% FOREACH target = targets %]
+        <tr data-targetid="[% target.target_id %]">
+            <td>[% target.name %]</td>
+            <td>[% target.host %]:[% target.port %]/[% target.db %]</td>
+            <td>[% IF target.userid %][% target.userid %] / [% IF target.password %]********[% ELSE %]<span class="hint">none</span>[% END %][% ELSE %]<span class="hint">none</span>[% END %]</td>
+            <td>[% target.syntax %]</td>
+            <td>
+                [% IF target.encoding == 'marc8' %]
+                MARC-8
+                [% ELSIF target.encoding == 'utf8' %]
+                UTF-8
+                [% END %]
+            </td>
+            <td><a href="/cgi-bin/koha/admin/external_targets.pl?op=edit&amp;target_id=[% target.target_id %]">Edit</a></td>
+            <td><a class="delete" href="/cgi-bin/koha/admin/external_targets.pl?op=delete&amp;target_id=[% target.target_id %]">Delete</a></td>
+        </tr>
+        [% END %]
+    </tbody>
+</table>
+[% ELSE %]
+<p>No external targets have been defined yet.</p>
+[% END %]
+
+[% ELSIF op == 'add' || op == 'edit' %]
+
+<form action="/cgi-bin/koha/admin/external_targets.pl" method="POST">
+    [% IF op == 'add' %]
+    <h1>Create an external target</h1>
+    [% ELSIF op == 'edit' %]
+    <h1>Editing '[% target.name %]'</h1>
+    [% END %]
+
+    <input type="hidden" name="op" value="save">
+    <input type="hidden" name="target_id" value="[% target.target_id %]">
+
+    <fieldset class="rows">
+        <ol>
+            <li><label for="name">Name:</label> <input type="text" id="name" name="name" value="[% target.name %]" required></li>
+            <li><label for="host">Host:</label> <input type="text" id="host" name="host" value="[% target.host %]" required></li>
+            <li><label for="port">Port:</label> <input type="num" id="port" name="port" value="[% target.port %]" required></li>
+            <li><label for="db">Database:</label> <input type="text" id="db" name="db" value="[% target.db %]" required></li>
+            <li><label for="userid">User:</label> <input type="text" id="userid" name="userid" value="[% target.userid %]"></li>
+            <li><label for="password">Password:</label> <input type="password" id="password" name="password" value="[% target.password %]" autocomplete="off"></li>
+            <li>
+                <label for="syntax">Syntax:</label>
+                <select id="syntax" name="syntax">
+                    [% FOREACH syntax = syntaxes %]
+                    [% IF syntax == target.syntax %]
+                    <option selected>[% syntax %]
+                    [% ELSE %]
+                    <option>[% syntax %]</option>
+                    [% END %]
+                    [% END %]
+                </select>
+            </li>
+            <li>
+                <label for="encoding">Encoding:</label>
+                <select id="encoding" name="encoding">
+                    [% FOREACH encoding = encodings %]
+                    [% IF encoding.key == target.encoding %]
+                    <option value="[% encoding.key %]" selected>[% encoding.value %]
+                    [% ELSE %]
+                    <option value="[% encoding.key %]">[% encoding.value %]</option>
+                    [% END %]
+                    [% END %]
+                </select>
+            </li>
+            <li>
+                <label>Restricted libraries:</label>
+                <fieldset>
+                    <legend>Not available to patrons from:</legend>
+                    <p>Only targets with no restrictions will be shown to anonymous (not logged in) users.</p>
+                    <ol>
+                        [% FOREACH branch = branches %]
+                        <li>
+                            <label for="branch-[% branch.branchcode %]">[% branch.branchname %]</label>
+                            [% IF branch.selected %]
+                            <input type="checkbox" id="branch-[% branch.branchcode %]" name="branch" value="[% branch.branchcode %]" checked />
+                            [% ELSE %]
+                            <input type="checkbox" id="branch-[% branch.branchcode %]" name="branch" value="[% branch.branchcode %]" />
+                            [% END %]
+                        </li>
+                        [% END %]
+                    </ol>
+                </fieldset>
+            </li>
+        </ol>
+    </fieldset>
+
+    <fieldset class="action"><input type="submit" value="Save"></fieldset>
+</form>
+
+[% END %]
+
+</div></div>
+<div class="yui-b">
+[% INCLUDE 'admin-menu.inc' %]
+</div>
+
+</div>
+[% INCLUDE 'intranet-bottom.inc' %]

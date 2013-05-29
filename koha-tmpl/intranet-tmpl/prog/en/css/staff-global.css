@@ -270,6 +270,16 @@ tr.even td, tr.even.highlight td {
     border-right : 1px solid #BCBCBC;
 }
 
+tr.highlight td {
+	background-color : #F6F6F6;
+	border-color : #BCBCBC;
+}
+
+tr.highlight th[scope=row] {
+	background-color : #DDDDDD;
+	border-color : #BCBCBC;
+}
+
 td.od {
 	color : #cc0000;
 	font-weight : bold;
@@ -285,6 +295,10 @@ tr.onissue td {
 
 tr.odd.onissue td {
 	background-color: #FFFFE1;
+}
+
+tr.updated td {
+    background-color: #FFFFBB;
 }
 
 tfoot td {
@@ -937,16 +951,6 @@ div.sysprefs div.hint {
 	float : right;
 	padding : .5em;
 	margin : .7em;
-}
-
-tr.highlight td {
-	background-color : #F6F6F6;
-	border-color : #BCBCBC;
-}
-
-tr.highlight th[scope=row] {
-	background-color : #DDDDDD;
-	border-color : #BCBCBC;
 }
 
 #circ_circulation_issue label {

@@ -5,11 +5,13 @@
   xmlns:marc="http://www.loc.gov/MARC21/slim"
   xmlns:items="http://www.koha-community.org/items"
   xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
+  xmlns="http://www.w3.org/1999/xhtml"
   exclude-result-prefixes="marc items">
     <xsl:import href="MARC21slimUtils.xsl"/>
     <xsl:output method = "html" indent="yes" omit-xml-declaration = "yes" encoding="UTF-8"/>
     <xsl:key name="item-by-status" match="items:item" use="items:status"/>
     <xsl:key name="item-by-status-and-branch" match="items:item" use="concat(items:status, ' ', items:homebranch)"/>
+    <xsl:param name="showAvailability" select="true()"/>
 
     <xsl:template match="/">
             <xsl:apply-templates/>
@@ -1027,6 +1029,7 @@
                             </xsl:for-each>
                             </span>
                         </xsl:if>
+                        <xsl:if test="$showAvailability">
                         <span class="results_summary availability">
                         <span class="label">Availability: </span>
                         <xsl:choose>
@@ -1035,7 +1038,7 @@
                             <xsl:when test="string-length($AlternateHoldingsField)=3 and marc:datafield[@tag=$AlternateHoldingsField]">
                             <xsl:variable name="AlternateHoldingsCount" select="count(marc:datafield[@tag=$AlternateHoldingsField])"/>
                             <xsl:for-each select="marc:datafield[@tag=$AlternateHoldingsField][1]">
-                                <xsl:call-template select="marc:datafield[@tag=$AlternateHoldingsField]" name="subfieldSelect">
+                                <xsl:call-template name="subfieldSelect">
                                     <xsl:with-param name="codes"><xsl:value-of select="$AlternateHoldingsSubfields"/></xsl:with-param>
                                     <xsl:with-param name="delimeter"><xsl:value-of select="$AlternateHoldingsSeparator"/></xsl:with-param>
                                 </xsl:call-template>
@@ -1143,6 +1146,7 @@
                        <xsl:text>). </xsl:text>                   </span>
                    </xsl:if>
                </span>
+               </xsl:if>
     <xsl:choose>
         <xsl:when test="($OPACItemLocation='location' or $OPACItemLocation='ccode') and (count(key('item-by-status', 'available'))!=0 or count(key('item-by-status', 'reference'))!=0)">
             <span class="results_summary" id="location">

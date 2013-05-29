@@ -1605,6 +1605,10 @@ strong em, em strong  {
      vertical-align: top;
    width: 10px;
 }
+.sourcecol {
+	vertical-align: top;
+	width: 100px;
+}
 #container {
     color : #000;
 }
@@ -2818,4 +2822,16 @@ a.reviewlink,a.reviewlink:visited {
 }
 .subjectSearch ul {
     padding-left: 0px;
+}
+
+#modal-overlay {
+    background-color: white;
+    border-radius: 5px;
+    max-width: 75%;
+    padding: 15px;
+}
+
+#overdrive-results, #pazpar2-results {
+    font-weight: bold;
+    padding-left: 1em;
 }

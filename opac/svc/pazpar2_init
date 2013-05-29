@@ -1,0 +1,99 @@
+#!/usr/bin/perl
+
+# Copyright 2013 ByWater
+#
+# This file is part of Koha.
+#
+# Koha is free software; you can redistribute it and/or modify it under the
+# terms of the GNU General Public License as published by the Free Software
+# Foundation; either version 2 of the License, or (at your option) any later
+# version.
+#
+# Koha is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
+# A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Koha; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+
+=head1 NAME
+
+svc/pazpar2_init: Initialize a Pazpar2 session
+
+=head1 SYNOPSIS
+
+svc/pazpar2_init?targets=3,5,9 -> ../pazpar2/search.pz2?command=init&...
+
+=head1 DESCRIPTION
+
+This services connects to pazpar2 and authenticates connections on behalf of
+client-side search code.
+
+=cut
+
+use strict;
+use warnings;
+
+use CGI qw(-oldstyle_urls);
+use HTTP::Request::Common;
+use JSON;
+use URI;
+use XML::Simple;
+
+use C4::Context;
+use C4::Search;
+use C4::Output;
+
+my $dbh = C4::Context->dbh;
+my $query = new CGI;
+
+my %init_opts;
+
+my $targets = GetExternalSearchTargets( C4::Context->userenv ? C4::Context->userenv->{branch} : '' );
+
+foreach my $target ( @$targets ) {
+    my $target_url = $target->{'host'} . ':' . $target->{'port'} . '/' . $target->{'db'};
+    $init_opts{ 'pz:name[' . $target_url . ']' } = $target->{'name'};
+    $init_opts{ 'pz:queryencoding[' . $target_url . ']' } = $target->{'encoding'};
+    $init_opts{ 'pz:xslt[' . $target_url . ']' } = lc( $target->{'syntax'} ) . '-work-groups.xsl';
+    $init_opts{ 'pz:requestsyntax[' . $target_url . ']' } = $target->{'syntax'};
+    $init_opts{ 'pz:nativesyntax[' . $target_url . ']' } = 'iso2709';
+
+    if ( $target->{'userid'} ) {
+        if ( $target->{'password'} ) {
+            $init_opts{ 'pz:authentication[' . $target_url . ']' } = $target->{'userid'} . '/' . $target->{'password'};
+        } else {
+            $init_opts{ 'pz:authentication[' . $target_url . ']' } = $target->{'userid'};
+        }
+    }
+}
+
+my $uri = 'http://' . C4::Context->preference( 'OPACBaseURL' ) . "/pazpar2/search.pz2";
+
+my $request = HTTP::Request::Common::POST( $uri, [ command => 'init', %init_opts ] );
+
+my $ua = LWP::UserAgent->new( "Koha " . C4::Context->KOHAVERSION );
+
+my $response = $ua->request( $request ) ;
+if ( !$response->is_success ) {
+    print $query->header(
+        -status => '500 Internal Server Error'
+    );
+
+    warn "Pazpar2 init failed: " . $response->message;
+    my $content = to_json({
+        error => 'Could not connect to Pazpar2',
+    });
+    output_with_http_headers $query, undef, $content, 'json', '500 Internal Server Error';
+
+    exit;
+} else {
+    my $xs = XML::Simple->new;
+    my $data = $xs->XMLin( $response->content );
+
+    my $content = to_json({
+        sessionID => $data->{'session'}
+    });
+    output_with_http_headers $query, undef, $content, 'json', '200 OK';
+}

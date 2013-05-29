@@ -1628,6 +1628,10 @@ strong em, em strong  {
 	vertical-align: top;
 	width: 10px;
 }
+.sourcecol {
+	vertical-align: top;
+	width: 100px;
+}
 #container {
 	color : #000;
 }
@@ -2955,6 +2959,7 @@ a.reviewlink,a.reviewlink:visited {
 float:left;
 padding: 0.1em 0;
 }
+
 .notesrow label {
     font-weight: bold;
 }
@@ -2969,11 +2974,22 @@ padding: 0.1em 0;
     margin: 0px auto;
 }
 
-#overdrive-results {
+#overdrive-results, #pazpar2-results {
     font-weight: bold;
     padding-left: 1em;
 }
 
 .throbber {
     vertical-align: middle;
+}
+
+.thumbnail-shelfbrowser span {
+    margin: 0px auto;
+}
+
+#modal-overlay {
+    background-color: white;
+    border-radius: 5px;
+    max-width: 75%;
+    padding: 15px;
 }

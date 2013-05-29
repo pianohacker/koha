@@ -1,0 +1,240 @@
+[% INCLUDE 'doc-head-open.inc' %]
+[% IF ( LibraryNameTitle ) %][% LibraryNameTitle %][% ELSE %]Koha online[% END %] catalog &rsaquo; External search for '[% q | html %]'
+[% INCLUDE 'doc-head-close.inc' %]
+<script type="text/javascript" src="[% themelang %]/lib/jquery/plugins/jquery.lightbox_me.js"></script>
+<script type="text/javascript" src="/opac-tmpl/lib/pz2.js"></script>
+<script type="text/javascript" src="[% themelang %]/js/externalsearch.js"></script>
+<script type="text/javascript">
+var querystring = "[% q |replace( "'", "\'" ) |replace( '\n', '\\n' ) |replace( '\r', '\\r' ) |html %]";
+var results_per_page = [% OPACnumSearchResults %];
+KOHA.ExternalSearch.targets = {
+    [% FOREACH target IN external_search_targets %]
+        '[% target.host %]:[% target.port %]/[% target.db %]': {
+            name: '[% target.name %]',
+            syntax: '[% target.syntax %]',
+        },
+    [% END %]
+};
+
+var xsltResultStylesheets = {
+    [% FOREACH stylesheet IN xslt_result_stylesheets %]
+    '[% stylesheet.syntax %]': KOHA.XSLTGet( '[% stylesheet.url %]' ),
+    [% END %]
+};
+
+var xsltDetailStylesheets = {
+    [% FOREACH stylesheet IN xslt_detail_stylesheets %]
+    '[% stylesheet.syntax %]': KOHA.XSLTGet( '[% stylesheet.url %]' ),
+    [% END %]
+};
+
+var recordCache = {};
+var resultRenderCache = {};
+
+function showResult( syntax, recid ) {
+    if ( recordCache[ recid ] ) {
+        done( recordCache[ recid ] );
+    } else {
+        KOHA.ExternalSearch.GetDetailedRecord( recid, function( record ) {
+            done( recordCache[ recid ] = record.xmlDoc );
+        } );
+    }
+
+    function done( record ) {
+        xsltResultStylesheets[ syntax ].done( function( xslDoc ) {
+            var fragment = resultRenderCache[ recid ] = KOHA.TransformToFragment( record, xslDoc );
+            var $tr = $( '#results tr' ).filter( function() { return $( this ).data( 'recid' ) == recid } );
+            $tr.find( '.info' ).html( fragment );
+            $tr.find( 'a' ).attr( 'href', '#' ).click( function() {
+                showDetail( syntax, recid );
+
+                return false;
+            } );
+        } );
+    }
+}
+
+function showDetail( syntax, recid ) {
+    var record = recordCache[ recid ];
+    console.info((new XMLSerializer).serializeToString( record ));
+
+    xsltDetailStylesheets[ syntax ].done( function( xslDoc ) {
+        var fragment = KOHA.TransformToFragment( record, xslDoc );
+
+        $( '#modal-overlay' ).html( fragment ).lightbox_me( {
+            centered: true,
+        } );
+    } );
+}
+
+function search( offset, reset_search ) {
+    $( '#pazpar2-status' ).html( 'Searching external targets... <img class="throbber" src="/opac-tmpl/lib/jquery/plugins/themes/classic/throbber.gif" /></span>' );
+
+    if ( reset_search ) {
+        KOHA.ExternalSearch.Search( querystring, results_per_page, callback );
+    } else {
+        KOHA.ExternalSearch.Fetch( offset, callback );
+    }
+
+    function callback( data ) {
+        if ( data.error ) {
+            $( '#pazpar2-status' ).html( '<strong class="unavailable">Error searching external targets.</strong>' );
+            return;
+        }
+
+        if ( !data.total ) {
+            $( '#pazpar2-status' ).html( '<strong>No results found in the external targets.</strong>' );
+            return;
+        }
+
+        $( '#results tbody' ).empty();
+
+        $( '#pazpar2-status' ).html( '<strong>' + _( 'Found ' ) + data.total + _( ' results in ' ) + $( '#targets-facet input:checked' ).length + _( ' external targets.' ) + '</strong>' );
+
+        for ( var i = 0; data.hits[i]; i++ ) {
+            var hit = data.hits[i];
+            var results = [];
+            var recordSyntax = KOHA.ExternalSearch.targets[ hit.location[0]['@id'] ].syntax;
+
+            results.push( '<tr>' );
+
+            results.push( '<td class="sourcecol">', hit.location[0]['@name'], '</td>' );
+
+            results.push( '<td class="info">' );
+
+            if ( resultRenderCache[ hit.recid[0] ] ) {
+                results.push( resultRenderCache[ hit.recid[0] ] );
+            } else {
+                results.push( hit['md-work-title'] ? hit['md-work-title'][0] : 'Loading...' );
+                showResult( recordSyntax, hit.recid[0] );
+            }
+
+            results.push( '</td>' );
+
+            results.push( '</tr>' );
+            var $tr = $( results.join( '' ) );
+            $tr.data( 'recid', hit.recid[0] );
+            $( '#results tbody' ).append( $tr );
+
+            ( function( hit, recordSyntax ) {
+                $tr.find( 'a' ).attr( 'href', '#' ).click( function() {
+                    showDetail( recordSyntax, hit.recid[0] );
+
+                    return false;
+                } );
+            } )( hit, recordSyntax );
+        }
+
+        $( '#results tr:odd' ).addClass( 'highlight' );
+
+        var pages = [];
+        var cur_page = data.start / results_per_page;
+        var max_page = Math.floor( data.total / results_per_page );
+
+        if ( cur_page != 0 ) {
+            pages.push( '<a class="nav" href="#" data-offset="' + (offset - results_per_page) + '">&lt;&lt; Previous</a>' );
+        }
+
+        for ( var page = Math.max( 0, cur_page - 9 ); page <= Math.min( max_page, cur_page + 9 ); page++ ) {
+            if ( page == cur_page ) {
+                pages.push( ' <span class="current">' + ( page + 1 ) + '</span>' );
+            } else {
+                pages.push( ' <a class="nav" href="#" data-offset="' + ( page * results_per_page ) + '">' + ( page + 1 ) + '</a>' );
+            }
+        }
+
+        if ( cur_page < max_page ) {
+            pages.push( ' <a class="nav" href="#" data-offset="' + (offset + results_per_page) + '">Next >></a>' );
+        }
+
+        if ( pages.length > 1 ) $( '#top-pages, #bottom-pages' ).find( '.pages' ).html( pages.join( '' ) );
+    }
+}
+
+$( document ).ready( function() {
+    $( '#breadcrumbs p' )
+        .append( ' ' )
+        .append( '<span id="pazpar2-status"></span>' );
+
+    $( document ).on( 'click', 'a.nav', function() {
+        search( $( this ).data( 'offset' ) );
+        return false;
+    });
+
+    var reSearchTimeout;
+
+    $( '#targets-facet input' ).each( function() {
+        $( this ).click( function() {
+            KOHA.ExternalSearch.targets[ $( this ).data( 'url' ) ].disabled = !this.checked;
+
+            if ( reSearchTimeout ) clearTimeout( reSearchTimeout );
+            
+            reSearchTimeout = setTimeout( function() {
+                if ( $( '#targets-facet input:checked' ).length ) search( 0, true );
+            }, 1000 );
+        } );
+
+        KOHA.ExternalSearch.targets[ $( this ).data( 'url' ) ].disabled = !this.checked;
+    } );
+
+    search( 0, true );
+} );
+</script>
+<style>
+.actions a.addtocart {
+    display: inline;
+}
+</style>
+</head>
+<body>
+<div id="doc3" class="yui-t1">
+
+<div id="bd">
+    [% INCLUDE 'masthead.inc' %]
+
+    <h1>External search for '[% q | html %]'</h1>
+    <div id="breadcrumbs">
+        <p></p>
+    </div>
+
+    <div id="yui-main"><div class="yui-b searchresults">
+        <div id="top-pages">
+            <div class="pages">
+            </div>
+        </div>
+        <table id="results">
+            <tbody>
+            </tbody>
+        </table>
+        <div id="bottom-pages">
+            <div class="pages">
+            </div>
+        </div>
+    </div></div>
+
+    <div class="yui-b"><div id="facetcontainer" class="container">
+    <div id="search-facets">
+        
+        <h4>Refine your search</h4>
+
+        <ul>
+            <li id="targets-facet">
+                Targets
+                <ul>
+                    [% FOREACH target = external_search_targets %]
+                    <li>
+                        <input data-url="[% target.host %]:[% target.port %]/[% target.db %]" type="checkbox" id="target-[% loop.index %]" checked />
+                        <label for="target-[% loop.index %]">[% target.name %]
+                    </li>
+                    [% END %]
+                </ul>
+            </li>
+        </ul>
+    </div>
+    </div></div>
+</div>
+
+</div>
+
+<div id="modal-overlay" style="display: none"></div>
+[% INCLUDE 'opac-bottom.inc' %]

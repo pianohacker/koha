@@ -534,7 +534,7 @@ if ($config{'INSTALL_ZEBRA'} eq "yes") {
     );
     if ($config{'INSTALL_PAZPAR2'} eq 'yes') {
         push @{ $pl_files->{'rewrite-config.PL'} }, (
-            'blib/PAZPAR2_CONF_DIR/koha-biblios.xml',
+            'blib/PAZPAR2_CONF_DIR/generic-settings.xml',
             'blib/PAZPAR2_CONF_DIR/pazpar2.xml'
         );
     }

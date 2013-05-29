@@ -72,6 +72,7 @@ This module provides searching functions for Koha's bibliographic databases
   &GetDistinctValues
   &enabled_staff_search_views
   &SimpleSearch
+  &GetExternalSearchTargets
 );
 
 # make all your functions, whether exported or not;
@@ -2355,6 +2356,35 @@ sub _ZOOM_event_loop {
 
     foreach my $result (@$results) {
         $result->destroy();
+    }
+}
+
+=head2 GetExternalSearchTargets
+
+Returns the list of Z39.50 servers that are marked for search in the OPAC using
+Pazpar2.
+
+=cut
+
+sub GetExternalSearchTargets {
+    my ( $branchcode ) = @_;
+
+    if ( $branchcode ) {
+        return C4::Context->dbh->selectall_arrayref( q{
+            SELECT * FROM external_targets et
+            LEFT JOIN external_target_restrictions etr
+                ON (etr.target_id = et.target_id and etr.branchcode = ?)
+            WHERE etr.target_id IS NULL
+            ORDER BY et.name
+        }, { Slice => {} }, $branchcode );
+    } else {
+        return C4::Context->dbh->selectall_arrayref( q{
+            SELECT * FROM external_targets et
+            LEFT JOIN external_target_restrictions etr USING (target_id)
+            GROUP by et.target_id
+            HAVING branchcode IS NULL
+            ORDER BY et.name
+        }, { Slice => {} } );
     }
 }
 

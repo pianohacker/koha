@@ -13,7 +13,11 @@
 [% IF ( OpacStarRatings == 'all' ) %]<script type="text/javascript" src="[% themelang %]/lib/jquery/plugins/jquery.rating.js"></script>
 <link rel="stylesheet" type="text/css" href="[% themelang %]/css/jquery.rating.css" />[% END %]
 
-<script type="text/javascript" src="[% themelang %]/js/overdrive.js"></script>
+[% IF ( OverDriveEnabled ) %]<script type="text/javascript" src="[% themelang %]/js/overdrive.js"></script>[% END %]
+[% IF ( 1 ) %]
+<script type="text/javascript" src="/opac-tmpl/lib/pz2.js"></script>
+<script type="text/javascript" src="[% themelang %]/js/externalsearch.js"></script>
+[% END %]
 <script type="text/javascript" src="[% themelang %]/lib/jquery/plugins/jquery.checkboxes.min.js"></script>
 [% IF ( OpacHighlightedWords ) %]<script type="text/javascript" src="[% themelang %]/lib/jquery/plugins/jquery.highlight-3.js"></script>
 [% END %]<script type="text/javascript">
@@ -262,24 +266,59 @@ $(document).ready(function(){
         $("#highlight_toggle_on" ).hide().click(function() {highlightOn() ;});
         $("#highlight_toggle_off").show().click(function() {highlightOff();});
     [% END %]
+    function StartExternalSearch(name, text) {
+        $( '#breadcrumbs p' )
+            .eq( 0 )
+            .append( ' <span id="' + name + '-results">' + text + '... <img class="throbber" src="/opac-tmpl/lib/jquery/plugins/themes/classic/throbber.gif" /></span>' );
+    }
+    function FailExternalSearch( name, text ) {
+        $( '#' + name + '-results' ).html( text );
+    }
+    function FinishExternalSearch( name, text, numItems, url ) {
+        if ( numItems ) {
+            $( '#' + name + '-results' ).html( text.replace( '__LINK__', '<a href="' + url + '">'  + numItems + ' results</a>' ) );
+        } else {
+            $( '#' + name + '-results' ).remove();
+        }
+    }
+
     [% IF ( OverDriveEnabled ) %]
-        var $overdrive_results = $( '<span id="overdrive-results">Searching OverDrive... <img class="throbber" src="/opac-tmpl/lib/jquery/plugins/themes/classic/throbber.gif" /></span>' );
-        $( '#breadcrumbs p' ).eq(0)
-            .append( ' ' )
-            .append( $overdrive_results );
+        StartExternalSearch( 'overdrive', _( 'Searching OverDrive' ) );
         KOHA.OverDrive.Search( "[% OverDriveLibraryID %]", querystring, 1, 0, function( data ) {
             if ( data.error ) {
-                $overdrive_results.html( 'Error searching OverDrive collection' );
+                FailExternalSearch( 'overdrive', _( 'Error searching OverDrive collection' ) );
                 return;
             }
 
-            if ( data.totalItems ) {
-                $overdrive_results.html( 'Found <a href="/cgi-bin/koha/opac-overdrive-search.pl?q=' + escape( querystring ) + '">' + data.totalItems + ' results</a> in OverDrive collection' );
-            } else {
-                $overdrive_results.remove();
-            }
+            FinishExternalSearch( 'overdrive', 'Found __LINK__ in OverDrive collection', data.totalItems, '/cgi-bin/koha/opac-overdrive-search.pl?q=' + escape( querystring ) );
         } );
     [% END %]
+
+    [% IF ( 1 ) %]
+        KOHA.ExternalSearch.targets = {
+            [% FOREACH target IN external_search_targets %]
+                '[% target.host %]:[% target.port %]/[% target.db %]': {
+                    id: '[% target.target_id %]',
+                    name: '[% target.name %]',
+                    syntax: '[% target.syntax %]',
+                },
+            [% END %]
+        };
+        var num_targets = 0; $.each( KOHA.ExternalSearch.targets, function() { num_targets++ } );
+        var first_succeeded;
+
+        StartExternalSearch( 'pazpar2', _( 'Searching external targets' ) );
+        KOHA.ExternalSearch.Search( querystring, 1, function( data ) {
+            if ( data.error ) {
+                if ( !first_succeeded ) FailExternalSearch( 'pazpar2', _( 'Error searching external targets' ) );
+                return;
+            }
+
+            first_succeeded = true;
+            FinishExternalSearch( 'pazpar2', _( 'Found __LINK__ in ' ) + num_targets + _( ' external targets' ), data.total, '/cgi-bin/koha/opac-external-search.pl?q=' + escape( querystring ) );
+        } );
+    [% END %]
+    
 [% END %]
 
 [% IF ( TagsInputEnabled && loggedinusername ) %]

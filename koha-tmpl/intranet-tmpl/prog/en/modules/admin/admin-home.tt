@@ -84,6 +84,8 @@
       <dt><a href="/cgi-bin/koha/admin/searchengine/solr/indexes.pl">Search engine configuration</a></dt>
       <dd>Manage indexes, facets, and their mappings to MARC fields and subfields.</dd>
     [% END %]
+    <dt><a href="/cgi-bin/koha/admin/external_targets.pl">External search targets</a></dt>
+    <dd>Define external search targets that can be searched from the OPAC.</dd>
 </dl>
 
 <h3>Acquisition parameters</h3>

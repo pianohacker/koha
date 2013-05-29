@@ -74,6 +74,9 @@ if ( $branch_group_limit ) {
             -name => 'multibranchlimit',
             -values => substr($branch_group_limit, 17)
         );
+    } elsif ( $branch_group_limit eq '@overdrive' ) {
+        print $cgi->redirect( '/cgi-bin/koha/opac-overdrive-search.pl?q=' . join( '+', $cgi->param( 'q' ) ) );
+        exit;
     } else {
         $cgi->append(
             -name => 'limit',
@@ -900,10 +903,10 @@ $template->{VARS}->{IDreamBooksReviews} = C4::Context->preference('IDreamBooksRe
 $template->{VARS}->{IDreamBooksReadometer} = C4::Context->preference('IDreamBooksReadometer');
 $template->{VARS}->{IDreamBooksResults} = C4::Context->preference('IDreamBooksResults');
 
-if ($offset == 0 && IsOverDriveEnabled()) {
-    $template->param(OverDriveEnabled => 1);
-    $template->param(OverDriveLibraryID => C4::Context->preference('OverDriveLibraryID'));
-}
+$template->{VARS}->{external_search_targets} = GetExternalSearchTargets( C4::Context->userenv ? C4::Context->userenv->{branch} : '' );
+
+$template->{VARS}->{OverDriveLibraryID} = C4::Context->preference('OverDriveLibraryID');
+$template->{VARS}->{OverDriveEnabled} = ($offset == 0 && IsOverDriveEnabled());
 
     $template->param( borrowernumber    => $borrowernumber);
 output_with_http_headers $cgi, $cookie, $template->output, $content_type;

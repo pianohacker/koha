@@ -42,6 +42,7 @@ BEGIN {
     $VERSION = 3.07.00.049;
     @ISA = qw(Exporter);
     @EXPORT = qw(
+        &XSLTGetFilename
         &XSLTParse4Display
         &GetURI
     );
@@ -156,9 +157,10 @@ sub _get_best_default_xslt_filename {
     return $xslfilename;
 }
 
-sub XSLTParse4Display {
-    my ( $biblionumber, $orig_record, $xslsyspref, $fixamps, $hidden_items ) = @_;
-    my $xslfilename = C4::Context->preference($xslsyspref);
+sub XSLTGetFilename {
+    my ( $marcflavour, $xslsyspref ) = @_;
+
+    my $xslfilename = $marcflavour eq C4::Context->preference('marcflavour') ? C4::Context->preference($xslsyspref) : 'default';
     if ( $xslfilename =~ /^\s*"?default"?\s*$/i ) {
         my $htdocs;
         my $theme;
@@ -167,22 +169,22 @@ sub XSLTParse4Display {
         if ($xslsyspref eq "XSLTDetailsDisplay") {
             $htdocs  = C4::Context->config('intrahtdocs');
             $theme   = C4::Context->preference("template");
-            $xslfile = C4::Context->preference('marcflavour') .
+            $xslfile = $marcflavour .
                        "slim2intranetDetail.xsl";
         } elsif ($xslsyspref eq "XSLTResultsDisplay") {
             $htdocs  = C4::Context->config('intrahtdocs');
             $theme   = C4::Context->preference("template");
-            $xslfile = C4::Context->preference('marcflavour') .
+            $xslfile = $marcflavour .
                         "slim2intranetResults.xsl";
         } elsif ($xslsyspref eq "OPACXSLTDetailsDisplay") {
             $htdocs  = C4::Context->config('opachtdocs');
             $theme   = C4::Context->preference("opacthemes");
-            $xslfile = C4::Context->preference('marcflavour') .
+            $xslfile = $marcflavour .
                        "slim2OPACDetail.xsl";
         } elsif ($xslsyspref eq "OPACXSLTResultsDisplay") {
             $htdocs  = C4::Context->config('opachtdocs');
             $theme   = C4::Context->preference("opacthemes");
-            $xslfile = C4::Context->preference('marcflavour') .
+            $xslfile = $marcflavour .
                        "slim2OPACResults.xsl";
         }
         $xslfilename = _get_best_default_xslt_filename($htdocs, $theme, $lang, $xslfile);
@@ -192,6 +194,14 @@ sub XSLTParse4Display {
         my $lang = C4::Templates::_current_language();
         $xslfilename =~ s/\{langcode\}/$lang/;
     }
+
+    return $xslfilename;
+}
+
+sub XSLTParse4Display {
+    my ( $biblionumber, $orig_record, $xslsyspref, $fixamps, $hidden_items ) = @_;
+
+    my $xslfilename = XSLTGetFilename( C4::Context->preference( 'marcflavour' ), $xslsyspref );
 
     # grab the XML, run it through our stylesheet, push it out to the browser
     my $record = transformMARCXML4XSLT($biblionumber, $orig_record);
