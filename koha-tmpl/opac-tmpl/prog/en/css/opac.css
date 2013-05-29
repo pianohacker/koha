@@ -1677,6 +1677,10 @@ strong em, em strong  {
 	vertical-align: top;
 	width: 10px;
 }
+.sourcecol {
+	vertical-align: top;
+	width: 100px;
+}
 #container {
 	color : #000;
 }
@@ -3006,6 +3010,16 @@ float:left;
 padding: 0.1em 0;
 }
 
+.notesrow label {
+    font-weight: bold;
+}
+.notesrow span {
+    display: block;
+}
+.notesrow textarea {
+    width: 100%;
+}
+
 .thumbnail-shelfbrowser span {
     margin: 0px auto;
 }
@@ -3030,7 +3044,7 @@ padding: 0.1em 0;
     background: #EEEEEE none;
 }
 
-#overdrive-results {
+#overdrive-results, #pazpar2-results {
     font-weight: bold;
     padding-left: 1em;
 }
@@ -3073,4 +3087,15 @@ padding: 0.1em 0;
 #transl1 {
     width: 35%;
     font-size: 111%;
+}
+
+.thumbnail-shelfbrowser span {
+    margin: 0px auto;
+}
+
+#modal-overlay {
+    background-color: white;
+    border-radius: 5px;
+    max-width: 75%;
+    padding: 15px;
 }

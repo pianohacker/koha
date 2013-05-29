@@ -4,7 +4,7 @@
   
   <server>
     <listen port="__PAZPAR2_PORT__"/>
-    <settings src="__PAZPAR2_CONF_DIR__/koha-biblios.xml"/>
+    <settings src="__PAZPAR2_CONF_DIR__/generic-settings.xml"/>
 
     <relevance>
       <icu_chain id="relevance" locale="el">

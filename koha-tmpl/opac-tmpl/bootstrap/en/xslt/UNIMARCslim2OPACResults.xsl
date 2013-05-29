@@ -6,12 +6,14 @@
   xmlns:marc="http://www.loc.gov/MARC21/slim"
   xmlns:items="http://www.koha-community.org/items"
   xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
+  xmlns="http://www.w3.org/1999/xhtml"
   exclude-result-prefixes="marc items">
 
 <xsl:import href="UNIMARCslimUtils.xsl"/>
 <xsl:output method = "html" indent="yes" omit-xml-declaration = "yes" encoding="UTF-8"/>
 <xsl:key name="item-by-status" match="items:item" use="items:status"/>
 <xsl:key name="item-by-status-and-branch" match="items:item" use="concat(items:status, ' ', items:homebranch)"/>
+<xsl:param name="showAvailability" select="true()"/>
 
 <xsl:template match="/">
   <xsl:apply-templates/>
@@ -99,6 +101,7 @@
 
   <xsl:call-template name="tag_215" />
 
+  <xsl:if test="$showAvailability">
   <span class="results_summary availability">
     <span class="label">Availability: </span>
     <xsl:choose>
@@ -247,6 +250,7 @@
       </span>
     </xsl:if>
   </span>
+  </xsl:if>
 
 </xsl:template>
 

@@ -531,8 +531,8 @@ push @{ $pl_files->{'rewrite-config.PL'} }, (
 );
 if ($config{'INSTALL_PAZPAR2'} eq 'yes') {
     push @{ $pl_files->{'rewrite-config.PL'} }, (
-        'blib/PAZPAR2_CONF_DIR/koha-biblios.xml',
-        'blib/PAZPAR2_CONF_DIR/pazpar2.xml'
+        'blib/PAZPAR2_CONF_DIR/generic-settings.xml',
+        'blib/PAZPAR2_CONF_DIR/pazpar2.xml',
     );
 }
 $config{'ZEBRA_AUTH_CFG'} = $config{'AUTH_INDEX_MODE'} eq 'dom'
