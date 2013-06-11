@@ -35,11 +35,12 @@ BEGIN {
     @EXPORT  = qw(logout_shib login_shib_url checkpw_shib get_login_shib);
 }
 my $context = C4::Context->new() or die 'C4::Context->new failed';
+my $protocol = "https://";
 
 # Logout from Shibboleth
 sub logout_shib {
     my ($query) = @_;
-    my $uri = $ENV{'SERVER_NAME'};
+    my $uri = $protocol . $ENV{'SERVER_NAME'};
     print $query->redirect( $uri . "/Shibboleth.sso/Logout?return=$uri" );
 }
 
@@ -47,8 +48,8 @@ sub logout_shib {
 sub login_shib_url {
 
     my ($query) = @_;
-    my $param = $ENV{'SERVER_NAME'} . $query->script_name();
-    my $uri = $ENV{'SERVER_NAME'} . "/Shibboleth.sso/Login?target=$param";
+    my $param = $protocol . $ENV{'SERVER_NAME'} . $query->script_name();
+    my $uri = $protocol . $ENV{'SERVER_NAME'} . "/Shibboleth.sso/Login?target=$param";
     return $uri;
 }
 
