@@ -39,7 +39,7 @@ my $context = C4::Context->new() or die 'C4::Context->new failed';
 # Logout from Shibboleth
 sub logout_shib {
     my ($query) = @_;
-    my $uri = C4::Context->preference('OPACBaseURL');
+    my $uri = $ENV{'SERVER_NAME'};
     print $query->redirect( $uri . "/Shibboleth.sso/Logout?return=$uri" );
 }
 
@@ -47,8 +47,8 @@ sub logout_shib {
 sub login_shib_url {
 
     my ($query) = @_;
-    my $param = C4::Context->preference('OPACBaseURL') . $query->script_name();
-    my $uri = C4::Context->preference('OPACBaseURL') . "/Shibboleth.sso/Login?target=$param";
+    my $param = $ENV{'SERVER_NAME'} . $query->script_name();
+    my $uri = $ENV{'SERVER_NAME'} . "/Shibboleth.sso/Login?target=$param";
     return $uri;
 }
 
