@@ -7025,6 +7025,39 @@ if(CheckVersion($DBversion)) {
     SetVersion($DBversion);
 }
 
+$DBversion = "3.13.00.XXX";
+if(CheckVersion($DBversion)) {
+    $dbh->do(
+"INSERT IGNORE INTO systempreferences (variable,value,explanation,options,type) VALUES('OPACSearchExternalTargets','0','Whether to search external targets in the OPAC','','YesNo')"
+    );
+    $dbh->do( q{
+CREATE TABLE `external_targets` (
+  `target_id` int(11) NOT NULL AUTO_INCREMENT,
+  `host` varchar(128) NOT NULL,
+  `port` int(11) NOT NULL,
+  `db` varchar(64) NOT NULL,
+  `userid` varchar(64) DEFAULT '',
+  `password` varchar(64) DEFAULT '',
+  `name` varchar(64) NOT NULL,
+  `syntax` varchar(64) NOT NULL,
+  `encoding` varchar(16) DEFAULT 'MARC-8',
+  PRIMARY KEY (`target_id`)
+) ENGINE=InnoDB AUTO_INCREMENT=21 DEFAULT CHARSET=utf8
+    } );
+    $dbh->do( q{
+CREATE TABLE `external_target_restrictions` (
+  `branchcode` varchar(10) NOT NULL,
+  `target_id` int(11) NOT NULL,
+  KEY `branchcode` (`branchcode`),
+  KEY `target_id` (`target_id`),
+  CONSTRAINT `external_target_restrictions_ibfk_1` FOREIGN KEY (`branchcode`) REFERENCES `branches` (`branchcode`) ON DELETE CASCADE,
+  CONSTRAINT `external_target_restrictions_ibfk_2` FOREIGN KEY (`target_id`) REFERENCES `external_targets` (`target_id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf
+    } );
+    print "Upgrade to $DBversion done (Bug 10486 - Allow external Z39.50 targets to be searched from the OPAC)\n";
+    SetVersion($DBversion);
+}
+
 =head1 FUNCTIONS
 
 =head2 TableExists($table)

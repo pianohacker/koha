@@ -14,7 +14,7 @@
 <link rel="stylesheet" type="text/css" href="[% themelang %]/css/jquery.rating.css" />[% END %]
 
 [% IF ( OverDriveEnabled ) %]<script type="text/javascript" src="[% themelang %]/js/overdrive.js"></script>[% END %]
-[% IF ( 1 ) %]
+[% IF ( OPACSearchExternalTargets ) %]
 <script type="text/javascript" src="/opac-tmpl/lib/pz2.js"></script>
 <script type="text/javascript" src="[% themelang %]/js/externalsearch.js"></script>
 [% END %]
@@ -294,7 +294,7 @@ $(document).ready(function(){
         } );
     [% END %]
 
-    [% IF ( 1 ) %]
+    [% IF ( OPACSearchExternalTargets ) %]
         KOHA.ExternalSearch.targets = {
             [% FOREACH target IN external_search_targets %]
                 '[% target.host %]:[% target.port %]/[% target.db %]': {

@@ -424,6 +424,13 @@ OPAC:
                   yes: Allow
                   no: Do not allow
             - users to add a note when placing a hold.
+        -
+            - pref: OPACSearchExternalTargets
+              default: 0
+              choices:
+                  yes: Search
+                  no: "Don't search"
+            - external targets from the OPAC.
 
     Policy:
         -

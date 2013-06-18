@@ -903,6 +903,7 @@ $template->{VARS}->{IDreamBooksReviews} = C4::Context->preference('IDreamBooksRe
 $template->{VARS}->{IDreamBooksReadometer} = C4::Context->preference('IDreamBooksReadometer');
 $template->{VARS}->{IDreamBooksResults} = C4::Context->preference('IDreamBooksResults');
 
+$template->{VARS}->{OPACSearchExternalTargets} = C4::Context->preference('OPACSearchExternalTargets');
 $template->{VARS}->{external_search_targets} = GetExternalSearchTargets( C4::Context->userenv ? C4::Context->userenv->{branch} : '' );
 
 $template->{VARS}->{OverDriveLibraryID} = C4::Context->preference('OverDriveLibraryID');
