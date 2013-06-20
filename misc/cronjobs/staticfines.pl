@@ -176,7 +176,7 @@ for ( my $i = 0 ; $i < scalar(@$data) ; $i++ ) {
         $calendars{$branchcode} = Koha::Calendar->new( branchcode => $branchcode );
     }
     $calendar = $calendars{$branchcode};
-    my $isHoliday = $calendar->is_holiday( DateTime->new(
+    my $isHoliday = $calendar->is_holiday( DateTime->new( 
         year => $tyear,
         month => $tmonth,
         day => $tday

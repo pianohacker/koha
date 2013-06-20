@@ -19,10 +19,10 @@
 -- with Koha; if not, write to the Free Software Foundation, Inc.,
 -- 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-INSERT INTO `repeatable_holidays` VALUES 
-(2,'',0,NULL,NULL,'','Søndager'),
-(3,'',NULL,1,1,'','1. nyttårsdag'),
-(4,'',NULL,1,5,'','1. mai'),
-(5,'',NULL,17,5,'','17. mai'),
-(6,'',NULL,25,12,'','1. juledag'),
-(7,'',NULL,26,12,'','2. juledag');
+INSERT INTO `calendar_repeats` VALUES 
+(2,'',0,NULL,NULL,'','Søndager',0,0,0,0),
+(3,'',NULL,1,1,'','1. nyttårsdag',0,0,0,0),
+(4,'',NULL,5,1,'','1. mai',0,0,0,0),
+(5,'',NULL,5,17,'','17. mai',0,0,0,0),
+(6,'',NULL,12,25,'','1. juledag',0,0,0,0),
+(7,'',NULL,12,26,'','2. juledag',0,0,0,0);

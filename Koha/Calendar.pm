@@ -29,91 +29,41 @@ sub _init {
     my $self       = shift;
     my $branch     = $self->{branchcode};
     my $dbh        = C4::Context->dbh();
-    my $weekly_closed_days_sth = $dbh->prepare(
-'SELECT weekday FROM repeatable_holidays WHERE branchcode = ? AND weekday IS NOT NULL'
-    );
-    $weekly_closed_days_sth->execute( $branch );
-    $self->{weekly_closed_days} = [ 0, 0, 0, 0, 0, 0, 0 ];
-    Readonly::Scalar my $sunday => 7;
-    while ( my $tuple = $weekly_closed_days_sth->fetchrow_hashref ) {
-        $self->{weekly_closed_days}->[ $tuple->{weekday} ] = 1;
+
+    $self->{weekday_hours} = $dbh->selectall_hashref( q{
+        SELECT
+            weekday, open_hour, open_minute, close_hour, close_minute,
+            (open_hour = 0 AND open_minute = 0 AND close_hour = 0 AND close_minute = 0) AS closed
+        FROM calendar_repeats
+        WHERE branchcode = ? AND weekday IS NOT NULL
+    }, 'weekday', { Slice => {} }, $branch ); 
+
+    my $day_month_hours = $dbh->selectall_arrayref( q{
+        SELECT
+            month, day, open_hour, open_minute, close_hour, close_minute,
+            (open_hour = 0 AND open_minute = 0 AND close_hour = 0 AND close_minute = 0) AS closed
+        FROM calendar_repeats
+        WHERE branchcode = ? AND weekday IS NULL
+    }, { Slice => {} }, $branch );
+
+    # DBD::Mock doesn't support multi-key selectall_hashref, so we do it ourselves for now
+    foreach my $day_month ( @$day_month_hours ) {
+        $self->{day_month_hours}->{ $day_month->{month} }->{ $day_month->{day} } = $day_month;
     }
-    my $day_month_closed_days_sth = $dbh->prepare(
-'SELECT day, month FROM repeatable_holidays WHERE branchcode = ? AND weekday IS NULL'
-    );
-    $day_month_closed_days_sth->execute( $branch );
-    $self->{day_month_closed_days} = {};
-    while ( my $tuple = $day_month_closed_days_sth->fetchrow_hashref ) {
-        $self->{day_month_closed_days}->{ $tuple->{month} }->{ $tuple->{day} } =
-          1;
-    }
+
+    $self->{date_hours} = $dbh->selectall_hashref( q{
+        SELECT
+            event_date, open_hour, open_minute, close_hour, close_minute,
+            (open_hour = 0 AND open_minute = 0 AND close_hour = 0 AND close_minute = 0) AS closed
+        FROM calendar_events
+        WHERE branchcode = ?
+    }, 'event_date', { Slice => {} }, $branch );
 
     $self->{days_mode}       = C4::Context->preference('useDaysMode');
     $self->{test}            = 0;
     return;
 }
 
-
-# FIXME: use of package-level variables for caching the holiday
-# lists breaks persistance engines.  As of 2013-12-10, the RM
-# is allowing this with the expectation that prior to release of
-# 3.16, bug 8089 will be fixed and we can switch the caching over
-# to Koha::Cache.
-our ( $exception_holidays, $single_holidays );
-sub _exception_holidays {
-    my ( $self ) = @_;
-    my $dbh = C4::Context->dbh;
-    my $branch = $self->{branchcode};
-    if ( $exception_holidays ) {
-        $self->{exception_holidays} = $exception_holidays;
-        return $exception_holidays;
-    }
-    my $exception_holidays_sth = $dbh->prepare(
-'SELECT day, month, year FROM special_holidays WHERE branchcode = ? AND isexception = 1'
-    );
-    $exception_holidays_sth->execute( $branch );
-    my $dates = [];
-    while ( my ( $day, $month, $year ) = $exception_holidays_sth->fetchrow ) {
-        push @{$dates},
-          DateTime->new(
-            day       => $day,
-            month     => $month,
-            year      => $year,
-            time_zone => C4::Context->tz()
-          )->truncate( to => 'day' );
-    }
-    $self->{exception_holidays} =
-      DateTime::Set->from_datetimes( dates => $dates );
-    $exception_holidays = $self->{exception_holidays};
-    return $exception_holidays;
-}
-
-sub _single_holidays {
-    my ( $self ) = @_;
-    my $dbh = C4::Context->dbh;
-    my $branch = $self->{branchcode};
-    if ( $single_holidays ) {
-        $self->{single_holidays} = $single_holidays;
-        return $single_holidays;
-    }
-    my $single_holidays_sth = $dbh->prepare(
-'SELECT day, month, year FROM special_holidays WHERE branchcode = ? AND isexception = 0'
-    );
-    $single_holidays_sth->execute( $branch );
-    my $dates = [];
-    while ( my ( $day, $month, $year ) = $single_holidays_sth->fetchrow ) {
-        push @{$dates},
-          DateTime->new(
-            day       => $day,
-            month     => $month,
-            year      => $year,
-            time_zone => C4::Context->tz()
-          )->truncate( to => 'day' );
-    }
-    $self->{single_holidays} = DateTime::Set->from_datetimes( dates => $dates );
-    $single_holidays = $self->{single_holidays};
-    return $single_holidays;
-}
 sub addDate {
     my ( $self, $startdate, $add_duration, $unit ) = @_;
 
@@ -126,10 +76,7 @@ sub addDate {
     my $dt;
 
     if ( $unit eq 'hours' ) {
-        # Fixed for legacy support. Should be set as a branch parameter
-        Readonly::Scalar my $return_by_hour => 10;
-
-        $dt = $self->addHours($startdate, $add_duration, $return_by_hour);
+        $dt = $self->addHours($startdate, $add_duration);
     } else {
         # days
         $dt = $self->addDays($startdate, $add_duration);
@@ -139,25 +86,73 @@ sub addDate {
 }
 
 sub addHours {
-    my ( $self, $startdate, $hours_duration, $return_by_hour ) = @_;
+    my ( $self, $startdate, $hours_duration ) = @_;
     my $base_date = $startdate->clone();
 
-    $base_date->add_duration($hours_duration);
+    if ( $self->{days_mode} eq 'Days' ) {
+        $base_date->add_duration( $hours_duration );
+        return $base_date;
+    }
+    my $hours = $self->get_hours_full( $base_date );
 
-    # If we are using the calendar behave for now as if Datedue
-    # was the chosen option (current intended behaviour)
+    if ( $hours_duration->is_negative() ) {
+        if ( $base_date <= $hours->{open_time} ) {
+            # Library is already closed
+            $base_date = $self->prev_open_day( $base_date );
+            $hours = $self->get_hours_full( $base_date );
+            $base_date = $hours->{close_time}->clone;
 
-    if ( $self->{days_mode} ne 'Days' &&
-          $self->is_holiday($base_date) ) {
-
-        if ( $hours_duration->is_negative() ) {
-            $base_date = $self->prev_open_day($base_date);
-        } else {
-            $base_date = $self->next_open_day($base_date);
+            if ( $self->{days_mode} eq 'Calendar' ) {
+                return $base_date;
+            }
         }
 
-        $base_date->set_hour($return_by_hour);
+        while ( $hours_duration->is_negative ) {
+            my $day_len = $hours->{open_time} - $base_date;
 
+            if ( DateTime::Duration->compare( $day_len, $hours_duration, $base_date ) > 0 ) {
+                if ( $self->{days_mode} eq 'Calendar' ) { 
+                    return $hours->{open_time};
+                }
+
+                $hours_duration->subtract( $day_len );
+                $base_date = $self->prev_open_day( $base_date );
+                $hours = $self->get_hours_full( $base_date );
+                $base_date = $hours->{close_time}->clone;
+            } else {
+                $base_date->add_duration( $hours_duration );
+                return $base_date;
+            }
+        }
+    } else {
+        if ( $base_date >= $hours->{close_time} ) {
+            # Library is already closed
+            $base_date = $self->next_open_day( $base_date );
+            $hours = $self->get_hours_full( $base_date );
+            $base_date = $hours->{open_time}->clone;
+
+            if ( $self->{days_mode} eq 'Calendar' ) {
+                return $base_date;
+            }
+        }
+
+        while ( $hours_duration->is_positive ) {
+            my $day_len = $hours->{close_time} - $base_date;
+
+            if ( DateTime::Duration->compare( $day_len, $hours_duration, $base_date ) < 0 ) {
+                if ( $self->{days_mode} eq 'Calendar' ) { 
+                    return $hours->{close_time};
+                }
+
+                $hours_duration->subtract( $day_len );
+                $base_date = $self->next_open_day( $base_date );
+                $hours = $self->get_hours_full( $base_date );
+                $base_date = $hours->{open_time}->clone;
+            } else {
+                $base_date->add_duration( $hours_duration );
+                return $base_date;
+            }
+        }
     }
 
     return $base_date;
@@ -207,38 +202,84 @@ sub addDays {
 
 sub is_holiday {
     my ( $self, $dt ) = @_;
-    my $localdt = $dt->clone();
-    my $day   = $localdt->day;
-    my $month = $localdt->month;
+    my $day   = $dt->day;
+    my $month = $dt->month;
 
-    $localdt->truncate( to => 'day' );
-
-    if ( $self->_exception_holidays->contains($localdt) ) {
-        # exceptions are not holidays
+    if ( exists $self->{date_hours}->{ $dt->ymd } && !$self->{date_hours}->{ $dt->ymd }->{closed} ) {
         return 0;
     }
 
-    my $dow = $localdt->day_of_week;
-    # Representation fix
-    # TODO: Shouldn't we shift the rest of the $dow also?
-    if ( $dow == 7 ) {
-        $dow = 0;
-    }
-
-    if ( $self->{weekly_closed_days}->[$dow] == 1 ) {
+    if ( ( $self->{day_month_hours}->{$month}->{$day} || {} )->{closed} ) {
         return 1;
     }
 
-    if ( exists $self->{day_month_closed_days}->{$month}->{$day} ) {
+    # We use 0 for Sunday, not 7
+    my $dow = $dt->day_of_week % 7;
+
+    if ( ( $self->{weekday_hours}->{ $dow } || {} )->{closed} ) {
         return 1;
     }
 
-    if ( $self->_single_holidays->contains($localdt) ) {
+    if ( ( $self->{date_hours}->{ $dt->ymd } || {} )->{closed} ) {
         return 1;
     }
 
     # damn have to go to work after all
     return 0;
+}
+
+sub get_hours {
+    my ( $self, $dt ) = @_;
+    my $day   = $dt->day;
+    my $month = $dt->month;
+
+    if ( exists $self->{date_hours}->{ $dt->ymd } ) {
+        return $self->{date_hours}->{ $dt->ymd };
+    }
+
+    if ( exists $self->{day_month_hours}->{$month}->{$day} ) {
+        return $self->{day_month_hours}->{$month}->{$day};
+    }
+
+    # We use 0 for Sunday, not 7
+    my $dow = $dt->day_of_week % 7;
+
+    if ( exists $self->{weekday_hours}->{ $dow } ) {
+        return $self->{weekday_hours}->{ $dow };
+    }
+
+    # Assume open
+    return {
+        open_hour => 0,
+        open_minute => 0,
+        close_hour => 24,
+        close_minute => 0,
+        closed => 0
+    };
+}
+
+sub get_hours_full {
+    my ( $self, $dt ) = @_;
+
+    my $hours = { %{ $self->get_hours( $dt ) } };
+
+    $hours->{open_time} = $dt
+        ->clone->truncate( to => 'day' )
+        ->set_hour( $hours->{open_hour} )
+        ->set_minute( $hours->{open_minute} );
+
+    if ( $hours->{close_hour} == 24 ) {
+        $hours->{close_time} = $dt
+            ->clone->truncate( to => 'day' )
+            ->add( days => 1 );
+    } else {
+        $hours->{close_time} = $dt
+            ->clone->truncate( to => 'day' )
+            ->set_hour( $hours->{close_hour} )
+            ->set_minute( $hours->{close_minute} );
+    }
+
+    return $hours;
 }
 
 sub next_open_day {
@@ -298,45 +339,39 @@ sub hours_between {
     my ($self, $start_date, $end_date) = @_;
     my $start_dt = $start_date->clone();
     my $end_dt = $end_date->clone();
-    my $duration = $end_dt->delta_ms($start_dt);
-    $start_dt->truncate( to => 'day' );
-    $end_dt->truncate( to => 'day' );
-    # NB this is a kludge in that it assumes all days are 24 hours
-    # However for hourly loans the logic should be expanded to
-    # take into account open/close times then it would be a duration
-    # of library open hours
-    my $skipped_days = 0;
-    for (my $dt = $start_dt->clone();
-        $dt <= $end_dt;
-        $dt->add(days => 1)
+
+    if ( $start_dt->compare($end_dt) > 0 ) {
+        # swap dates
+        my $int_dt = $end_dt;
+        $end_dt = $start_dt;
+        $start_dt = $int_dt;
+    }
+
+    my $start_hours = $self->get_hours_full( $start_dt );
+    my $end_hours = $self->get_hours_full( $end_dt );
+
+    $start_dt = $start_hours->{open_time} if ( $start_dt < $start_hours->{open_time} );
+    $end_dt = $end_hours->{close_time} if ( $end_dt > $end_hours->{close_time} );
+
+    return $end_dt - $start_dt if ( $start_dt->ymd eq $end_dt->ymd );
+
+    my $duration = DateTime::Duration->new;
+    
+    $duration->add_duration( $start_hours->{close_time} - $start_dt ) if ( $start_dt < $start_hours->{close_time} );
+
+    for (my $date = $start_dt->clone->truncate( to => 'day' )->add( days => 1 );
+        $date->ymd lt $end_dt->ymd;
+        $date->add(days => 1)
     ) {
-        if ($self->is_holiday($dt)) {
-            ++$skipped_days;
-        }
+        my $hours = $self->get_hours_full( $date );
+
+        $duration->add_duration( $hours->{close_time}->delta_ms( $hours->{open_time} ) );
     }
-    if ($skipped_days) {
-        $duration->subtract_duration(DateTime::Duration->new( hours => 24 * $skipped_days));
-    }
+
+    $duration->add_duration( $end_dt - $end_hours->{open_time} ) if ( $end_dt > $start_hours->{open_time} );
 
     return $duration;
 
-}
-
-sub set_daysmode {
-    my ( $self, $mode ) = @_;
-
-    # if not testing this is a no op
-    if ( $self->{test} ) {
-        $self->{days_mode} = $mode;
-    }
-
-    return;
-}
-
-sub clear_weekly_closed_days {
-    my $self = shift;
-    $self->{weekly_closed_days} = [ 0, 0, 0, 0, 0, 0, 0 ];    # Sunday only
-    return;
 }
 
 1;
@@ -392,13 +427,11 @@ parameter will be removed when issuingrules properly cope with that
 
 =head2 addHours
 
-    my $dt = $calendar->addHours($date, $dur, $return_by_hour )
+    my $dt = $calendar->addHours($date, $dur )
 
 C<$date> is a DateTime object representing the starting date of the interval.
 
 C<$offset> is a DateTime::Duration to add to it
-
-C<$return_by_hour> is an integer value representing the opening hour for the branch
 
 
 =head2 addDays
@@ -445,16 +478,6 @@ $datetime = $calendar->prev_open_day($duedate_dt)
 Passed a Datetime returns another Datetime representing the previous open day. It is
 intended for use to calculate the due date when useDaysMode syspref is set to either
 'Datedue' or 'Calendar'.
-
-=head2 set_daysmode
-
-For testing only allows the calling script to change days mode
-
-=head2 clear_weekly_closed_days
-
-In test mode changes the testing set of closed days to a new set with
-no closed days. TODO passing an array of closed days to this would
-allow testing of more configurations
 
 =head1 DIAGNOSTICS
 

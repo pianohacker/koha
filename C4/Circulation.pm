@@ -3337,6 +3337,8 @@ sub CalcDateDue {
     return $datedue;
 }
 
+
+
 sub CheckValidBarcode{
 my ($barcode) = @_;
 my $dbh = C4::Context->dbh;

@@ -20,7 +20,7 @@ use vars qw($VERSION @EXPORT);
 
 use Carp;
 
-use Koha::Database;
+use C4::Context;
 
 our ( @ISA, @EXPORT );
 
@@ -66,10 +66,9 @@ sub GetSingleEvents {
 
     return C4::Context->dbh->selectall_arrayref( q{
         SELECT
-            CONCAT(LPAD(year, 4, '0'), '-', LPAD(month, 2, '0'), '-', LPAD(day, 2, '0')) as event_date,
-            0 as open_hour, 0 as open_minute, IF(isexception, 24, 0) as close_hour,
-            0 as close_minute, title, description, IF(isexception, 0, 1) as closed
-        FROM special_holidays
+            event_date, open_hour, open_minute, close_hour, close_minute, title, description,
+            (open_hour = 0 AND open_minute = 0 AND close_hour = 0 AND close_minute = 0) AS closed
+        FROM calendar_events
         WHERE branchcode = ?
     }, { Slice => {} }, $branchcode );
 }
@@ -87,11 +86,11 @@ sub GetWeeklyEvents {
 
     return C4::Context->dbh->selectall_arrayref( q{
         SELECT
-            weekday, 0 as open_hour, 0 as open_minute, 0 as close_hour,
-            0 as close_minute, title, description, 1 as closed
-        FROM repeatable_holidays
+            weekday, open_hour, open_minute, close_hour, close_minute, title, description,
+            (open_hour = 0 AND open_minute = 0 AND close_hour = 0 AND close_minute = 0) AS closed
+        FROM calendar_repeats
         WHERE branchcode = ? AND weekday IS NOT NULL
-    }, { Slice => {} }, $branchcode );
+    }, { Slice => {} }, $branchcode ); 
 }
 
 =head2 GetYearlyEvents
@@ -107,56 +106,68 @@ sub GetYearlyEvents {
 
     return C4::Context->dbh->selectall_arrayref( q{
         SELECT
-            month, day, 0 as open_hour, 0 as open_minute, 0 as close_hour,
-            0 as close_minute, title, description, 1 as closed
-        FROM repeatable_holidays
+            month, day, open_hour, open_minute, close_hour, close_minute, title, description,
+            (open_hour = 0 AND open_minute = 0 AND close_hour = 0 AND close_minute = 0) AS closed
+        FROM calendar_repeats
         WHERE branchcode = ? AND weekday IS NULL
     }, { Slice => {} }, $branchcode );
 }
 
 =head2 ModSingleEvent
 
-  ModSingleEvent( $branchcode, \%info )
+  ModSingleEvent( $branchcode, $date, \%info )
 
-Creates or updates an event for a single date. $info->{date} should be an
-ISO-formatted date string, and \%info should also contain the following keys:
-open_hour, open_minute, close_hour, close_minute, title and description.
+Creates or updates an event for a single date. $date should be an ISO-formatted
+date string, and \%info should contain the following keys: open_hour,
+open_minute, close_hour, close_minute, title and description.
 
 =cut
 
 sub ModSingleEvent {
-    my ( $branchcode, $info ) = @_;
+    my ( $branchcode, $date, $info ) = @_;
 
-    my ( $year, $month, $day ) = ( $info->{date} =~ /(\d+)-(\d+)-(\d+)/ );
-    return unless ( $year && $month && $day );
-
-    my $dbh = C4::Context->dbh;
-    my @args = ( ( map { $info->{$_} } qw(title description) ), $info->{close_hour} != 0, $branchcode, $year, $month, $day );
-
-    # The code below relies on $dbh->do returning 0 when the update affects no rows
-    my $affected = $dbh->do( q{
-        UPDATE special_holidays
-        SET
-            title = ?, description = ?, isexception = ?
-        WHERE branchcode = ? AND year = ? AND month = ? AND day = ?
-    }, {}, @args );
-
-    $dbh->do( q{
-        INSERT
-        INTO special_holidays(title, description, isexception, branchcode, year, month, day)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-    }, {}, @args ) unless ( $affected > 0 );
+    C4::Context->dbh->do( q{
+        INSERT INTO calendar_events(branchcode, event_date, open_hour, open_minute, close_hour, close_minute, title, description)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        ON DUPLICATE KEY UPDATE open_hour = ?, open_minute = ?, close_hour = ?, close_minute = ?, title = ?, description = ?
+    }, {}, $branchcode, $date, ( map { $info->{$_} } qw(open_hour open_minute close_hour close_minute title description) ) x 2 );
 }
 
 =head2 ModRepeatingEvent
 
-  ModRepeatingEvent( $branchcode, \%info )
+  ModRepeatingEvent( $branchcode, $weekday, $month, $day, \%info )
 
-Creates or updates a weekly- or yearly-repeating event. Either $info->{weekday},
-or $info->{month} and $info->{day} should be set, for a weekly or yearly event,
-respectively.
+Creates or updates a weekly- or yearly-repeating event. Either $weekday,
+or $month and $day should be set, for a weekly or yearly event, respectively.
 
 =cut
+
+sub ModRepeatingEvent {
+    my ( $branchcode, $weekday, $month, $day, $info ) = @_;
+
+    C4::Context->dbh->do( q{
+        INSERT INTO calendar_repeats(branchcode, weekday, month, day, open_hour, open_minute, close_hour, close_minute, title, description)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ON DUPLICATE KEY UPDATE open_hour = ?, open_minute = ?, close_hour = ?, close_minute = ?, title = ?, description = ?
+    }, {}, $branchcode, $weekday, $month, $day, ( map { $info->{$_} } qw(open_hour open_minute close_hour close_minute title description) ) x 2 );
+}
+
+=head2 DelSingleEvent
+
+  DelSingleEvent( $branchcode, $date, \%info )
+
+Deletes an event for a single date. $date should be an ISO-formatted date string.
+
+=cut
+
+sub DelSingleEvent {
+    my ( $branchcode, $date ) = @_;
+
+    C4::Context->dbh->do( q{
+        DELETE FROM calendar_events
+        WHERE branchcode = ? AND event_date = ?
+    }, {}, $branchcode, $date );
+}
 
 sub _get_compare {
     my ( $colname, $value ) = @_;
@@ -164,73 +175,22 @@ sub _get_compare {
     return ' AND ' . $colname . ' ' . ( defined( $value ) ? '=' : 'IS' ) . ' ?';
 }
 
-sub ModRepeatingEvent {
-    my ( $branchcode, $info ) = @_;
-
-    my $dbh = C4::Context->dbh;
-    my $open = ( $info->{close_hour} != 0 );
-
-    if ($open) {
-        $dbh->do( q{
-            DELETE FROM repeatable_holidays
-            WHERE branchcode = ?
-        } . _get_compare( 'weekday', $info->{weekday} ) . _get_compare( 'month', $info->{month} ) . _get_compare( 'day', $info->{day} ), {}, $branchcode, $info->{weekday}, $info->{month}, $info->{day} );
-    } else {
-        my @args = ( ( map { $info->{$_} } qw(title description) ), $branchcode, $info->{weekday}, $info->{month}, $info->{day} );
-
-        # The code below relies on $dbh->do returning 0 when the update affects no rows
-        my $affected = $dbh->do( q{
-            UPDATE repeatable_holidays
-            SET
-                title = ?, description = ?
-            WHERE branchcode = ?
-        } . _get_compare( 'weekday', $info->{weekday} ) . _get_compare( 'month', $info->{month} ) . _get_compare( 'day', $info->{day} ), {}, @args );
-
-        $dbh->do( q{
-            INSERT
-            INTO repeatable_holidays(title, description, branchcode, weekday, month, day)
-            VALUES (?, ?, ?, ?, ?, ?)
-        }, {}, @args ) unless ( $affected > 0 );
-    }
-}
-
-=head2 DelSingleEvent
-
-  DelSingleEvent( $branchcode, \%info )
-
-Deletes an event for a single date. $info->{date} should be an ISO-formatted date string.
-
-=cut
-
-sub DelSingleEvent {
-    my ( $branchcode, $info ) = @_;
-
-    my ( $year, $month, $day ) = ( $info->{date} =~ /(\d+)-(\d+)-(\d+)/ );
-    return unless ( $year && $month && $day );
-
-    C4::Context->dbh->do( q{
-        DELETE FROM special_holidays
-        WHERE branchcode = ? AND year = ? AND month = ? AND day = ?
-    }, {}, $branchcode, $year, $month, $day );
-}
-
 =head2 DelRepeatingEvent
 
-  DelRepeatingEvent( $branchcode, \%info )
+  DelRepeatingEvent( $branchcode, $weekday, $month, $day )
 
-Deletes a weekly- or yearly-repeating event. Either $info->{weekday}, or
-$info->{month} and $info->{day} should be set, for a weekly or yearly event,
-respectively.
+Deletes a weekly- or yearly-repeating event. Either $weekday, or $month and
+$day should be set, for a weekly or yearly event, respectively.
 
 =cut
 
 sub DelRepeatingEvent {
-    my ( $branchcode, $info ) = @_;
+    my ( $branchcode, $weekday, $month, $day ) = @_;
 
     C4::Context->dbh->do( q{
-        DELETE FROM repeatable_holidays
+        DELETE FROM calendar_repeats
         WHERE branchcode = ?
-    } . _get_compare( 'weekday', $info->{weekday} ) . _get_compare( 'month', $info->{month} ) . _get_compare( 'day', $info->{day} ), {}, $branchcode, $info->{weekday}, $info->{month}, $info->{day} );
+    } . _get_compare( 'weekday', $weekday ) . _get_compare( 'month', $month ) . _get_compare( 'day', $day ), {}, $branchcode, $weekday, $month, $day );
 }
 
 =head2 CopyAllEvents
@@ -245,16 +205,16 @@ sub CopyAllEvents {
     my ( $from_branchcode, $to_branchcode ) = @_;
 
     C4::Context->dbh->do( q{
-        INSERT IGNORE INTO special_holidays(branchcode, year, month, day, isexception, title, description)
-        SELECT ?, year, month, day, isexception, title, description
-        FROM special_holidays
+        INSERT IGNORE INTO calendar_events(branchcode, event_date, open_hour, open_minute, close_hour, close_minute, title, description)
+        SELECT ?, event_date, open_hour, open_minute, close_hour, close_minute, title, description
+        FROM calendar_events
         WHERE branchcode = ?
     }, {}, $to_branchcode, $from_branchcode );
 
     C4::Context->dbh->do( q{
-        INSERT IGNORE INTO repeatable_holidays(branchcode, weekday, month, day, title, description)
-        SELECT ?, weekday, month, day, title, description
-        FROM repeatable_holidays
+        INSERT IGNORE INTO calendar_repeats(branchcode, weekday, month, day, open_hour, open_minute, close_hour, close_minute, title, description)
+        SELECT ?, weekday, month, day, open_hour, open_minute, close_hour, close_minute, title, description
+        FROM calendar_repeats
         WHERE branchcode = ?
     }, {}, $to_branchcode, $from_branchcode );
 }
@@ -267,6 +227,5 @@ __END__
 =head1 AUTHOR
 
 Koha Physics Library UNLP <matias_veleda@hotmail.com>
-Jesse Weaver <jweaver@bywatersolutions.com>
 
 =cut

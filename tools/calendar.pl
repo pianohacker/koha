@@ -2,22 +2,22 @@
 
 # This file is part of Koha.
 #
-# Koha is free software; you can redistribute it and/or modify it
-# under the terms of the GNU General Public License as published by
-# the Free Software Foundation; either version 3 of the License, or
-# (at your option) any later version.
+# Koha is free software; you can redistribute it and/or modify it under the
+# terms of the GNU General Public License as published by the Free Software
+# Foundation; either version 2 of the License, or (at your option) any later
+# version.
 #
-# Koha is distributed in the hope that it will be useful, but
-# WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-# GNU General Public License for more details.
+# Koha is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
+# A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
 #
-# You should have received a copy of the GNU General Public License
-# along with Koha; if not, see <http://www.gnu.org/licenses>.
+# You should have received a copy of the GNU General Public License along with
+# Koha; if not, write to the Free Software Foundation, Inc., 59 Temple Place,
+# Suite 330, Boston, MA  02111-1307 USA
 
 #####Sets holiday periods for each branch. Datedues will be extended if branch is closed -TG
 
-use Modern::Perl;
+use Modern::Perl '2009';
 
 use CGI;
 
@@ -55,13 +55,13 @@ unless($keydate = $calendarinput->output('iso')) {
 }
 $keydate =~ s/-/\//g;
 
-my $branch= $input->param('branchName') || $input->param('branch') || C4::Context->userenv->{'branch'};
+my $branch= $input->param('branch') || C4::Context->userenv->{'branch'};
 # Set all the branches.
 my $onlymine=(C4::Context->preference('IndependentBranches') &&
               C4::Context->userenv &&
               C4::Context->userenv->{flags} % 2 !=1  &&
               C4::Context->userenv->{branch}?1:0);
-if ( $onlymine ) {
+if ( $onlymine ) { 
     $branch = C4::Context->userenv->{'branch'};
 }
 my $branchname = GetBranchName($branch);
@@ -110,7 +110,7 @@ if ( $input->param( 'allBranches' ) || !$input->param( 'branchName' ) ) {
 if ( $op eq 'save' ) {
     my $date = $input->param( 'year' ) . '-' . $input->param( 'month' ) . '-' . $input->param( 'day' );
 
-    local our ( $open_hour, $open_minute, $close_hour, $close_minute );
+    my ( $open_hour, $open_minute, $close_hour, $close_minute );
 
     if ( $input->param( 'hoursType' ) eq 'open' ) {
         ( $open_hour, $open_minute ) = ( 0, 0 );
@@ -124,10 +124,9 @@ if ( $op eq 'save' ) {
     }
 
     foreach my $branchcode ( @branches ) {
-        my %event_types = (
-            'single' => sub {
-                ModSingleEvent( $branchcode, {
-                    date => $date,
+        given ( $input->param( 'eventType' ) ) {
+            when ( 'single' ) {
+                ModSingleEvent( $branchcode, $date, {
                     title => $input->param( 'title' ),
                     description => $input->param( 'description' ),
                     open_hour => $open_hour,
@@ -135,11 +134,10 @@ if ( $op eq 'save' ) {
                     close_hour => $close_hour,
                     close_minute => $close_minute
                 } );
-            },
+            }
 
-            'weekly' => sub {
-                ModRepeatingEvent( $branchcode, {
-                    weekday => $input->param( 'weekday' ),
+            when ( 'weekly' ) {
+                ModRepeatingEvent( $branchcode, $input->param( 'weekday' ), undef, undef, {
                     title => $input->param( 'title' ),
                     description => $input->param( 'description' ),
                     open_hour => $open_hour,
@@ -147,12 +145,10 @@ if ( $op eq 'save' ) {
                     close_hour => $close_hour,
                     close_minute => $close_minute
                 } );
-            },
+            }
 
-            'yearly' => sub {
-                ModRepeatingEvent( $branchcode, {
-                    month => $input->param( 'month' ),
-                    day => $input->param( 'day' ),
+            when ( 'yearly' ) {
+                ModRepeatingEvent( $branchcode, undef, $input->param( 'month' ), $input->param( 'day' ), {
                     title => $input->param( 'title' ),
                     description => $input->param( 'description' ),
                     open_hour => $open_hour,
@@ -160,12 +156,11 @@ if ( $op eq 'save' ) {
                     close_hour => $close_hour,
                     close_minute => $close_minute
                 } );
-            },
+            }
 
-            'singlerange' => sub {
+            when ( 'singlerange' ) {
                 foreach my $dt ( @ranged_dates ) {
-                    ModSingleEvent( $branchcode, {
-                        date => $dt->ymd,
+                    ModSingleEvent( $branchcode, $dt->ymd, {
                         title => $input->param( 'title' ),
                         description => $input->param( 'description' ),
                         open_hour => $open_hour,
@@ -174,13 +169,11 @@ if ( $op eq 'save' ) {
                         close_minute => $close_minute
                     } );
                 }
-            },
+            }
 
-            'yearlyrange' => sub {
+            when ( 'yearlyrange' ) {
                 foreach my $dt ( @ranged_dates ) {
-                    ModRepeatingEvent( $branchcode, {
-                        month => $dt->month,
-                        day => $dt->day,
+                    ModRepeatingEvent( $branchcode, undef, $dt->month, $dt->day, {
                         title => $input->param( 'title' ),
                         description => $input->param( 'description' ),
                         open_hour => $open_hour,
@@ -189,43 +182,37 @@ if ( $op eq 'save' ) {
                         close_minute => $close_minute
                     } );
                 }
-            },
-        );
-
-        # Choose from the above options
-        $event_types{ $input->param( 'eventType' ) }->();
+            }
+        }
     }
 } elsif ( $op eq 'delete' ) {
     my $date = $input->param( 'year' ) . '-' . $input->param( 'month' ) . '-' . $input->param( 'day' );
 
     foreach my $branchcode ( @branches ) {
-        my %event_types = (
-            'single' => sub {
-                DelSingleEvent( $branchcode, { date => $date } );
-            },
+        given ( $input->param( 'eventType' ) ) {
+            when ( 'single' ) {
+                DelSingleEvent( $branchcode, $date );
+            }
 
-            'weekly' => sub {
-                DelRepeatingEvent( $branchcode, { weekday => $input->param( 'weekday' ) } );
-            },
+            when ( 'weekly' ) {
+                DelRepeatingEvent( $branchcode, $input->param( 'weekday' ), undef, undef );
+            }
 
-            'yearly' => sub {
-                DelRepeatingEvent( $branchcode, { month => $input->param( 'month' ), day => $input->param( 'day' ) } );
-            },
-        );
-
-        # Choose from the above options
-        $event_types{ $input->param( 'eventType' ) }->();
+            when ( 'yearly' ) {
+                DelRepeatingEvent( $branchcode, undef, $input->param( 'month' ), $input->param( 'day' ) );
+            }
+        }
     }
 } elsif ( $op eq 'deleterange' ) {
     foreach my $branchcode ( @branches ) {
         foreach my $dt ( @ranged_dates ) {
-            DelSingleEvent( $branchcode, { date => $dt->ymd } );
+            DelSingleEvent( $branchcode, $dt->ymd );
         }
     }
 } elsif ( $op eq 'deleterangerepeat' ) {
     foreach my $branchcode ( @branches ) {
         foreach my $dt ( @ranged_dates ) {
-            DelRepeatingEvent( $branchcode, { month => $dt->month, day => $dt->day } );
+            DelRepeatingEvent( $branchcode, undef, $dt->month, $dt->day );
         }
     }
 } elsif ( $op eq 'copyall' ) {

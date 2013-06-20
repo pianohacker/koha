@@ -667,6 +667,43 @@ CREATE TABLE `default_circ_rules` (
     PRIMARY KEY (`singleton`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
+
+--
+-- Table structure for table `calendar_events`
+--
+DROP TABLE IF EXISTS `calendar_events`;
+CREATE TABLE `calendar_events` (
+    `branchcode` varchar(10) NOT NULL DEFAULT '',
+    `event_date` date NOT NULL,
+    `title` varchar(50) NOT NULL DEFAULT '',
+    `description` text NOT NULL,
+    `open_hour` smallint(6) NOT NULL,
+    `open_minute` smallint(6) NOT NULL,
+    `close_hour` smallint(6) NOT NULL,
+    `close_minute` smallint(6) NOT NULL,
+    PRIMARY KEY (`branchcode`,`event_date`),
+    CONSTRAINT `calendar_events_ibfk_1` FOREIGN KEY (`branchcode`) REFERENCES `branches` (`branchcode`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+--
+-- Table structure for table `calendar_repeats`
+--
+DROP TABLE IF EXISTS `calendar_repeats`;
+CREATE TABLE `calendar_repeats` (
+    `branchcode` varchar(10) NOT NULL DEFAULT '',
+    `weekday` smallint(6) DEFAULT NULL,
+    `month` smallint(6) DEFAULT NULL,
+    `day` smallint(6) DEFAULT NULL,
+    `title` varchar(50) NOT NULL DEFAULT '',
+    `description` text NOT NULL,
+    `open_hour` smallint(6) NOT NULL,
+    `open_minute` smallint(6) NOT NULL,
+    `close_hour` smallint(6) NOT NULL,
+    `close_minute` smallint(6) NOT NULL,
+    UNIQUE KEY `branchcode` (`branchcode`,`weekday`),
+    UNIQUE KEY `branchcode_2` (`branchcode`,`month`,`day`),
+    CONSTRAINT `calendar_repeats_ibfk_1` FOREIGN KEY (`branchcode`) REFERENCES `branches` (`branchcode`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 --
 -- Table structure for table `cities`
 --
@@ -1766,22 +1803,6 @@ CREATE TABLE `printers_profile` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 --
--- Table structure for table `repeatable_holidays`
---
-
-DROP TABLE IF EXISTS `repeatable_holidays`;
-CREATE TABLE `repeatable_holidays` ( -- information for the days the library is closed
-  `id` int(11) NOT NULL auto_increment, -- unique identifier assigned by Koha
-  `branchcode` varchar(10) NOT NULL default '', -- foreign key from the branches table, defines which branch this closing is for
-  `weekday` smallint(6) default NULL, -- day of the week (0=Sunday, 1=Monday, etc) this closing is repeated on
-  `day` smallint(6) default NULL, -- day of the month this closing is on
-  `month` smallint(6) default NULL, -- month this closing is in
-  `title` varchar(50) NOT NULL default '', -- title of this closing
-  `description` text NOT NULL, -- description for this closing
-  PRIMARY KEY  (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-
---
 -- Table structure for table `reports_dictionary`
 --
 
@@ -1951,23 +1972,6 @@ CREATE TABLE sessions (
   `id` varchar(32) NOT NULL,
   `a_session` text NOT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-
---
--- Table structure for table `special_holidays`
---
-
-DROP TABLE IF EXISTS `special_holidays`;
-CREATE TABLE `special_holidays` ( -- non repeatable holidays/library closings
-  `id` int(11) NOT NULL auto_increment, -- unique identifier assigned by Koha
-  `branchcode` varchar(10) NOT NULL default '', -- foreign key from the branches table, defines which branch this closing is for
-  `day` smallint(6) NOT NULL default 0, -- day of the month this closing is on
-  `month` smallint(6) NOT NULL default 0, -- month this closing is in
-  `year` smallint(6) NOT NULL default 0, -- year this closing is in
-  `isexception` smallint(1) NOT NULL default 1, -- is this a holiday exception to a repeatable holiday (1 for yes, 0 for no)
-  `title` varchar(50) NOT NULL default '', -- title for this closing
-  `description` text NOT NULL, -- description of this closing
-  PRIMARY KEY  (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 --

@@ -8778,6 +8778,82 @@ if ( CheckVersion($DBversion) ) {
         INSERT IGNORE INTO systempreferences (variable,value,explanation,options,type) VALUES('StatisticsFields','location|itype|ccode','Define fields (from the items table) used for statistics members',NULL,'Free')
     });
     print "Upgrade to $DBversion done (Bug 12728: Checked syspref StatisticsFields)\n";
+
+    SetVersion($DBversion);
+}
+
+$DBversion = "3.17.00.XXX";
+if ( CheckVersion($DBversion) ) {
+    print "Upgrade to $DBversion done (Bug 8133: create tables, migrate data to calendar_*)\n";
+
+    $dbh->do( q{
+        CREATE TABLE `calendar_events` (
+          `branchcode` varchar(10) NOT NULL DEFAULT '',
+          `event_date` date NOT NULL,
+          `title` varchar(50) NOT NULL DEFAULT '',
+          `description` text NOT NULL,
+          `open_hour` smallint(6) NOT NULL,
+          `open_minute` smallint(6) NOT NULL,
+          `close_hour` smallint(6) NOT NULL,
+          `close_minute` smallint(6) NOT NULL,
+          PRIMARY KEY (`branchcode`,`event_date`),
+          CONSTRAINT `calendar_events_ibfk_1` FOREIGN KEY (`branchcode`) REFERENCES `branches` (`branchcode`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+    } );
+
+    $dbh->do( q{
+        CREATE TABLE `calendar_repeats` (
+          `branchcode` varchar(10) NOT NULL DEFAULT '',
+          `weekday` smallint(6) DEFAULT NULL,
+          `month` smallint(6) DEFAULT NULL,
+          `day` smallint(6) DEFAULT NULL,
+          `title` varchar(50) NOT NULL DEFAULT '',
+          `description` text NOT NULL,
+          `open_hour` smallint(6) NOT NULL,
+          `open_minute` smallint(6) NOT NULL,
+          `close_hour` smallint(6) NOT NULL,
+          `close_minute` smallint(6) NOT NULL,
+          UNIQUE KEY `branchcode` (`branchcode`,`weekday`),
+          UNIQUE KEY `branchcode_2` (`branchcode`,`month`,`day`),
+          CONSTRAINT `calendar_repeats_ibfk_1` FOREIGN KEY (`branchcode`) REFERENCES `branches` (`branchcode`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+    } );
+
+    $dbh->do( q{
+        INSERT INTO
+          calendar_events(branchcode, event_date, title, description, open_hour, open_minute, close_hour, close_minute)
+        SELECT
+          branchcode, CONCAT_WS('-', year, month, day), title, description, 0, 0, 0, 0
+          FROM special_holidays
+          WHERE isexception = 0
+    } );
+
+    $dbh->do( q{
+        INSERT INTO
+          calendar_events(branchcode, event_date, title, description, open_hour, open_minute, close_hour, close_minute)
+        SELECT
+          branchcode, CONCAT_WS('-', year, month, day), title, description, 0, 0, 24, 0
+          FROM special_holidays
+          WHERE isexception = 1
+    } );
+
+    $dbh->do( q{
+        INSERT INTO
+          calendar_repeats(branchcode, weekday, month, day, title, description, open_hour, open_minute, close_hour, close_minute)
+        SELECT
+          branchcode, weekday, month, day, title, description, 0, 0, 0, 0
+          FROM repeatable_holidays
+          WHERE weekday IS NULL
+    } );
+
+    $dbh->do( q{
+        DROP TABLE repeatable_holidays;
+    } );
+
+    $dbh->do( q{
+        DROP TABLE special_holidays;
+    } );
+
     SetVersion($DBversion);
 }
 

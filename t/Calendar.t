@@ -4,13 +4,15 @@ use strict;
 use warnings;
 use DateTime;
 use DateTime::Duration;
-use Test::More tests => 34;
+use Test::More tests => 51;
 use Test::MockModule;
 use DBD::Mock;
 use Koha::DateUtils;
 
 BEGIN {
     use_ok('Koha::Calendar');
+    use Carp;
+    $SIG{ __DIE__ } = sub { Carp::confess( @_ ) };
 }
 
 my $module_context = new Test::MockModule('C4::Context');
@@ -38,38 +40,55 @@ SKIP: {
 skip "DBD::Mock is too old", 33
   unless $DBD::Mock::VERSION >= 1.45;
 
+# Apologies for strange indentation, DBD::Mock is picky
 my $holidays_session = DBD::Mock::Session->new('holidays_session' => (
     { # weekly holidays
-        statement => "SELECT weekday FROM repeatable_holidays WHERE branchcode = ? AND weekday IS NOT NULL",
+        statement => q{
+        SELECT
+            weekday, open_hour, open_minute, close_hour, close_minute,
+            (open_hour = 0 AND open_minute = 0 AND close_hour = 0 AND close_minute = 0) AS closed
+        FROM calendar_repeats
+        WHERE branchcode = ? AND weekday IS NOT NULL
+    },
         results   => [
-                        ['weekday'],
-                        [0],    # sundays
-                        [6]     # saturdays
+                        ['weekday', 'open_hour', 'open_minute', 'close_hour', 'close_minute', 'closed'],
+                        [0, 0, 0, 0, 0, 1],    # sundays
+                        [1,10, 0,19, 0, 0],    # mondays
+                        [2,10, 0,19, 0, 0],    # tuesdays
+                        [6, 0, 0, 0, 0, 1]     # saturdays
                      ]
     },
     { # day and month repeatable holidays
-        statement => "SELECT day, month FROM repeatable_holidays WHERE branchcode = ? AND weekday IS NULL",
+        statement => q{
+        SELECT
+            month, day, open_hour, open_minute, close_hour, close_minute,
+            (open_hour = 0 AND open_minute = 0 AND close_hour = 0 AND close_minute = 0) AS closed
+        FROM calendar_repeats
+        WHERE branchcode = ? AND weekday IS NULL
+    },
         results   => [
-                        [ 'month', 'day' ],
-                        [ 1, 1 ],   # new year's day
-                        [12,25]     # christmas
+                        [ 'month', 'day', 'open_hour', 'open_minute', 'close_hour', 'close_minute', 'closed' ],
+                        [ 1, 1, 0, 0, 0, 0, 1],   # new year's day
+                        [ 6,26,10, 0,15, 0, 0],    # wednesdays
+                        [12,25, 0, 0, 0, 0, 1]     # christmas
                      ]
     },
     { # exception holidays
-        statement => "SELECT day, month, year FROM special_holidays WHERE branchcode = ? AND isexception = 1",
+        statement => q{
+        SELECT
+            event_date, open_hour, open_minute, close_hour, close_minute,
+            (open_hour = 0 AND open_minute = 0 AND close_hour = 0 AND close_minute = 0) AS closed
+        FROM calendar_events
+        WHERE branchcode = ?
+    },
         results   => [
-                        [ 'day', 'month', 'year' ],
-                        [ 11, 11, 2012 ] # sunday exception
+                        [ 'event_date', 'open_hour', 'open_minute', 'close_hour', 'close_minute', 'closed' ],
+                        [ '2012-11-11', 0, 0,24, 0, 0 ], # sunday exception
+                        [ '2011-06-01', 0, 0, 0, 0, 1 ],  # single holiday
+                        [ '2012-07-04', 0, 0, 0, 0, 1 ],
+                        [ '2014-06-26',12, 0,14, 0, 0 ]
                      ]
     },
-    { # single holidays
-        statement => "SELECT day, month, year FROM special_holidays WHERE branchcode = ? AND isexception = 0",
-        results   => [
-                        [ 'day', 'month', 'year' ],
-                        [ 1, 6, 2011 ],  # single holiday
-                        [ 4, 7, 2012 ]
-                     ]
-    }
 ));
 
 # Initialize the global $dbh variable
@@ -189,6 +208,22 @@ my $day_after_christmas = DateTime->new(
         minute    => 53,
     );
 
+    my $same_day_dt = DateTime->new(    # Monday
+        year      => 2012,
+        month     => 7,
+        day       => 23,
+        hour      => 13,
+        minute    => 53,
+    );
+
+    my $after_close_dt = DateTime->new(    # Monday
+        year      => 2012,
+        month     => 7,
+        day       => 23,
+        hour      => 22,
+        minute    => 53,
+    );
+
     my $later_dt = DateTime->new(    # Monday
         year      => 2012,
         month     => 9,
@@ -232,13 +267,41 @@ my $day_after_christmas = DateTime->new(
     is( $cal->addDate($day_after_christmas, -1, 'days')->ymd(), '2012-12-24',
         'Negative call to addDate (Datedue)' );
 
+    cmp_ok($cal->addDate( $test_dt, DateTime::Duration->new( hours => -10 ), 'hours' ),'eq',
+        '2012-07-20T15:53:00',
+        'Subtract 10 hours (Datedue)' );
+
+    cmp_ok($cal->addDate( $test_dt, DateTime::Duration->new( hours => 10 ), 'hours' ),'eq',
+        '2012-07-24T12:53:00',
+        'Add 10 hours (Datedue)' );
+
+    cmp_ok($cal->addDate( $test_dt, DateTime::Duration->new( hours => -1 ), 'hours' ),'eq',
+        '2012-07-23T10:53:00',
+        'Subtract 1 hours (Datedue)' );
+
+    cmp_ok($cal->addDate( $test_dt, DateTime::Duration->new( hours => 1 ), 'hours' ),'eq',
+        '2012-07-23T12:53:00',
+        'Add 1 hours (Datedue)' );
+
     ## Note that the days_between API says closed days are not considered.
     ## This tests are here as an API test.
     cmp_ok( $cal->days_between( $test_dt, $later_dt )->in_units('days'),
-                '==', 40, 'days_between calculates correctly (Days)' );
+                '==', 40, 'days_between calculates correctly (Datedue)' );
 
     cmp_ok( $cal->days_between( $later_dt, $test_dt )->in_units('days'),
-                '==', 40, 'Test parameter order not relevant (Days)' );
+                '==', 40, 'Test parameter order not relevant (Datedue)' );
+
+    cmp_ok( $cal->hours_between( $test_dt, $same_day_dt )->in_units('hours'),
+                '==', 2, 'hours_between calculates correctly (short period)' );
+
+    cmp_ok( $cal->hours_between( $test_dt, $after_close_dt )->in_units('hours'),
+                '==', 7, 'hours_between calculates correctly (after close)' );
+
+    cmp_ok( $cal->hours_between( $test_dt, $later_dt )->in_units('hours'),
+                '==', 725, 'hours_between calculates correctly (Datedue)' );
+
+    cmp_ok( $cal->hours_between( $later_dt, $test_dt )->in_units('hours'),
+                '==', 725, 'hours_between parameter order not relevant (Datedue)' );
 
 
 }
@@ -274,11 +337,33 @@ my $day_after_christmas = DateTime->new(
     is( $cal->addDate($day_after_christmas, -1, 'days')->ymd(), '2012-12-24',
             'Negative call to addDate (Calendar)' );
 
+    cmp_ok($cal->addDate( $test_dt, DateTime::Duration->new( hours => -10 ), 'hours' ),'eq',
+        '2012-07-23T10:00:00',
+        'Subtract 10 hours (Calendar)' );
+
+    cmp_ok($cal->addDate( $test_dt, DateTime::Duration->new( hours => 10 ), 'hours' ),'eq',
+        '2012-07-23T19:00:00',
+        'Add 10 hours (Calendar)' );
+
+    cmp_ok($cal->addDate( $test_dt, DateTime::Duration->new( hours => -1 ), 'hours' ),'eq',
+        '2012-07-23T10:53:00',
+        'Subtract 1 hours (Calendar)' );
+
+    cmp_ok($cal->addDate( $test_dt, DateTime::Duration->new( hours => 1 ), 'hours' ),'eq',
+        '2012-07-23T12:53:00',
+        'Add 1 hours (Calendar)' );
+
     cmp_ok( $cal->days_between( $test_dt, $later_dt )->in_units('days'),
                 '==', 40, 'days_between calculates correctly (Calendar)' );
 
     cmp_ok( $cal->days_between( $later_dt, $test_dt )->in_units('days'),
                 '==', 40, 'Test parameter order not relevant (Calendar)' );
+
+    cmp_ok( $cal->hours_between( $test_dt, $later_dt )->in_units('hours'),
+                '==', 725, 'hours_between calculates correctly (Calendar)' );
+
+    cmp_ok( $cal->hours_between( $later_dt, $test_dt )->in_units('hours'),
+                '==', 725, 'hours_between parameter order not relevant (Calendar)' );
 }
 
 
@@ -311,6 +396,10 @@ my $day_after_christmas = DateTime->new(
     is( $cal->addDate($day_after_christmas, -1, 'days')->ymd(), '2012-12-25',
         'Negative call to addDate (Days)' );
 
+    cmp_ok($cal->addDate( $test_dt, DateTime::Duration->new( hours => 10 ), 'hours' ),'eq',
+        '2012-07-23T21:53:00',
+        'Add 10 hours (Days)' );
+
     ## Note that the days_between API says closed days are not considered.
     ## This tests are here as an API test.
     cmp_ok( $cal->days_between( $test_dt, $later_dt )->in_units('days'),
@@ -318,6 +407,12 @@ my $day_after_christmas = DateTime->new(
 
     cmp_ok( $cal->days_between( $later_dt, $test_dt )->in_units('days'),
                 '==', 40, 'Test parameter order not relevant (Days)' );
+
+    cmp_ok( $cal->hours_between( $test_dt, $later_dt )->in_units('hours'),
+                '==', 725, 'hours_between calculates correctly (Days)' );
+
+    cmp_ok( $cal->hours_between( $later_dt, $test_dt )->in_units('hours'),
+                '==', 725, 'hours_between parameter order not relevant (Days)' );
 
 }
 

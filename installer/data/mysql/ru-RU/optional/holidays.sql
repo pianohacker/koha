@@ -1,23 +1,23 @@
-TRUNCATE repeatable_holidays;
+TRUNCATE calendar_repeats;
 
-INSERT INTO `repeatable_holidays` (`id`, `branchcode`, `weekday`, `day`, `month`, `title`, `description`) 
-VALUES (2, '',0,NULL,NULL,'','Воскресенья');
+INSERT INTO `calendar_repeats` (`branchcode`, `weekday`, `day`, `month`, `title`, `description`, open_hour, open_minute, close_hour, close_minute) 
+VALUES ('',0,NULL,NULL,'','Воскресенья', 0, 0, 0, 0);
 
-INSERT INTO `repeatable_holidays` (`id`, `branchcode`, `weekday`, `day`, `month`, `title`, `description`) 
-VALUES (3, '',NULL,1,1,'','Новый год');
+INSERT INTO `calendar_repeats` (`branchcode`, `weekday`, `day`, `month`, `title`, `description`, open_hour, open_minute, close_hour, close_minute) 
+VALUES ('',NULL,1,1,'','Новый год', 0, 0, 0, 0);
 
-INSERT INTO `repeatable_holidays` (`id`, `branchcode`, `weekday`, `day`, `month`, `title`, `description`) 
-VALUES (4, '',NULL,7,1,'','Рождество');
+INSERT INTO `calendar_repeats` (`branchcode`, `weekday`, `day`, `month`, `title`, `description`, open_hour, open_minute, close_hour, close_minute) 
+VALUES ('',NULL,7,1,'','Рождество', 0, 0, 0, 0);
 
-INSERT INTO `repeatable_holidays` (`id`, `branchcode`, `weekday`, `day`, `month`, `title`, `description`) 
-VALUES (5, '',NULL,8,3,'','Международный женский день');
+INSERT INTO `calendar_repeats` (`branchcode`, `weekday`, `day`, `month`, `title`, `description`, open_hour, open_minute, close_hour, close_minute) 
+VALUES ('',NULL,8,3,'','Международный женский день', 0, 0, 0, 0);
 
-INSERT INTO `repeatable_holidays` (`id`, `branchcode`, `weekday`, `day`, `month`, `title`, `description`) 
-VALUES (6, '',NULL,1,5,'','День Труда');
+INSERT INTO `calendar_repeats` (`branchcode`, `weekday`, `day`, `month`, `title`, `description`, open_hour, open_minute, close_hour, close_minute) 
+VALUES ('',NULL,1,5,'','День Труда', 0, 0, 0, 0);
 
-INSERT INTO `repeatable_holidays` (`id`, `branchcode`, `weekday`, `day`, `month`, `title`, `description`) 
-VALUES (7, '',NULL,2,5,'','День Труда');
+INSERT INTO `calendar_repeats` (`branchcode`, `weekday`, `day`, `month`, `title`, `description`, open_hour, open_minute, close_hour, close_minute) 
+VALUES ('',NULL,2,5,'','День Труда', 0, 0, 0, 0);
 
-INSERT INTO `repeatable_holidays` (`id`, `branchcode`, `weekday`, `day`, `month`, `title`, `description`) 
-VALUES (8, '',NULL,9,5,'','День Победы');
+INSERT INTO `calendar_repeats` (`branchcode`, `weekday`, `day`, `month`, `title`, `description`, open_hour, open_minute, close_hour, close_minute) 
+VALUES ('',NULL,9,5,'','День Победы', 0, 0, 0, 0);
 
