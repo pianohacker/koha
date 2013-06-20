@@ -42,38 +42,51 @@ SKIP: {
 skip "DBD::Mock is too old", 33
   unless $DBD::Mock::VERSION >= 1.45;
 
+# Apologies for strange indentation, DBD::Mock is picky
 my $holidays_session = DBD::Mock::Session->new('holidays_session' => (
     { # weekly holidays
-        statement => "SELECT weekday FROM repeatable_holidays WHERE branchcode = ? AND weekday IS NOT NULL",
+        statement => q{
+        SELECT
+            weekday, open_hour, open_minute, close_hour, close_minute,
+            (open_hour = open_minute = close_hour = close_minute = 0) AS closed
+        FROM calendar_repeats
+        WHERE branchode = ? AND weekday IS NOT NULL
+    },
         results   => [
-                        ['weekday'],
-                        [0],    # sundays
-                        [6]     # saturdays
+                        ['weekday', 'open_hour', 'open_minute', 'close_hour', 'close_minute', 'closed'],
+                        [0, 0, 0, 0, 0, 1],    # sundays
+                        [6, 0, 0, 0, 0, 1]     # saturdays
                      ]
     },
     { # day and month repeatable holidays
-        statement => "SELECT day, month FROM repeatable_holidays WHERE branchcode = ? AND weekday IS NULL",
+        statement => q{
+        SELECT
+            month, day, open_hour, open_minute, close_hour, close_minute,
+            (open_hour = open_minute = close_hour = close_minute = 0) AS closed
+        FROM calendar_repeats
+        WHERE branchode = ? AND weekday IS NULL
+    },
         results   => [
-                        [ 'month', 'day' ],
-                        [ 1, 1 ],   # new year's day
-                        [12,25]     # christmas
+                        [ 'month', 'day', 'open_hour', 'open_minute', 'close_hour', 'close_minute', 'closed' ],
+                        [ 1, 1, 0, 0, 0, 0, 1],   # new year's day
+                        [12,25, 0, 0, 0, 0, 1]     # christmas
                      ]
     },
     { # exception holidays
-        statement => "SELECT day, month, year FROM special_holidays WHERE branchcode = ? AND isexception = 1",
+        statement => q{
+        SELECT
+            CONCAT_WS('-', year, month, day) AS date, open_hour, open_minute, close_hour, close_minute,
+            (open_hour = open_minute = close_hour = close_minute = 0) AS closed
+        FROM calendar_dates
+        WHERE branchcode = ?
+    },
         results   => [
-                        [ 'day', 'month', 'year' ],
-                        [ 11, 11, 2012 ] # sunday exception
+                        [ 'date', 'open_hour', 'open_minute', 'close_hour', 'close_minute', 'closed' ],
+                        [ '2012-11-11', 0, 0, 24, 0, 0 ], # sunday exception
+                        [ '2011-06-01', 0, 0,  0, 0, 1 ],  # single holiday
+                        [ '2012-07-04', 0, 0,  0, 0, 1 ]
                      ]
     },
-    { # single holidays
-        statement => "SELECT day, month, year FROM special_holidays WHERE branchcode = ? AND isexception = 0",
-        results   => [
-                        [ 'day', 'month', 'year' ],
-                        [ 1, 6, 2011 ],  # single holiday
-                        [ 4, 7, 2012 ]
-                     ]
-    }
 ));
 
 # Initialize the global $dbh variable

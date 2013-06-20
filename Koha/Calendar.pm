@@ -18,10 +18,6 @@ sub new {
         my $o = lc $o_name;
         $self->{$o} = $options{$o_name};
     }
-    if ( exists $options{TEST_MODE} ) {
-        $self->_mockinit();
-        return $self;
-    }
     if ( !defined $self->{branchcode} ) {
         croak 'No branchcode argument passed to Koha::Calendar->new';
     }
@@ -33,57 +29,36 @@ sub _init {
     my $self       = shift;
     my $branch     = $self->{branchcode};
     my $dbh        = C4::Context->dbh();
-    my $weekly_closed_days_sth = $dbh->prepare(
-'SELECT weekday FROM repeatable_holidays WHERE branchcode = ? AND weekday IS NOT NULL'
-    );
-    $weekly_closed_days_sth->execute( $branch );
-    $self->{weekly_closed_days} = [ 0, 0, 0, 0, 0, 0, 0 ];
-    Readonly::Scalar my $sunday => 7;
-    while ( my $tuple = $weekly_closed_days_sth->fetchrow_hashref ) {
-        $self->{weekly_closed_days}->[ $tuple->{weekday} ] = 1;
-    }
-    my $day_month_closed_days_sth = $dbh->prepare(
-'SELECT day, month FROM repeatable_holidays WHERE branchcode = ? AND weekday IS NULL'
-    );
-    $day_month_closed_days_sth->execute( $branch );
-    $self->{day_month_closed_days} = {};
-    while ( my $tuple = $day_month_closed_days_sth->fetchrow_hashref ) {
-        $self->{day_month_closed_days}->{ $tuple->{month} }->{ $tuple->{day} } =
-          1;
+
+    $self->{weekday_hours} = $dbh->selectall_hashref( q{
+        SELECT
+            weekday, open_hour, open_minute, close_hour, close_minute,
+            (open_hour = open_minute = close_hour = close_minute = 0) AS closed
+        FROM calendar_repeats
+        WHERE branchode = ? AND weekday IS NOT NULL
+    }, 'weekday', { Slice => {} }, $branch ); 
+
+    my $day_month_hours = $dbh->selectall_arrayref( q{
+        SELECT
+            month, day, open_hour, open_minute, close_hour, close_minute,
+            (open_hour = open_minute = close_hour = close_minute = 0) AS closed
+        FROM calendar_repeats
+        WHERE branchode = ? AND weekday IS NULL
+    }, { Slice => {} }, $branch );
+
+    # DBD::Mock doesn't support multi-key selectall_hashref, so we do it ourselves for now
+    foreach my $day_month ( @$day_month_hours ) {
+        $self->{day_month_hours}->{ $day_month->{month} }->{ $day_month->{day} } = $day_month;
     }
 
-    my $exception_holidays_sth = $dbh->prepare(
-'SELECT day, month, year FROM special_holidays WHERE branchcode = ? AND isexception = 1'
-    );
-    $exception_holidays_sth->execute( $branch );
-    my $dates = [];
-    while ( my ( $day, $month, $year ) = $exception_holidays_sth->fetchrow ) {
-        push @{$dates},
-          DateTime->new(
-            day       => $day,
-            month     => $month,
-            year      => $year,
-            time_zone => C4::Context->tz()
-          )->truncate( to => 'day' );
-    }
-    $self->{exception_holidays} =
-      DateTime::Set->from_datetimes( dates => $dates );
+    $self->{date_hours} = $dbh->selectall_hashref( q{
+        SELECT
+            CONCAT_WS('-', year, month, day) AS date, open_hour, open_minute, close_hour, close_minute,
+            (open_hour = open_minute = close_hour = close_minute = 0) AS closed
+        FROM calendar_dates
+        WHERE branchcode = ?
+    }, 'date', { Slice => {} }, $branch );
 
-    my $single_holidays_sth = $dbh->prepare(
-'SELECT day, month, year FROM special_holidays WHERE branchcode = ? AND isexception = 0'
-    );
-    $single_holidays_sth->execute( $branch );
-    $dates = [];
-    while ( my ( $day, $month, $year ) = $single_holidays_sth->fetchrow ) {
-        push @{$dates},
-          DateTime->new(
-            day       => $day,
-            month     => $month,
-            year      => $year,
-            time_zone => C4::Context->tz()
-          )->truncate( to => 'day' );
-    }
-    $self->{single_holidays} = DateTime::Set->from_datetimes( dates => $dates );
     $self->{days_mode}       = C4::Context->preference('useDaysMode');
     $self->{test}            = 0;
     return;
@@ -101,10 +76,7 @@ sub addDate {
     my $dt;
 
     if ( $unit eq 'hours' ) {
-        # Fixed for legacy support. Should be set as a branch parameter
-        Readonly::Scalar my $return_by_hour => 10;
-
-        $dt = $self->addHours($startdate, $add_duration, $return_by_hour);
+        $dt = $self->addHours($startdate, $add_duration);
     } else {
         # days
         $dt = $self->addDays($startdate, $add_duration);
@@ -114,7 +86,7 @@ sub addDate {
 }
 
 sub addHours {
-    my ( $self, $startdate, $hours_duration, $return_by_hour ) = @_;
+    my ( $self, $startdate, $hours_duration ) = @_;
     my $base_date = $startdate->clone();
 
     $base_date->add_duration($hours_duration);
@@ -130,8 +102,6 @@ sub addHours {
         } else {
             $base_date = $self->next_open_day($base_date);
         }
-
-        $base_date->set_hour($return_by_hour);
 
     }
 
@@ -182,33 +152,25 @@ sub addDays {
 
 sub is_holiday {
     my ( $self, $dt ) = @_;
-    my $localdt = $dt->clone();
-    my $day   = $localdt->day;
-    my $month = $localdt->month;
+    my $day   = $dt->day;
+    my $month = $dt->month;
 
-    $localdt->truncate( to => 'day' );
-
-    if ( $self->{exception_holidays}->contains($localdt) ) {
-        # exceptions are not holidays
+    if ( exists $self->{date_hours}->{ $dt->ymd } && !$self->{date_hours}->{ $dt->ymd }->{closed} ) {
         return 0;
     }
 
-    my $dow = $localdt->day_of_week;
-    # Representation fix
-    # TODO: Shouldn't we shift the rest of the $dow also?
-    if ( $dow == 7 ) {
-        $dow = 0;
-    }
-
-    if ( $self->{weekly_closed_days}->[$dow] == 1 ) {
+    if ( ( $self->{day_month_hours}->{$month}->{$day} || {} )->{closed} ) {
         return 1;
     }
 
-    if ( exists $self->{day_month_closed_days}->{$month}->{$day} ) {
+    # We use 0 for Sunday, not 7
+    my $dow = $dt->day_of_week % 7;
+
+    if ( ( $self->{weekday_hours}->{ $dow } || {} )->{closed} ) {
         return 1;
     }
 
-    if ( $self->{single_holidays}->contains($localdt) ) {
+    if ( ( $self->{date_hours}->{ $dt->ymd } || {} )->{closed} ) {
         return 1;
     }
 
@@ -297,59 +259,6 @@ sub hours_between {
 
 }
 
-sub _mockinit {
-    my $self = shift;
-    $self->{weekly_closed_days} = [ 1, 0, 0, 0, 0, 0, 0 ];    # Sunday only
-    $self->{day_month_closed_days} = { 6 => { 16 => 1, } };
-    my $dates = [];
-    $self->{exception_holidays} =
-      DateTime::Set->from_datetimes( dates => $dates );
-    my $special = DateTime->new(
-        year      => 2011,
-        month     => 6,
-        day       => 1,
-        time_zone => 'Europe/London',
-    );
-    push @{$dates}, $special;
-    $self->{single_holidays} = DateTime::Set->from_datetimes( dates => $dates );
-
-    # if not defined, days_mode defaults to 'Calendar'
-    if ( !defined($self->{days_mode}) ) {
-        $self->{days_mode} = 'Calendar';
-    }
-
-    $self->{test} = 1;
-    return;
-}
-
-sub set_daysmode {
-    my ( $self, $mode ) = @_;
-
-    # if not testing this is a no op
-    if ( $self->{test} ) {
-        $self->{days_mode} = $mode;
-    }
-
-    return;
-}
-
-sub clear_weekly_closed_days {
-    my $self = shift;
-    $self->{weekly_closed_days} = [ 0, 0, 0, 0, 0, 0, 0 ];    # Sunday only
-    return;
-}
-
-sub add_holiday {
-    my $self = shift;
-    my $new_dt = shift;
-    my @dt = $self->{single_holidays}->as_list;
-    push @dt, $new_dt;
-    $self->{single_holidays} =
-      DateTime::Set->from_datetimes( dates => \@dt );
-
-    return;
-}
-
 1;
 __END__
 
@@ -403,13 +312,11 @@ parameter will be removed when issuingrules properly cope with that
 
 =head2 addHours
 
-    my $dt = $calendar->addHours($date, $dur, $return_by_hour )
+    my $dt = $calendar->addHours($date, $dur )
 
 C<$date> is a DateTime object representing the starting date of the interval.
 
 C<$offset> is a DateTime::Duration to add to it
-
-C<$return_by_hour> is an integer value representing the opening hour for the branch
 
 
 =head2 addDays
@@ -456,22 +363,6 @@ $datetime = $calendar->prev_open_day($duedate_dt)
 Passed a Datetime returns another Datetime representing the previous open day. It is
 intended for use to calculate the due date when useDaysMode syspref is set to either
 'Datedue' or 'Calendar'.
-
-=head2 set_daysmode
-
-For testing only allows the calling script to change days mode
-
-=head2 clear_weekly_closed_days
-
-In test mode changes the testing set of closed days to a new set with
-no closed days. TODO passing an array of closed days to this would
-allow testing of more configurations
-
-=head2 add_holiday
-
-Passed a datetime object this will add it to the calendar's list of
-closed days. This is for testing so that we can alter the Calenfar object's
-list of specified dates
 
 =head1 DIAGNOSTICS
 
