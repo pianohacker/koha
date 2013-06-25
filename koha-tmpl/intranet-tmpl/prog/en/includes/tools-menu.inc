@@ -81,7 +81,7 @@
 <h5>Additional tools</h5>
 <ul>
     [% IF ( CAN_user_tools_edit_calendar ) %]
-	<li><a href="/cgi-bin/koha/tools/holidays.pl">Calendar</a></li>
+	<li><a href="/cgi-bin/koha/tools/calendar.pl">Calendar</a></li>
     [% END %]
     [% IF ( CAN_user_tools_manage_csv_profiles ) %]
 	<li><a href="/cgi-bin/koha/tools/csv-profiles.pl">CSV profiles</a></li>

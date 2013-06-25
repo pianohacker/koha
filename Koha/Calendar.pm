@@ -35,7 +35,7 @@ sub _init {
             weekday, open_hour, open_minute, close_hour, close_minute,
             (open_hour = open_minute = close_hour = close_minute = 0) AS closed
         FROM calendar_repeats
-        WHERE branchode = ? AND weekday IS NOT NULL
+        WHERE branchcode = ? AND weekday IS NOT NULL
     }, 'weekday', { Slice => {} }, $branch ); 
 
     my $day_month_hours = $dbh->selectall_arrayref( q{
@@ -43,7 +43,7 @@ sub _init {
             month, day, open_hour, open_minute, close_hour, close_minute,
             (open_hour = open_minute = close_hour = close_minute = 0) AS closed
         FROM calendar_repeats
-        WHERE branchode = ? AND weekday IS NULL
+        WHERE branchcode = ? AND weekday IS NULL
     }, { Slice => {} }, $branch );
 
     # DBD::Mock doesn't support multi-key selectall_hashref, so we do it ourselves for now
@@ -53,11 +53,11 @@ sub _init {
 
     $self->{date_hours} = $dbh->selectall_hashref( q{
         SELECT
-            CONCAT_WS('-', year, month, day) AS date, open_hour, open_minute, close_hour, close_minute,
+            event_date, open_hour, open_minute, close_hour, close_minute,
             (open_hour = open_minute = close_hour = close_minute = 0) AS closed
-        FROM calendar_dates
+        FROM calendar_events
         WHERE branchcode = ?
-    }, 'date', { Slice => {} }, $branch );
+    }, 'event_date', { Slice => {} }, $branch );
 
     $self->{days_mode}       = C4::Context->preference('useDaysMode');
     $self->{test}            = 0;
@@ -88,9 +88,6 @@ sub addDate {
 sub addHours {
     my ( $self, $startdate, $hours_duration ) = @_;
     my $base_date = $startdate->clone();
-
-    # If we are using the calendar behave for now as if Datedue
-    # was the chosen option (current intended behaviour)
 
     if ( $self->{days_mode} eq 'Days' ) {
         $base_date->add_duration( $hours_duration );
@@ -124,7 +121,7 @@ sub addHours {
             }
         }
     } else {
-        if ( $base_date >= $close_time ) {
+        if ( $base_date >= $hours->{close_time} ) {
             # Library is already closed
             $base_date = $self->next_open_day( $base_date );
             $hours = $self->get_hours_full( $base_date );

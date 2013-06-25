@@ -32,7 +32,7 @@ my $input = new CGI;
 my $dbh = C4::Context->dbh();
 # Get the template to use
 my ($template, $loggedinuser, $cookie)
-    = get_template_and_user({template_name => "tools/holidays.tmpl",
+    = get_template_and_user({template_name => "tools/calendar.tmpl",
                              type => "intranet",
                              query => $input,
                              authnotrequired => 0,
@@ -80,77 +80,31 @@ for my $thisbranch (
 # branches calculated - put branch codes in a single string so they can be passed in a form
 my $branchcodes = join '|', keys %{$branches};
 
-# Get all the holidays
-
-my $calendar = C4::Calendar->new(branchcode => $branch);
-my $week_days_holidays = $calendar->get_week_days_holidays();
-my @week_days;
-foreach my $weekday (keys %$week_days_holidays) {
-# warn "WEEK DAY : $weekday";
-    my %week_day;
-    %week_day = (KEY => $weekday,
-                 TITLE => $week_days_holidays->{$weekday}{title},
-                 DESCRIPTION => $week_days_holidays->{$weekday}{description});
-    push @week_days, \%week_day;
-}
-
-my $day_month_holidays = $calendar->get_day_month_holidays();
-my @day_month_holidays;
-foreach my $monthDay (keys %$day_month_holidays) {
+my $yearly_events = GetYearlyEvents();
+foreach my $event ( @$yearly_events ) {
     # Determine date format on month and day.
     my $day_monthdate;
     my $day_monthdate_sort;
     if (C4::Context->preference("dateformat") eq "metric") {
-      $day_monthdate_sort = "$day_month_holidays->{$monthDay}{month}-$day_month_holidays->{$monthDay}{day}";
-      $day_monthdate = "$day_month_holidays->{$monthDay}{day}/$day_month_holidays->{$monthDay}{month}";
+      $day_monthdate_sort = "$event->{month}-$event->{day}";
+      $day_monthdate = "$event->{day}/$event->{month}";
     } elsif (C4::Context->preference("dateformat") eq "us") {
-      $day_monthdate = "$day_month_holidays->{$monthDay}{month}/$day_month_holidays->{$monthDay}{day}";
+      $day_monthdate = "$event->{month}/$event->{day}";
       $day_monthdate_sort = $day_monthdate;
     } else {
-      $day_monthdate = "$day_month_holidays->{$monthDay}{month}-$day_month_holidays->{$monthDay}{day}";
+      $day_monthdate = "$event->{month}-$event->{day}";
       $day_monthdate_sort = $day_monthdate;
     }
-    my %day_month;
-    %day_month = (KEY => $monthDay,
-                  DATE_SORT => $day_monthdate_sort,
-                  DATE => $day_monthdate,
-                  TITLE => $day_month_holidays->{$monthDay}{title},
-                  DESCRIPTION => $day_month_holidays->{$monthDay}{description});
-    push @day_month_holidays, \%day_month;
-}
 
-my $exception_holidays = $calendar->get_exception_holidays();
-my @exception_holidays;
-foreach my $yearMonthDay (keys %$exception_holidays) {
-    my $exceptiondate = C4::Dates->new($exception_holidays->{$yearMonthDay}{date}, "iso");
-    my %exception_holiday;
-    %exception_holiday = (KEY => $yearMonthDay,
-                          DATE_SORT => $exception_holidays->{$yearMonthDay}{date},
-                          DATE => $exceptiondate->output("syspref"),
-                          TITLE => $exception_holidays->{$yearMonthDay}{title},
-                          DESCRIPTION => $exception_holidays->{$yearMonthDay}{description});
-    push @exception_holidays, \%exception_holiday;
-}
-
-my $single_holidays = $calendar->get_single_holidays();
-my @holidays;
-foreach my $yearMonthDay (keys %$single_holidays) {
-    my $holidaydate = C4::Dates->new($single_holidays->{$yearMonthDay}{date}, "iso");
-    my %holiday;
-    %holiday = (KEY => $yearMonthDay,
-                DATE_SORT => $single_holidays->{$yearMonthDay}{date},
-                DATE => $holidaydate->output("syspref"),
-                TITLE => $single_holidays->{$yearMonthDay}{title},
-                DESCRIPTION => $single_holidays->{$yearMonthDay}{description});
-    push @holidays, \%holiday;
+    $event->{month_day_display} = $day_monthdate;
+    $event->{month_day_sort} = $day_monthdate_sort;
 }
 
 $template->param(
-    WEEK_DAYS_LOOP           => \@week_days,
+    weekly_events            => GetWeeklyEvents(),
+    yearly_events            => $yearly_events,
+    single_events            => GetSingleEvents(),
     branchloop               => \@branchloop,
-    HOLIDAYS_LOOP            => \@holidays,
-    EXCEPTION_HOLIDAYS_LOOP  => \@exception_holidays,
-    DAY_MONTH_HOLIDAYS_LOOP  => \@day_month_holidays,
     calendardate             => $calendardate,
     keydate                  => $keydate,
     branchcodes              => $branchcodes,

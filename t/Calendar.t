@@ -4,7 +4,7 @@ use strict;
 use warnings;
 use DateTime;
 use DateTime::Duration;
-use Test::More tests => 35;
+use Test::More tests => 34;
 use Test::MockModule;
 use DBD::Mock;
 use Koha::DateUtils;
@@ -46,7 +46,7 @@ my $holidays_session = DBD::Mock::Session->new('holidays_session' => (
             weekday, open_hour, open_minute, close_hour, close_minute,
             (open_hour = open_minute = close_hour = close_minute = 0) AS closed
         FROM calendar_repeats
-        WHERE branchode = ? AND weekday IS NOT NULL
+        WHERE branchcode = ? AND weekday IS NOT NULL
     },
         results   => [
                         ['weekday', 'open_hour', 'open_minute', 'close_hour', 'close_minute', 'closed'],
@@ -60,7 +60,7 @@ my $holidays_session = DBD::Mock::Session->new('holidays_session' => (
             month, day, open_hour, open_minute, close_hour, close_minute,
             (open_hour = open_minute = close_hour = close_minute = 0) AS closed
         FROM calendar_repeats
-        WHERE branchode = ? AND weekday IS NULL
+        WHERE branchcode = ? AND weekday IS NULL
     },
         results   => [
                         [ 'month', 'day', 'open_hour', 'open_minute', 'close_hour', 'close_minute', 'closed' ],
@@ -71,13 +71,13 @@ my $holidays_session = DBD::Mock::Session->new('holidays_session' => (
     { # exception holidays
         statement => q{
         SELECT
-            CONCAT_WS('-', year, month, day) AS date, open_hour, open_minute, close_hour, close_minute,
+            event_date, open_hour, open_minute, close_hour, close_minute,
             (open_hour = open_minute = close_hour = close_minute = 0) AS closed
         FROM calendar_dates
         WHERE branchcode = ?
     },
         results   => [
-                        [ 'date', 'open_hour', 'open_minute', 'close_hour', 'close_minute', 'closed' ],
+                        [ 'event_date', 'open_hour', 'open_minute', 'close_hour', 'close_minute', 'closed' ],
                         [ '2012-11-11', 0, 0, 24, 0, 0 ], # sunday exception
                         [ '2011-06-01', 0, 0,  0, 0, 1 ],  # single holiday
                         [ '2012-07-04', 0, 0,  0, 0, 1 ]
