@@ -40,9 +40,10 @@ use Date::Calc qw/Date_to_Days/;
 use C4::Context;
 use C4::Circulation;
 use C4::Overdues;
-use C4::Calendar qw();    # don't need any exports from Calendar
 use C4::Biblio;
 use C4::Debug;            # supplying $debug and $cgi_debug
+use Koha::Calendar;
+
 use Getopt::Long;
 use List::MoreUtils qw/none/;
 use Koha::DateUtils;
@@ -172,10 +173,14 @@ for ( my $i = 0 ; $i < scalar(@$data) ; $i++ ) {
 
     my $calendar;
     unless ( defined( $calendars{$branchcode} ) ) {
-        $calendars{$branchcode} = C4::Calendar->new( branchcode => $branchcode );
+        $calendars{$branchcode} = Koha::Calendar->new( branchcode => $branchcode );
     }
     $calendar = $calendars{$branchcode};
-    my $isHoliday = $calendar->isHoliday( $tday, $tmonth, $tyear );
+    my $isHoliday = $calendar->is_holiday( DateTime->new( 
+        year => $tyear,
+        month => $tmonth,
+        day => $tday
+    ) );
 
     # Reassing datedue_days if -delay specified in commandline
     $bigdebug and warn "Using commandline supplied delay : $delay" if ($delay);

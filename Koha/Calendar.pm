@@ -89,20 +89,65 @@ sub addHours {
     my ( $self, $startdate, $hours_duration ) = @_;
     my $base_date = $startdate->clone();
 
-    $base_date->add_duration($hours_duration);
-
     # If we are using the calendar behave for now as if Datedue
     # was the chosen option (current intended behaviour)
 
-    if ( $self->{days_mode} ne 'Days' &&
-          $self->is_holiday($base_date) ) {
+    if ( $self->{days_mode} eq 'Days' ) {
+        $base_date->add_duration( $hours_duration );
+        return $base_date;
+    }
+    my $hours = $self->get_hours_full( $base_date );
 
-        if ( $hours_duration->is_negative() ) {
-            $base_date = $self->prev_open_day($base_date);
-        } else {
-            $base_date = $self->next_open_day($base_date);
+    if ( $hours_duration->is_negative() ) {
+        if ( $base_date <= $hours->{open_time} ) {
+            # Library is already closed
+            $base_date = $self->prev_open_day( $base_date );
+            $hours = $self->get_hours_full( $base_date );
+            $base_date = $hours->{close_time}->clone;
+
+            if ( $self->{days_mode} eq 'Calendar' ) {
+                return $base_date;
+            }
         }
 
+        while ( $hours_duration->is_negative ) {
+            my $day_len = $hours->{open_time} - $base_date;
+
+            if ( DateTime::Duration->compare( $day_len, $hours_duration, $base_date ) < 0 ) {
+                $hours_duration->subtract( $day_len );
+                $base_date = $self->prev_open_day( $base_date );
+                $hours = $self->get_hours_full( $base_date );
+                $base_date = $hours->{close_time}->clone;
+            } else {
+                $base_date->add_duration( $hours_duration );
+                return $base_date;
+            }
+        }
+    } else {
+        if ( $base_date >= $close_time ) {
+            # Library is already closed
+            $base_date = $self->next_open_day( $base_date );
+            $hours = $self->get_hours_full( $base_date );
+            $base_date = $hours->{open_time}->clone;
+
+            if ( $self->{days_mode} eq 'Calendar' ) {
+                return $base_date;
+            }
+        }
+
+        while ( $hours_duration->is_positive ) {
+            my $day_len = $hours->{close_time} - $base_date;
+
+            if ( DateTime::Duration->compare( $day_len, $hours_duration, $base_date ) > 0 ) {
+                $hours_duration->subtract( $day_len );
+                $base_date = $self->next_open_day( $base_date );
+                $hours = $self->get_hours_full( $base_date );
+                $base_date = $hours->{open_time}->clone;
+            } else {
+                $base_date->add_duration( $hours_duration );
+                return $base_date;
+            }
+        }
     }
 
     return $base_date;
@@ -176,6 +221,60 @@ sub is_holiday {
 
     # damn have to go to work after all
     return 0;
+}
+
+sub get_hours {
+    my ( $self, $dt ) = @_;
+    my $day   = $dt->day;
+    my $month = $dt->month;
+
+    if ( exists $self->{date_hours}->{ $dt->ymd } ) {
+        return $self->{date_hours}->{ $dt->ymd };
+    }
+
+    if ( exists $self->{day_month_hours}->{$month}->{$day} ) {
+        return $self->{day_month_hours}->{$month}->{$day};
+    }
+
+    # We use 0 for Sunday, not 7
+    my $dow = $dt->day_of_week % 7;
+
+    if ( exists $self->{weekday_hours}->{ $dow } ) {
+        return $self->{weekday_hours}->{ $dow };
+    }
+
+    # Assume open
+    return {
+        open_hour => 0,
+        open_minute => 0,
+        close_hour => 24,
+        close_minute => 0,
+        closed => 0
+    };
+}
+
+sub get_hours_full {
+    my ( $self, $dt ) = @_;
+
+    my $hours = $self->get_hours;
+
+    $hours->{open_time} = $dt
+        ->clone->truncate( to => 'day' )
+        ->set_hour( $hours->{open_hour} )
+        ->set_minute( $hours->{open_minute} );
+
+    if ( $hours->{close_hour} == 24 ) {
+        $hours->{close_time} = $dt
+            ->clone->truncate( to => 'day' )
+            ->add( days => 1 );
+    } else {
+        $hours->{close_time} = $dt
+            ->clone->truncate( to => 'day' )
+            ->set_hour( $hours->{close_hour} )
+            ->set_minute( $hours->{close_minute} );
+    }
+
+    return $hours;
 }
 
 sub next_open_day {
