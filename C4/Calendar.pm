@@ -57,8 +57,7 @@ This package is used to deal with hours and holidays;
 
   \@events = GetSingleEvents( $branchcode )
 
-Each library branch has its own Calendar.  
-C<$branchcode> specifies which Calendar you want.
+Get the non-repeating events for the given library.
 
 =cut
 
@@ -74,6 +73,14 @@ sub GetSingleEvents {
     }, { Slice => {} }, $branchcode );
 }
 
+=head2 GetWeeklyEvents
+
+  \@events = GetWeeklyEvents( $branchcode )
+
+Get the weekly-repeating events for the given library.
+
+=cut
+
 sub GetWeeklyEvents {
     my ( $branchcode ) = @_;
 
@@ -85,6 +92,14 @@ sub GetWeeklyEvents {
         WHERE branchcode = ? AND weekday IS NOT NULL
     }, { Slice => {} }, $branchcode ); 
 }
+
+=head2 GetYearlyEvents
+
+  \@events = GetYearlyEvents( $branchcode )
+
+Get the yearly-repeating events for the given library.
+
+=cut
 
 sub GetYearlyEvents {
     my ( $branchcode ) = @_;
@@ -98,6 +113,16 @@ sub GetYearlyEvents {
     }, { Slice => {} }, $branchcode );
 }
 
+=head2 ModSingleEvent
+
+  ModSingleEvent( $branchcode, $date, \%info )
+
+Creates or updates an event for a single date. $date should be an ISO-formatted
+date string, and \%info should contain the following keys: open_hour,
+open_minute, close_hour, close_minute, title and description.
+
+=cut
+
 sub ModSingleEvent {
     my ( $branchcode, $date, $info ) = @_;
 
@@ -110,6 +135,15 @@ sub ModSingleEvent {
     }, {}, $branchcode, $date, ( map { $info->{$_} } qw(open_hour open_minute close_hour close_minute title description) ) x 2 );
 }
 
+=head2 ModRepeatingEvent
+
+  ModRepeatingEvent( $branchcode, $weekday, $month, $day, \%info )
+
+Creates or updates a weekly- or yearly-repeating event. Either $weekday,
+or $month and $day should be set, for a weekly or yearly event, respectively.
+
+=cut
+
 sub ModRepeatingEvent {
     my ( $branchcode, $weekday, $month, $day, $info ) = @_;
 
@@ -119,6 +153,14 @@ sub ModRepeatingEvent {
         ON DUPLICATE KEY UPDATE open_hour = ?, open_minute = ?, close_hour = ?, close_minute = ?, title = ?, description = ?
     }, {}, $branchcode, $weekday, $month, $day, ( map { $info->{$_} } qw(open_hour open_minute close_hour close_minute title description) ) x 2 );
 }
+
+=head2 DelSingleEvent
+
+  DelSingleEvent( $branchcode, $date, \%info )
+
+Deletes an event for a single date. $date should be an ISO-formatted date string.
+
+=cut
 
 sub DelSingleEvent {
     my ( $branchcode, $date ) = @_;
@@ -135,6 +177,15 @@ sub _get_compare {
     return ' AND ' . $colname . ' ' . ( defined( $value ) ? '=' : 'IS' ) . ' ?';
 }
 
+=head2 DelRepeatingEvent
+
+  DelRepeatingEvent( $branchcode, $weekday, $month, $day )
+
+Deletes a weekly- or yearly-repeating event. Either $weekday, or $month and
+$day should be set, for a weekly or yearly event, respectively.
+
+=cut
+
 sub DelRepeatingEvent {
     my ( $branchcode, $weekday, $month, $day ) = @_;
 
@@ -143,6 +194,14 @@ sub DelRepeatingEvent {
         WHERE branchcode = ?
     } . _get_compare( 'weekday', $weekday ) . _get_compare( 'month', $month ) . _get_compare( 'day', $day ), {}, $branchcode, $weekday, $month, $day );
 }
+
+=head2 CopyAllEvents
+
+  CopyAllEvents( $from_branchcode, $to_branchcode )
+
+Copies all events from one branch to another.
+
+=cut
 
 sub CopyAllEvents {
     my ( $from_branchcode, $to_branchcode ) = @_;
