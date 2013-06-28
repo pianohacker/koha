@@ -30,8 +30,6 @@ BEGIN {
         GetSingleEvents
         GetWeeklyEvents
         GetYearlyEvents
-        AddSingleEvent
-        AddRepeatingEvent
         ModSingleEvent
         ModRepeatingEvent
         DelSingleEvent
@@ -69,7 +67,7 @@ sub GetSingleEvents {
 
     return C4::Context->dbh->selectall_arrayref( q{
         SELECT
-            event_date, open_hour, open_minute, close_hour, close_minute,
+            event_date, open_hour, open_minute, close_hour, close_minute, title, description,
             (open_hour = open_minute = close_hour = close_minute = 0) AS closed
         FROM calendar_events
         WHERE branchcode = ?
@@ -81,7 +79,7 @@ sub GetWeeklyEvents {
 
     return C4::Context->dbh->selectall_arrayref( q{
         SELECT
-            weekday, open_hour, open_minute, close_hour, close_minute,
+            weekday, open_hour, open_minute, close_hour, close_minute, title, description,
             (open_hour = open_minute = close_hour = close_minute = 0) AS closed
         FROM calendar_repeats
         WHERE branchcode = ? AND weekday IS NOT NULL
@@ -93,29 +91,49 @@ sub GetYearlyEvents {
 
     return C4::Context->dbh->selectall_arrayref( q{
         SELECT
-            month, day, open_hour, open_minute, close_hour, close_minute,
+            month, day, open_hour, open_minute, close_hour, close_minute, title, description,
             (open_hour = open_minute = close_hour = close_minute = 0) AS closed
         FROM calendar_repeats
         WHERE branchcode = ? AND weekday IS NULL
     }, { Slice => {} }, $branchcode );
 }
 
-sub AddSingleEvent {
-}
-
-sub AddRepeatingEvent {
-}
-
 sub ModSingleEvent {
+    my ( $branchcode, $date, $info ) = @_;
+
+    C4::Context->dbh->do( q{
+        INSERT INTO calendar_events(branchcode, event_date, open_hour, open_minute, close_hour, close_minute, title, description)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        ON DUPLICATE KEY UPDATE open_hour = ?, open_minute = ?, close_hour = ?, close_minute = ?, title = ?, description = ?
+    }, {}, $branchcode, $date, ( map { $info->{$_} } qw(open_hour open_minute close_hour close_minute title description) ) x 2 );
 }
 
 sub ModRepeatingEvent {
+    my ( $branchcode, $weekday, $day, $month, $info ) = @_;
+
+    C4::Context->dbh->do( q{
+        INSERT INTO calendar_repeats(branchcode, weekday, day, month, open_hour, open_minute, close_hour, close_minute, title, description)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ON DUPLICATE KEY UPDATE open_hour = ?, open_minute = ?, close_hour = ?, close_minute = ?, title = ?, description = ?
+    }, {}, $branchcode, $weekday, $day, $month, ( map { $info->{$_} } qw(open_hour open_minute close_hour close_minute title description) ) x 2 );
 }
 
 sub DelSingleEvent {
+    my ( $branchcode, $date ) = @_;
+
+    C4::Context->dbh->do( q{
+        DELETE FROM calendar_events
+        WHERE branchcode = ? AND event_date = ?
+    }, {}, $branchcode, $date );
 }
 
 sub DelRepeatingEvent {
+    my ( $branchcode, $weekday, $day, $month ) = @_;
+
+    C4::Context->dbh->do( q{
+        DELETE FROM calendar_repeats
+        WHERE branchcode = ? AND weekday = ? AND day = ? AND month = ?
+    }, {}, $branchcode, $weekday, $day, $month );
 }
 
 1;
