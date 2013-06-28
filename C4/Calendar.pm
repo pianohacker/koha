@@ -41,22 +41,21 @@ BEGIN {
 use constant ISO_DATE_FORMAT => "%04d-%02d-%02d";
 =head1 NAME
 
-C4::Calendar::Calendar - Koha module dealing with holidays.
+C4::Calendar - Koha module dealing with holidays.
 
 =head1 SYNOPSIS
 
-    use C4::Calendar::Calendar;
+    use C4::Calendar;
 
 =head1 DESCRIPTION
 
-This package is used to deal with holidays. Through this package, you can set 
-all kind of holidays for the library.
+This package is used to deal with hours and holidays;
 
 =head1 FUNCTIONS
 
-=head2 new
+=head2 GetSingleEvents
 
-  $calendar = C4::Calendar->new(branchcode => $branchcode);
+  \@events = GetSingleEvents( $branchcode )
 
 Each library branch has its own Calendar.  
 C<$branchcode> specifies which Calendar you want.

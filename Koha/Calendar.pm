@@ -110,7 +110,11 @@ sub addHours {
         while ( $hours_duration->is_negative ) {
             my $day_len = $hours->{open_time} - $base_date;
 
-            if ( DateTime::Duration->compare( $day_len, $hours_duration, $base_date ) < 0 ) {
+            if ( DateTime::Duration->compare( $day_len, $hours_duration, $base_date ) > 0 ) {
+                if ( $self->{days_mode} eq 'Calendar' ) { 
+                    return $hours->{open_time};
+                }
+
                 $hours_duration->subtract( $day_len );
                 $base_date = $self->prev_open_day( $base_date );
                 $hours = $self->get_hours_full( $base_date );
@@ -135,7 +139,11 @@ sub addHours {
         while ( $hours_duration->is_positive ) {
             my $day_len = $hours->{close_time} - $base_date;
 
-            if ( DateTime::Duration->compare( $day_len, $hours_duration, $base_date ) > 0 ) {
+            if ( DateTime::Duration->compare( $day_len, $hours_duration, $base_date ) < 0 ) {
+                if ( $self->{days_mode} eq 'Calendar' ) { 
+                    return $hours->{close_time};
+                }
+
                 $hours_duration->subtract( $day_len );
                 $base_date = $self->next_open_day( $base_date );
                 $hours = $self->get_hours_full( $base_date );
@@ -253,7 +261,7 @@ sub get_hours {
 sub get_hours_full {
     my ( $self, $dt ) = @_;
 
-    my $hours = $self->get_hours;
+    my $hours = { %{ $self->get_hours( $dt ) } };
 
     $hours->{open_time} = $dt
         ->clone->truncate( to => 'day' )
@@ -347,17 +355,18 @@ sub hours_between {
 
     my $duration = DateTime::Duration->new;
     
-    if ( $start_dt < $start_hours->{close_time} ) $duration->add_duration( $start_hours->{close_time} - $start_dt );
+    $duration->add_duration( $start_hours->{close_time} - $start_dt ) if ( $start_dt < $start_hours->{close_time} );
 
     for (my $date = $start_dt->clone->truncate( to => 'day' )->add( days => 1 );
         $date->ymd lt $end_dt->ymd;
         $date->add(days => 1)
     ) {
         my $hours = $self->get_hours_full( $date );
-        $duration->add_duration( $hours->{close_time} - $hours->{open_time} );
+
+        $duration->add_duration( $hours->{close_time}->delta_ms( $hours->{open_time} ) );
     }
 
-    if ( $end_dt > $start_hours->{open_time} ) $duration->add_duration( $end_dt - $end_hours->{open_time} );
+    $duration->add_duration( $end_dt - $end_hours->{open_time} ) if ( $end_dt > $start_hours->{open_time} );
 
     return $duration;
 
