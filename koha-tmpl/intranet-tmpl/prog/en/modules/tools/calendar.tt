@@ -70,7 +70,7 @@
         return value > 10 ? value : ('0' + value);
     }
 
-    // This function shows the "Show Holiday" panel //
+    // This function shows the "Show Event" panel //
     function showEvent(dayName, day, month, year, weekDay, event) {
         $("#newEvent").slideUp("fast");
         $("#showEvent").slideDown("fast");
@@ -110,7 +110,7 @@
         }
     }
 
-    // This function shows the "Add Holiday" panel //
+    // This function shows the "Add Event" panel //
     function newEvent (dayName, day, month, year, weekDay) {
         $("#showEvent").slideUp("fast");
         $("#newEvent").slideDown("fast");
