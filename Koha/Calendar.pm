@@ -33,7 +33,7 @@ sub _init {
     $self->{weekday_hours} = $dbh->selectall_hashref( q{
         SELECT
             weekday, open_hour, open_minute, close_hour, close_minute,
-            (open_hour = open_minute = close_hour = close_minute = 0) AS closed
+            (open_hour = 0 AND open_minute = 0 AND close_hour = 0 AND close_minute = 0) AS closed
         FROM calendar_repeats
         WHERE branchcode = ? AND weekday IS NOT NULL
     }, 'weekday', { Slice => {} }, $branch ); 
@@ -41,7 +41,7 @@ sub _init {
     my $day_month_hours = $dbh->selectall_arrayref( q{
         SELECT
             month, day, open_hour, open_minute, close_hour, close_minute,
-            (open_hour = open_minute = close_hour = close_minute = 0) AS closed
+            (open_hour = 0 AND open_minute = 0 AND close_hour = 0 AND close_minute = 0) AS closed
         FROM calendar_repeats
         WHERE branchcode = ? AND weekday IS NULL
     }, { Slice => {} }, $branch );
@@ -54,7 +54,7 @@ sub _init {
     $self->{date_hours} = $dbh->selectall_hashref( q{
         SELECT
             event_date, open_hour, open_minute, close_hour, close_minute,
-            (open_hour = open_minute = close_hour = close_minute = 0) AS closed
+            (open_hour = 0 AND open_minute = 0 AND close_hour = 0 AND close_minute = 0) AS closed
         FROM calendar_events
         WHERE branchcode = ?
     }, 'event_date', { Slice => {} }, $branch );

@@ -34,6 +34,7 @@ BEGIN {
         ModRepeatingEvent
         DelSingleEvent
         DelRepeatingEvent
+        CopyAllEvents
     );
 }
 
@@ -68,7 +69,7 @@ sub GetSingleEvents {
     return C4::Context->dbh->selectall_arrayref( q{
         SELECT
             event_date, open_hour, open_minute, close_hour, close_minute, title, description,
-            (open_hour = open_minute = close_hour = close_minute = 0) AS closed
+            (open_hour = 0 AND open_minute = 0 AND close_hour = 0 AND close_minute = 0) AS closed
         FROM calendar_events
         WHERE branchcode = ?
     }, { Slice => {} }, $branchcode );
@@ -80,7 +81,7 @@ sub GetWeeklyEvents {
     return C4::Context->dbh->selectall_arrayref( q{
         SELECT
             weekday, open_hour, open_minute, close_hour, close_minute, title, description,
-            (open_hour = open_minute = close_hour = close_minute = 0) AS closed
+            (open_hour = 0 AND open_minute = 0 AND close_hour = 0 AND close_minute = 0) AS closed
         FROM calendar_repeats
         WHERE branchcode = ? AND weekday IS NOT NULL
     }, { Slice => {} }, $branchcode ); 
@@ -92,7 +93,7 @@ sub GetYearlyEvents {
     return C4::Context->dbh->selectall_arrayref( q{
         SELECT
             month, day, open_hour, open_minute, close_hour, close_minute, title, description,
-            (open_hour = open_minute = close_hour = close_minute = 0) AS closed
+            (open_hour = 0 AND open_minute = 0 AND close_hour = 0 AND close_minute = 0) AS closed
         FROM calendar_repeats
         WHERE branchcode = ? AND weekday IS NULL
     }, { Slice => {} }, $branchcode );
@@ -100,6 +101,8 @@ sub GetYearlyEvents {
 
 sub ModSingleEvent {
     my ( $branchcode, $date, $info ) = @_;
+
+    use Data::Dumper; warn Dumper([@_]);
 
     C4::Context->dbh->do( q{
         INSERT INTO calendar_events(branchcode, event_date, open_hour, open_minute, close_hour, close_minute, title, description)
@@ -109,13 +112,13 @@ sub ModSingleEvent {
 }
 
 sub ModRepeatingEvent {
-    my ( $branchcode, $weekday, $day, $month, $info ) = @_;
+    my ( $branchcode, $weekday, $month, $day, $info ) = @_;
 
     C4::Context->dbh->do( q{
-        INSERT INTO calendar_repeats(branchcode, weekday, day, month, open_hour, open_minute, close_hour, close_minute, title, description)
+        INSERT INTO calendar_repeats(branchcode, weekday, month, day, open_hour, open_minute, close_hour, close_minute, title, description)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON DUPLICATE KEY UPDATE open_hour = ?, open_minute = ?, close_hour = ?, close_minute = ?, title = ?, description = ?
-    }, {}, $branchcode, $weekday, $day, $month, ( map { $info->{$_} } qw(open_hour open_minute close_hour close_minute title description) ) x 2 );
+    }, {}, $branchcode, $weekday, $month, $day, ( map { $info->{$_} } qw(open_hour open_minute close_hour close_minute title description) ) x 2 );
 }
 
 sub DelSingleEvent {
@@ -127,14 +130,39 @@ sub DelSingleEvent {
     }, {}, $branchcode, $date );
 }
 
+sub _get_compare {
+    my ( $colname, $value ) = @_;
+
+    return ' AND ' . $colname . ' ' . ( defined( $value ) ? '=' : 'IS' ) . ' ?';
+}
+
 sub DelRepeatingEvent {
-    my ( $branchcode, $weekday, $day, $month ) = @_;
+    my ( $branchcode, $weekday, $month, $day ) = @_;
 
     C4::Context->dbh->do( q{
         DELETE FROM calendar_repeats
-        WHERE branchcode = ? AND weekday = ? AND day = ? AND month = ?
-    }, {}, $branchcode, $weekday, $day, $month );
+        WHERE branchcode = ?
+    } . _get_compare( 'weekday', $weekday ) . _get_compare( 'month', $month ) . _get_compare( 'day', $day ), {}, $branchcode, $weekday, $month, $day );
 }
+
+sub CopyAllEvents {
+    my ( $from_branchcode, $to_branchcode ) = @_;
+
+    C4::Context->dbh->do( q{
+        INSERT IGNORE INTO calendar_events(branchcode, event_date, open_hour, open_minute, close_hour, close_minute, title, description)
+        SELECT ?, event_date, open_hour, open_minute, close_hour, close_minute, title, description
+        FROM calendar_events
+        WHERE branchcode = ?
+    }, {}, $to_branchcode, $from_branchcode );
+
+    C4::Context->dbh->do( q{
+        INSERT IGNORE INTO calendar_repeats(branchcode, weekday, month, day, open_hour, open_minute, close_hour, close_minute, title, description)
+        SELECT ?, weekday, month, day, open_hour, open_minute, close_hour, close_minute, title, description
+        FROM calendar_repeats
+        WHERE branchcode = ?
+    }, {}, $to_branchcode, $from_branchcode );
+}
+
 
 1;
 

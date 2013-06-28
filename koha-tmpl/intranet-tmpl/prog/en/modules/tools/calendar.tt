@@ -67,7 +67,7 @@
     }
 
     function zeroPad(value) {
-        return value > 10 ? value : ('0' + value);
+        return value >= 10 ? value : ('0' + value);
     }
 
     // This function shows the "Show Event" panel //
@@ -144,7 +144,7 @@
         var year = date.getFullYear();
         var weekDay = date.getDay();
         var dayMonth = month + '-' + day;
-        var dateString = year + '-' + month + '-' + day;
+        var dateString = year + '-' + zeroPad(month) + '-' + zeroPad(day);
 
         if ( single_events[dateString] != null) {
             return [true, "event", "Single event: "+single_events[dateString].title];
@@ -166,7 +166,7 @@
         var weekDay = calendar.getDay();
         var dayName = weekdays[weekDay];
         var dayMonth = month + '-' + day;
-        var dateString = year + '-' + month + '-' + day;
+        var dateString = year + '-' + zeroPad(month) + '-' + zeroPad(day);
         if ( single_events[dateString] != null ) {
             showEvent( dayName, day, month, year, weekDay, single_events[dateString] );
         } else if ( yearly_events[dayMonth] != null ) {
@@ -191,7 +191,7 @@
         $("#yearly-events").dataTable($.extend(true, {}, dataTablesDefaults, {
             "sDom": 't',
             "aoColumns": [
-                { "sType": "title-string" },null,null
+                { "sType": "title-string" },null,null,null
             ],
             "bPaginate": false
         }));
@@ -234,8 +234,8 @@
 .repeatableyearly {  background-color :  #FFCC66; color :  Black;  border : 1px solid #BCBCBC; }
 td.exception a.ui-state-default { background:  #b3d4ff none; color :  Black; border : 1px solid #BCBCBC; }
 td.event a.ui-state-default {  background:  #ffaeae none; color :  Black;  border : 1px solid #BCBCBC; }
-td.repeatableweekly a.ui-state-default {  background:  #D8EFB3 none; color :  Black;  border : 1px solid #BCBCBC; }
-td.repeatableyearly a.ui-state-default {  background:  #FFFF99 none; color :  Black;  border : 1px solid #BCBCBC; }
+td.repeatableweekly a.ui-state-default {  background:  #FFFF99 none; color :  Black;  border : 1px solid #BCBCBC; }
+td.repeatableyearly a.ui-state-default {  background:  #FFCC66 none; color :  Black;  border : 1px solid #BCBCBC; }
 .information { z-index : 1; background-color :  #DCD2F1; width : 300px; display : none; border : 1px solid #000000; color :  #000000; font-size :  8pt; font-weight :  bold; background-color :  #FFD700; cursor :  pointer; padding : 2px; }
 .panel { z-index : 1; display : none; border : 3px solid #CCC; padding : 3px; margin-top: .3em;  background-color: #FEFEFE; } fieldset.brief { border : 0; margin-top: 0; }
 #showEvent { margin : .5em 0; } h1 select { width: 20em; } div.yui-b fieldset.brief ol { font-size:100%; } div.yui-b fieldset.brief li, div.yui-b fieldset.brief li.radio  { padding:0.2em 0; } .help { margin:.3em 0;border:1px solid #EEE;padding:.3em .7em; font-size : 90%; } #single-events, #weekly-events, #yearly-events { font-size : 90%; margin-bottom : 1em;} .calendar td, .calendar th, .calendar .button, .calendar tbody .day { padding : .7em; font-size: 110%; } .calendar { width: auto; border : 0; }
@@ -309,7 +309,7 @@ li.hoursentry input {
             </li>
             <li class="dateinsert">
                 <b>To Date : </b>
-                <input type="text" id="datecancelrange" name="datecancelrange" size="20" value="[% datecancelrange %]" class="datepicker"/>
+                <input type="text" id="datecancelrange" name="dateofrange" size="20" value="[% dateofrange %]" class="datepicker"/>
             </li>
             <li class="radio hourssel">
                 <input type="radio" name="hoursType" id="showHoursTypeOpen" value="open" /><label for="showHoursTypeOpen">Open</label>
@@ -444,10 +444,11 @@ li.hoursentry input {
 <div id="jcalendar-container"></div>
 
 <div style="margin-top: 2em;">
-<form action="copy-events.pl" method="post">
+<form action="/cgi-bin/koha/tools/calendar.pl" method="post">
+    <input type="hidden" name="op" value="copyall" />
     <input type="hidden" name="from_branchcode" value="[% branch %]" />
-  <label for="branchcode">Copy event to:</label>
-  <select id="branchcode" name="branchcode">
+  <label for="branchcode">Copy events to:</label>
+  <select id="branchcode" name="branchcode" required>
     <option value=""></option>
     [% FOREACH branchloo IN branchloop %]
     <option value="[% branchloo.value %]">[% branchloo.branchname %]</option>
@@ -485,6 +486,7 @@ li.hoursentry input {
   <th class="repeatableweekly">Day of week</th>
   <th class="repeatableweekly">Title</th>
   <th class="repeatableweekly">Description</th>
+  <th class="repeatableweekly">Hours</th>
 </tr>
 </thead>
 <tbody>
@@ -497,6 +499,16 @@ li.hoursentry input {
   </td> 
   <td>[% event.title %]</td> 
   <td>[% event.description %]</td> 
+  <td>
+    [% IF event.closed %]
+    Closed
+    [% ELSIF event.close_hour == 24 %]
+    Open
+    [% ELSE %]
+    [% event.open_hour %]:[% event.open_minute > 10 ? event.open_minute : ( '0' _ event.open_minute) %] - 
+    [% event.close_hour %]:[% event.close_minute > 10 ? event.close_minute : ( '0' _ event.close_minute) %]
+    [% END %]
+  </td>
   </tr>
   [% END %] 
 </tbody>
@@ -515,6 +527,7 @@ li.hoursentry input {
   [% END %]
   <th class="repeatableyearly">Title</th>
   <th class="repeatableyearly">Description</th>
+  <th class="repeatableyearly">Hours</th>
 </tr>
 </thead>
 <tbody>
@@ -523,6 +536,16 @@ li.hoursentry input {
   <td><span title="[% event.month_day_display %]">[% event.month_day_sort %]</span></td>
   <td>[% event.title %]</td> 
   <td>[% event.description %]</td> 
+  <td>
+    [% IF event.closed %]
+    Closed
+    [% ELSIF event.close_hour == 24 %]
+    Open
+    [% ELSE %]
+    [% event.open_hour %]:[% event.open_minute > 10 ? event.open_minute : ( '0' _ event.open_minute) %] - 
+    [% event.close_hour %]:[% event.close_minute > 10 ? event.close_minute : ( '0' _ event.close_minute) %]
+    [% END %]
+  </td>
   </tr>
   [% END %] 
 </tbody>
@@ -537,6 +560,7 @@ li.hoursentry input {
   <th class="event">Date</th>
   <th class="event">Title</th>
   <th class="event">Description</th>
+  <th class="event">Hours</th>
 </tr>
 </thead>
 <tbody>
@@ -545,6 +569,16 @@ li.hoursentry input {
   <td><a href="/cgi-bin/koha/tools/calendar.pl?branch=[% branch %]&amp;calendardate=[% event.event_date | $KohaDates %]"><span title="[% event.event_date %]">[% event.event_date | $KohaDates %]</span></a></td>
   <td>[% event.title %]</td>
   <td>[% event.description %]</td>
+  <td>
+    [% IF event.closed %]
+    Closed
+    [% ELSIF event.close_hour == 24 %]
+    Open
+    [% ELSE %]
+    [% event.open_hour %]:[% event.open_minute > 10 ? event.open_minute : ( '0' _ event.open_minute) %] - 
+    [% event.close_hour %]:[% event.close_minute > 10 ? event.close_minute : ( '0' _ event.close_minute) %]
+    [% END %]
+  </td>
 </tr>
   [% END %] 
 </tbody>

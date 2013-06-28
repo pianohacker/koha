@@ -113,11 +113,11 @@ if ( $op eq 'save' ) {
     my ( $open_hour, $open_minute, $close_hour, $close_minute );
 
     if ( $input->param( 'hoursType' ) eq 'open' ) {
-        ( $open_hour, $open_minute ) = 0, 0;
-        ( $close_hour, $close_minute ) = 24, 0;
+        ( $open_hour, $open_minute ) = ( 0, 0 );
+        ( $close_hour, $close_minute ) = ( 24, 0 );
     } elsif ( $input->param( 'hoursType' ) eq 'closed' ) {
-        ( $open_hour, $open_minute ) = 0, 0;
-        ( $close_hour, $close_minute ) = 0, 0;
+        ( $open_hour, $open_minute ) = ( 0, 0 );
+        ( $close_hour, $close_minute ) = ( 0, 0 );
     } else {
         ( $open_hour, $open_minute ) = ( $input->param( 'openTime' ) =~ /(0?[0-9]|1[0-9]|2[0-3]):([0-5][0-9])/ );
         ( $close_hour, $close_minute ) = ( $input->param( 'closeTime' ) =~ /(0?[0-9]|1[0-9]|2[0-3]):([0-5][0-9])/ );
@@ -136,7 +136,7 @@ if ( $op eq 'save' ) {
                 } );
             }
 
-            when ( 'weekday' ) {
+            when ( 'weekly' ) {
                 ModRepeatingEvent( $branchcode, $input->param( 'weekday' ), undef, undef, {
                     title => $input->param( 'title' ),
                     description => $input->param( 'description' ),
@@ -194,7 +194,7 @@ if ( $op eq 'save' ) {
                 DelSingleEvent( $branchcode, $date );
             }
 
-            when ( 'weekday' ) {
+            when ( 'weekly' ) {
                 DelRepeatingEvent( $branchcode, $input->param( 'weekday' ), undef, undef );
             }
 
@@ -215,6 +215,8 @@ if ( $op eq 'save' ) {
             DelRepeatingEvent( $branchcode, undef, $dt->month, $dt->day );
         }
     }
+} elsif ( $op eq 'copyall' ) {
+    CopyAllEvents( $input->param( 'from_branchcode' ), $input->param( 'branchcode' ) );
 }
 
 my $yearly_events = GetYearlyEvents($branch);
