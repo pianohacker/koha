@@ -4,7 +4,7 @@ use strict;
 use warnings;
 use DateTime;
 use DateTime::Duration;
-use Test::More tests => 49;
+use Test::More tests => 51;
 use Test::MockModule;
 use DBD::Mock;
 use Koha::DateUtils;
@@ -208,6 +208,22 @@ my $day_after_christmas = DateTime->new(
         minute    => 53,
     );
 
+    my $same_day_dt = DateTime->new(    # Monday
+        year      => 2012,
+        month     => 7,
+        day       => 23,
+        hour      => 13,
+        minute    => 53,
+    );
+
+    my $after_close_dt = DateTime->new(    # Monday
+        year      => 2012,
+        month     => 7,
+        day       => 23,
+        hour      => 22,
+        minute    => 53,
+    );
+
     my $later_dt = DateTime->new(    # Monday
         year      => 2012,
         month     => 9,
@@ -274,6 +290,12 @@ my $day_after_christmas = DateTime->new(
 
     cmp_ok( $cal->days_between( $later_dt, $test_dt )->in_units('days'),
                 '==', 40, 'Test parameter order not relevant (Datedue)' );
+
+    cmp_ok( $cal->hours_between( $test_dt, $same_day_dt )->in_units('hours'),
+                '==', 2, 'hours_between calculates correctly (short period)' );
+
+    cmp_ok( $cal->hours_between( $test_dt, $after_close_dt )->in_units('hours'),
+                '==', 7, 'hours_between calculates correctly (after close)' );
 
     cmp_ok( $cal->hours_between( $test_dt, $later_dt )->in_units('hours'),
                 '==', 725, 'hours_between calculates correctly (Datedue)' );

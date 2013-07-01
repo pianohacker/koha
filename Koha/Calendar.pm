@@ -353,6 +353,8 @@ sub hours_between {
     $start_dt = $start_hours->{open_time} if ( $start_dt < $start_hours->{open_time} );
     $end_dt = $end_hours->{close_time} if ( $end_dt > $end_hours->{close_time} );
 
+    return $end_dt - $start_dt if ( $start_dt->ymd eq $end_dt->ymd );
+
     my $duration = DateTime::Duration->new;
     
     $duration->add_duration( $start_hours->{close_time} - $start_dt ) if ( $start_dt < $start_hours->{close_time} );
