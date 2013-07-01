@@ -126,8 +126,6 @@ open_minute, close_hour, close_minute, title and description.
 sub ModSingleEvent {
     my ( $branchcode, $date, $info ) = @_;
 
-    use Data::Dumper; warn Dumper([@_]);
-
     C4::Context->dbh->do( q{
         INSERT INTO calendar_events(branchcode, event_date, open_hour, open_minute, close_hour, close_minute, title, description)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
