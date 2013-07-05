@@ -33,7 +33,7 @@ use POSIX qw/strftime/;
 use List::MoreUtils qw/ any /;
 
 # use utf8;
-use vars qw($VERSION @ISA @EXPORT @EXPORT_OK %EXPORT_TAGS $debug $ldap $cas $caslogout);
+use vars qw($VERSION @ISA @EXPORT @EXPORT_OK %EXPORT_TAGS $debug $ldap $cas $caslogout $ExtAuthSrc);
 
 BEGIN {
     sub psgi_env { any { /^psgi\./ } keys %ENV }
@@ -53,13 +53,18 @@ BEGIN {
     $ldap        = C4::Context->config('useldapserver') || 0;
     $cas         = C4::Context->preference('casAuthentication');
     $caslogout   = C4::Context->preference('casLogout');
+    $ExtAuthSrc  = C4::Context->config('useExtAuthSrc') || 0;
     require C4::Auth_with_cas;             # no import
+    require C4::Auth_with_ExtAuthSrc;
     if ($ldap) {
     require C4::Auth_with_ldap;
     import C4::Auth_with_ldap qw(checkpw_ldap);
     }
     if ($cas) {
         import  C4::Auth_with_cas qw(check_api_auth_cas checkpw_cas login_cas logout_cas login_cas_url);
+    }
+    if ($ExtAuthSrc) {
+        import  C4::Auth_with_ExtAuthSrc qw(logout_extauthsrc login_extauthsrc_url);
     }
 
 }
@@ -601,13 +606,16 @@ sub _timeout_syspref {
 
 sub checkauth {
     my $query = shift;
+    $debug = 1;
     $debug and warn "Checking Auth";
     # $authnotrequired will be set for scripts which will run without authentication
     my $authnotrequired = shift;
     my $flagsrequired   = shift;
     my $type            = shift;
     my $persona         = shift;
+    my $extauthsrc_id   = shift;
     $type = 'opac' unless $type;
+    print STDERR "EXTAUTHSRC_ID=$extauthsrc_id\n";
 
     my $dbh     = C4::Context->dbh;
     my $timeout = _timeout_syspref();
@@ -633,7 +641,7 @@ sub checkauth {
         );
         $loggedin = 1;
     }
-    elsif ( $persona ){
+    elsif ( $persona || $extauthsrc_id){
       # we dont want to set a session because we are being called by a persona callback
     }
     elsif ( $sessionID = $query->cookie("CGISESSID") )
@@ -682,6 +690,14 @@ sub checkauth {
         if ($cas and $caslogout) {
         logout_cas($query);
         }
+            if ( $ExtAuthSrc and $type eq 'opac' ) {
+                # Note: $type eq 'opac' should be removed when External
+                #       Authentication Source is implemented for the
+                #       Staff Client.
+                $debug and printf STDERR sprintf("\$ExtAuthSrc=%s\n",$ExtAuthSrc);
+                $debug and printf STDERR sprintf("\$type=%s\n",$type);
+                logout_extauthsrc($query);
+            }
         }
         elsif ( $lasttime < time() - $timeout ) {
             # timed logout
@@ -731,7 +747,8 @@ sub checkauth {
             -value    => $session->id,
             -HttpOnly => 1
         );
-    $userid = $query->param('userid');
+        $userid = $query->param('userid') || $extauthsrc_id;
+        print STDERR "USERID=$userid\n";
         if (   ( $cas && $query->param('ticket') )
             || $userid
             || ( my $pki_field = C4::Context->preference('AllowPKIAuth') ) ne
@@ -747,29 +764,31 @@ sub checkauth {
                 $userid = $retuserid;
                 $info{'invalidCasLogin'} = 1 unless ($return);
             }
-
-    elsif ($persona) {
-        my $value = $persona;
+            elsif ( $extauthsrc_id ) {
+                print STDERR "RETURN=1\n";
+                $return = 1;
+            } 
+            elsif ($persona) {
+                my $value = $persona;
 
         # If we're looking up the email, there's a chance that the person
         # doesn't have a userid. So if there is none, we pass along the
         # borrower number, and the bits of code that need to know the user
         # ID will have to be smart enough to handle that.
-        require C4::Members;
-        my @users_info = C4::Members::GetBorrowersWithEmail($value);
-        if (@users_info) {
+                require C4::Members;
+                my @users_info = C4::Members::GetBorrowersWithEmail($value);
+                if (@users_info) {
 
-            # First the userid, then the borrowernum
-            $value = $users_info[0][1] || $users_info[0][0];
-        }
-        else {
-            undef $value;
-        }
-        $return = $value ? 1 : 0;
-        $userid = $value;
-    }
-
-    elsif (
+                    # First the userid, then the borrowernum
+                    $value = $users_info[0][1] || $users_info[0][0];
+                }
+                else {
+                    undef $value;
+                }
+                $return = $value ? 1 : 0;
+                $userid = $value;
+            }
+            elsif (
                 ( $pki_field eq 'Common Name' && $ENV{'SSL_CLIENT_S_DN_CN'} )
                 || (   $pki_field eq 'emailAddress'
                     && $ENV{'SSL_CLIENT_S_DN_Email'} )
@@ -782,10 +801,10 @@ sub checkauth {
                 elsif ( $pki_field eq 'emailAddress' ) {
                     $value = $ENV{'SSL_CLIENT_S_DN_Email'};
 
-              # If we're looking up the email, there's a chance that the person
-              # doesn't have a userid. So if there is none, we pass along the
-              # borrower number, and the bits of code that need to know the user
-              # ID will have to be smart enough to handle that.
+      # If we're looking up the email, there's a chance that the person
+      # doesn't have a userid. So if there is none, we pass along the
+      # borrower number, and the bits of code that need to know the user
+      # ID will have to be smart enough to handle that.
                     require C4::Members;
                     my @users_info = C4::Members::GetBorrowersWithEmail($value);
                     if (@users_info) {
@@ -801,19 +820,23 @@ sub checkauth {
                 $return = $value ? 1 : 0;
                 $userid = $value;
 
-    }
+            }
             else {
                 my $retuserid;
                 ( $return, $cardnumber, $retuserid ) =
                   checkpw( $dbh, $userid, $password, $query );
                 $userid = $retuserid if ( $retuserid ne '' );
-        }
-        if ($return) {
+            }
+            print STDERR "CHECK LOGIN.\n";
+            if ($return) {
+                print STDERR "Hopefully logging in.\n";
                #_session_log(sprintf "%20s from %16s logged in  at %30s.\n", $userid,$ENV{'REMOTE_ADDR'},(strftime '%c', localtime));
                 if ( $flags = haspermission(  $userid, $flagsrequired ) ) {
                     $loggedin = 1;
+                    print STDERR "YES! We're in.\n";
                 }
-                   else {
+                else {
+                    print STDERR "SHOOT!\n";
                     $info{'nopermission'} = 1;
                     C4::Context->_unset_userenv($sessionID);
                 }
@@ -947,6 +970,7 @@ sub checkauth {
     # finished authentification, now respond
     if ( $loggedin || $authnotrequired )
     {
+        print STDERR "SUCCESSFUL LOG IN!\n";
         # successful login
         unless ($cookie) {
             $cookie = $query->cookie(
@@ -985,6 +1009,7 @@ sub checkauth {
         login                => 1,
         INPUTS               => \@inputs,
         casAuthentication    => C4::Context->preference("casAuthentication"),
+        useExtAuthSrc        => C4::Context->config("useExtAuthSrc"),
         suggestion           => C4::Context->preference("suggestion"),
         virtualshelves       => C4::Context->preference("virtualshelves"),
         LibraryName          => "" . C4::Context->preference("LibraryName"),
@@ -1053,6 +1078,12 @@ sub checkauth {
 
     $template->param(
             invalidCasLogin => $info{'invalidCasLogin'}
+        );
+    }
+
+    if ($ExtAuthSrc) {
+        $template->param(
+            ExtAuthSrcLoginURL => login_extauthsrc_url($query),
         );
     }
 

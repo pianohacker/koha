@@ -47,6 +47,7 @@
     [% IF ( opacuserlogin ) %]
     [% UNLESS ( loggedinusername ) %]
     [% UNLESS ( casAuthentication ) %]
+    [% UNLESS ( useExtAuthSrc ) %]
     <div id="login" class="container clearfix">
 	<form action="/cgi-bin/koha/opac-user.pl" method="post" name="auth" id="auth">
     <input type="hidden" name="koha_login_context" value="opac" />
@@ -66,6 +67,7 @@
     [% END %]
     [% IF persona %]
      <a href="#" class="persona-button" id="browserid" ><span>Sign in with your Email</span></a>
+    [% END %]
     [% END %]
     [% END %]
     [% END %]

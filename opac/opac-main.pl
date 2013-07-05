@@ -43,6 +43,8 @@ $template->param(
     casAuthentication   => $casAuthentication,
 );
 
+my $useExtAuthSrc = C4::Context->config('useExtAuthSrc');
+$template->param( useExtAuthSrc => $useExtAuthSrc,);
 
 # display news
 # use cookie setting for language, bug default to syspref if it's not set

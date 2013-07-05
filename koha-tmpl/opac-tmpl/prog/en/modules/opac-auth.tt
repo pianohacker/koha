@@ -46,6 +46,14 @@
 <p>You entered an incorrect username or password. Please try again! And remember, usernames and passwords are case sensitive.</p>
 [% END %]
 
+[% IF ( useExtAuthSrc ) %]
+<h4>Login Using An External Authentication Source</h4>
+
+<p>If you have an account externally,
+please <a href="[% ExtAuthSrcLoginURL %]">click here to login</a>.</p>
+
+[% END %]
+
 [% IF ( casAuthentication ) %]
 <h4>Cas login</h4>
 
@@ -68,9 +76,11 @@ please choose against which one you would like to authenticate: </p>
 [% END %]
 </ul>
 
-<h4>Local login</h4>
-<p>If you do not have a CAS account, but a local account, you can still log in : </p>
+[% END %]
 
+[% IF ( casAuthentication || useExtAuthSrc ) %]
+<h4>Local login</h4>
+<p>If you can prefer to use a local account, you can still log in :</p>
 [% END %]
 
 <form action="[% url %]" name="auth" id="auth" method="post">

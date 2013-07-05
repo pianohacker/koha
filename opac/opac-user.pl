@@ -65,6 +65,9 @@ my ( $template, $borrowernumber, $cookie ) = get_template_and_user(
     }
 );
 
+my $useExtAuthSrc = C4::Context->config('useExtAuthSrc');
+$template->param( useExtAuthSrc => $useExtAuthSrc );
+
 my $show_priority;
 for ( C4::Context->preference("OPACShowHoldQueueDetails") ) {
     m/priority/ and $show_priority = 1;
