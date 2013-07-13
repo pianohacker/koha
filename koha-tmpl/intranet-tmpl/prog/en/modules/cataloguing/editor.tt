@@ -1,0 +1,50 @@
+[% INCLUDE 'doc-head-open.inc' %]
+<title>Koha &rsaquo; Cataloging &rsaquo; [% IF ( biblionumber ) %]Editing [% title |html %] (Record number [% biblionumber %])[% ELSE %]Add MARC record[% END %]</title>
+[% INCLUDE 'doc-head-close.inc' %]
+<script type="text/javascript" src="[% themelang %]/lib/jquery/plugins/jquery.fixFloat.js"></script>
+<script type="text/javascript" src="[% themelang %]/js/catalog-editor.js"></script>
+<script type="text/javascript">
+    $(window).load(function(){
+        $("#loading").hide();
+    });
+</script>
+<link type="text/css" rel="stylesheet" href="[% themelang %]/css/catalog-editor.css" />
+<link type="text/css" rel="stylesheet" href="[% themelang %]/lib/codemirror/codemirror.css" />
+<script src="[% themelang %]/lib/codemirror/codemirror.js"></script>
+[% IF ( bidi ) %]
+   <link rel="stylesheet" type="text/css" href="[% themelang %]/css/right-to-left.css" />
+[% END %]
+</head>
+<body id="cat_addbiblio" class="cat">
+
+   <div id="loading">
+       <div>Loading, please wait...</div>
+   </div>
+
+[% INCLUDE 'header.inc' %]
+
+<div id="breadcrumbs"><a href="/cgi-bin/koha/mainpage.pl">Home</a> &rsaquo; <a href="/cgi-bin/koha/cataloguing/addbooks.pl">Cataloging</a>  &rsaquo; [% IF ( biblionumber ) %]Editing <em>[% title |html %]</em> (Record number [% biblionumber %])[% ELSE %]Add MARC record[% END %]</div>
+
+<div id="doc2" class="yui-t2">
+<div id="bd">
+
+<h1>
+[% IF ( biblionumber ) %]Editing <em>[% title |html %]</em> (Record number [% biblionumber %])
+[% ELSE %]Add MARC record [% IF (circborrowernumber) %]<em>(fast cataloging)</em>[% END %]
+[% END %]
+</h1>
+
+<div id="yui-main"><div class="yui-b">
+
+<div id="editor"></div>
+
+</div></div>
+
+<div class="yui-b">
+Editing sidebar
+</div>
+
+</div>
+</div>
+
+[% INCLUDE 'intranet-bottom.inc' %]
