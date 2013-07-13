@@ -74,6 +74,20 @@
             return false;
         });
 
+        $( '#switcheditor' ).click( function() {
+            if ( !confirm( _("Any changes will not be saved. Continue?") ) ) return;
+
+            $.cookie( 'catalogue_editor_[% USER_INFO.0.borrowernumber %]', 'advanced', { expires: 365, path: '/' } );
+
+            var biblionumber = [% biblionumber || "null" %];
+
+            if ( biblionumber ) {
+                window.location = '/cgi-bin/koha/cataloguing/editor.pl#catalog:' + biblionumber;
+            } else {
+                window.location = '/cgi-bin/koha/cataloguing/editor.pl';
+            }
+        } );
+
 	});
 
 function redirect(dest){
@@ -402,6 +416,7 @@ function Changefwk(FwkList) {
 
     [% UNLESS (circborrowernumber) %][%# Hide in fast cataloging %]
         <div class="btn-group"><a class="btn btn-small" href="#" id="z3950search"><i class="icon-search"></i> Z39.50 search</a></div>
+        <div class="btn-group"><a href="#" id="switcheditor" class="btn btn-small">Switch to advanced editor</a></div>
         [% IF (biblionumber) %]
             [% IF ( BiblioDefaultViewmarc ) %]
                 <div class="btn-group">
