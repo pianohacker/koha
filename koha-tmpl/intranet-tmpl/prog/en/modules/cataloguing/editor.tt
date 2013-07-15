@@ -2,15 +2,10 @@
 <title>Koha &rsaquo; Cataloging &rsaquo; [% IF ( biblionumber ) %]Editing [% title |html %] (Record number [% biblionumber %])[% ELSE %]Add MARC record[% END %]</title>
 [% INCLUDE 'doc-head-close.inc' %]
 <script type="text/javascript" src="[% themelang %]/lib/jquery/plugins/jquery.fixFloat.js"></script>
-<script type="text/javascript" src="[% themelang %]/js/catalog-editor.js"></script>
-<script type="text/javascript">
-    $(window).load(function(){
-        $("#loading").hide();
-    });
-</script>
-<link type="text/css" rel="stylesheet" href="[% themelang %]/css/catalog-editor.css" />
+<link type="text/css" rel="stylesheet" href="[% themelang %]/css/cateditor.css" />
 <link type="text/css" rel="stylesheet" href="[% themelang %]/lib/codemirror/codemirror.css" />
 <script src="[% themelang %]/lib/codemirror/codemirror.js"></script>
+<script type="text/javascript" src="[% themelang %]/js/cateditor/marc-mode.js"></script>
 [% IF ( bidi ) %]
    <link rel="stylesheet" type="text/css" href="[% themelang %]/css/right-to-left.css" />
 [% END %]
@@ -46,5 +41,24 @@ Editing sidebar
 
 </div>
 </div>
+
+<script>
+( function() {
+    var editor = CodeMirror(
+        $('#editor')[0],
+        {
+            mode: 'marc',
+        }
+    );
+
+    editor.on( 'cursorActivity', function( editor ) {
+        //var token = editor.getTokenAt( editor.getCursor() );
+    } );
+} )();
+
+$(window).load(function(){
+    $("#loading").hide();
+});
+</script>
 
 [% INCLUDE 'intranet-bottom.inc' %]

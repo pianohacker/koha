@@ -21,3 +21,16 @@
     top: 50%;
     width: 15em;
 }
+
+#editor .cm-tagnumber {
+    color: #080;
+}
+
+#editor .cm-indicator {
+    color: #884;
+}
+
+#editor .cm-subfieldcode {
+    color: #448;
+    font-weight: bold;
+}
