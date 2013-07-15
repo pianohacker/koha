@@ -25,6 +25,7 @@ CodeMirror.defineMode( 'marc', function() {
                     match = match[0];
                     if ( match.length != 3 ) {
                         if ( stream.eol() && match.length < 3 ) {
+                            // Don't show error for incomplete number
                             return 'tagnumber';
                         } else {
                             stream.skipToEnd();
