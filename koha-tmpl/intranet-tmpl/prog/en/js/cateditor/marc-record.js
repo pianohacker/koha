@@ -11,6 +11,10 @@ define( function() {
     }
 
     $.extend( MARC.Record.prototype, {
+        /**
+         * If a tagnumber is given, returns all fields with that tagnumber.
+         * Otherwise, returns all fields.
+         */
         fields: function(fieldno) {
             if (!fieldno) return this._fieldlist;
 
@@ -24,6 +28,9 @@ define( function() {
             return results;
         },
 
+        /**
+         * Returns the first field with the given tagnumber, or false.
+         */
         field: function(fieldno) {
             for(var i=0; i<this._fieldlist.length; i++){
                 if( this._fieldlist[i].tagnumber() == fieldno ) {
@@ -33,11 +40,19 @@ define( function() {
             return false;
         },
 
+        /**
+         * Adds the given MARC.Field to the record, at the end.
+         */
         addField: function(field) {
             this._fieldlist.push(field);
             return true;
         },
 
+        /**
+         * Adds the given MARC.Field to the record, at the end of the matching
+         * x00 group. If a record has a 100, 245 and 300 field, for instance, a
+         * 260 field would be added after the 245 field.
+         */
         addFieldGrouped: function(field) {
             for ( var i = this._fieldlist.length - 1; i >= 0; i-- ) {
                 if ( this._fieldlist[i].tagnumber()[0] <= field.tagnumber()[0] ) {
@@ -49,6 +64,10 @@ define( function() {
             return true;
         },
 
+        /**
+         * Removes the first field with the given tagnumber. Returns false if no
+         * such field was found.
+         */
         removeField: function(fieldno) {
             for(var i=0; i<this._fieldlist.length; i++){
                 if( this._fieldlist[i].tagnumber() == fieldno ) {
@@ -59,6 +78,10 @@ define( function() {
             return false;
         },
 
+        /**
+         * Check to see if this record contains a field with the given
+         * tagnumber.
+         */
         hasField: function(fieldno) {
             for(var i=0; i<this._fieldlist.length; i++){
                 if( this._fieldlist[i].tagnumber() == fieldno ) {
@@ -88,6 +111,10 @@ define( function() {
             return xml;
         },
 
+        /**
+         * Truncates this record, and loads in the data from the given MARCXML
+         * document.
+         */
         loadMarcXml: function(xmldoc) {
             this._fieldlist.length = 0;
             var leader = $('leader', xmldoc).text();
