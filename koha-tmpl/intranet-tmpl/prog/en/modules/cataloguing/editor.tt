@@ -18,7 +18,7 @@
 
 <div id="breadcrumbs"><a href="/cgi-bin/koha/mainpage.pl">Home</a> &rsaquo; <a href="/cgi-bin/koha/cataloguing/addbooks.pl">Cataloging</a>  &rsaquo; [% IF ( biblionumber ) %]Editing <em>[% title |html %]</em> (Record number [% biblionumber %])[% ELSE %]Add MARC record[% END %]</div>
 
-<div id="doc2" class="yui-t2">
+<div id="doc2" class="yui-t1">
 <div id="bd">
 
 <h1>
@@ -40,10 +40,20 @@ Editing sidebar
 </div>
 </div>
 
+<script src="/cgi-bin/koha/svc/cateditor/framework?frameworkcode=&amp;callback=var+_preloadDefaultFramework%3D"></script>
+
 <script src="/intranet-tmpl/lib/codemirror/codemirror.js"></script>
 <script src="[% themelang %]/js/cateditor/marc-mode.js"></script>
 <script src="/intranet-tmpl/lib/require.js"></script>
 <script>
+
+var editorKeys = {
+    Enter: function( editor ) {
+        var cursor = editor.getCursor();
+        editor.replaceRange( '\n', { line: cursor.line } );
+        editor.setCursor( { line: cursor.line + 1, column: 0 } );
+    }
+};
 
 require.config( {
     baseUrl: '[% themelang %]/js/cateditor/'
@@ -54,12 +64,17 @@ require( [ 'koha-backend', 'text-marc', 'marc-record' ], function( KohaBackend, 
         var editor = CodeMirror(
             $('#editor')[0],
             {
-                mode: 'marc',
+                extraKeys: editorKeys,
+                lineWrapping: true,
+                mode: 'marc'
             }
         );
 
+        KohaBackend.SetDefaultFramework( _preloadDefaultFramework.framework );
+
         record = new MARC.Record();
         KohaBackend.FillRecord( '', record );
+        console.log( record );
         editor.setValue( TextMARC.RecordToText( record ) );
 
         editor.on( 'cursorActivity', function( editor ) {

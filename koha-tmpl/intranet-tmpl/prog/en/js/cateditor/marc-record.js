@@ -7,50 +7,68 @@ define( function() {
     var MARC = {};
 
     MARC.Record = function (fieldlist) {
-        var fields = new Array();
-        if(fieldlist) {
-            fields = fieldlist;
-        }
-        var numfields = fields.length;
+        this._fieldlist = fieldlist || [];
+    }
 
-        this.fields = function() {
-            return fields;
-        };
+    $.extend( MARC.Record.prototype, {
+        fields: function(fieldno) {
+            if (!fieldno) return this._fieldlist;
 
-        this._field = function(fieldno) {
-            for(var i=0; i<fields.length; i++){
-                if( fields[i].tagnumber() == fieldno ) {
-                    return fields[i];
+            var results = [];
+            for(var i=0; i<this._fieldlist.length; i++){
+                if( this._fieldlist[i].tagnumber() == fieldno ) {
+                    results.push(this._fieldlist[i]);
+                }
+            }
+
+            return results;
+        },
+
+        field: function(fieldno) {
+            for(var i=0; i<this._fieldlist.length; i++){
+                if( this._fieldlist[i].tagnumber() == fieldno ) {
+                    return this._fieldlist[i];
                 }
             }
             return false;
-        };
+        },
 
-        this._addField = function(field) {
-            fields.push(field);
+        addField: function(field) {
+            this._fieldlist.push(field);
             return true;
-        };
+        },
 
-        this._removeField = function(fieldno) {
-            for(var i=0; i<fields.length; i++){
-                if( fields[i].tagnumber() == fieldno ) {
-                    fields.splice(i, 1);
+        addFieldGrouped: function(field) {
+            for ( var i = this._fieldlist.length - 1; i >= 0; i-- ) {
+                if ( this._fieldlist[i].tagnumber()[0] <= field.tagnumber()[0] ) {
+                    this._fieldlist.splice(i+1, 0, field);
+                    return true;
+                }
+            }
+            this._fieldlist.push(field);
+            return true;
+        },
+
+        removeField: function(fieldno) {
+            for(var i=0; i<this._fieldlist.length; i++){
+                if( this._fieldlist[i].tagnumber() == fieldno ) {
+                    this._fieldlist.splice(i, 1);
                     return true;
                 }
             }
             return false;
-        };
+        },
 
-        this._hasField = function(fieldno) {
-            for(var i=0; i<fields.length; i++){
-                if( fields[i].tagnumber() == fieldno ) {
+        hasField: function(fieldno) {
+            for(var i=0; i<this._fieldlist.length; i++){
+                if( this._fieldlist[i].tagnumber() == fieldno ) {
                     return true;
                 }
             }
             return false;
-        }
+        },
 
-        this._XML = function() {
+        XML: function() {
             // fixme this isn't working correctly: it's failing on trying to add xml fragment
             // returned from fields[i].XML()
             //var xml = Sarissa.getDomDocument("", "record");
@@ -59,24 +77,25 @@ define( function() {
             //}
             //return xml;
             return xslTransform.loadString( this._XMLString() );
-        };
+        },
 
-        this._XMLString = function() {
+        XMLString: function() {
             var xml = '<record xmlns="http://www.loc.gov/MARC21/slim">';
-            for(var i=0; i<fields.length; i++){
-                xml += fields[i].XMLString();
+            for(var i=0; i<this._fieldlist.length; i++){
+                xml += this._fieldlist[i].XMLString();
             }
             xml += '</record>';
             return xml;
-        };
-        this._loadMarcXml = function(xmldoc) {
-            fields.length = 0;
+        },
+
+        loadMarcXml: function(xmldoc) {
+            this._fieldlist.length = 0;
             var leader = $('leader', xmldoc).text();
-            fields.push( new MARC.Field('000', '', '', [{code: '', value: leader}]) );
+            this._fieldlist.push( new MARC.Field('000', '', '', [ '@', leader ]) );
             $('controlfield', xmldoc).each( function(i) {
                 val = $(this).text();
                 tagnum = $(this).attr('tag');
-                fields.push( new MARC.Field(tagnum, '', '', [{code: '', value: val}]) );
+                this._fieldlist.push( new MARC.Field(tagnum, '', '', [ '@', val ]) );
             });
             $('datafield', xmldoc).each(function(i) {
                 var value = $(this).text();
@@ -87,121 +106,120 @@ define( function() {
                 $('subfield', this).each(function(j) {
                     var sfval = $(this).text();
                     var sfcode = $(this).attr('code');
-                    subfields.push( new MARC.Subfield(sfcode, sfval) );
+                    subfields.push( [ sfcode, sfval ] );
                 });
-                fields.push( new MARC.Field(tagnum, ind1, ind2, subfields) );
+                this._fieldlist.push( new MARC.Field(tagnum, ind1, ind2, subfields) );
             });
         }
-    }
+    } );
 
-    MARC.Record.prototype.field = function(fieldno) {
-        return this._field(fieldno);
-    };
-
-    MARC.Record.prototype.fields = function() {
-        return this.fields();
-    };
-
-    MARC.Record.prototype.addField = function(field) {
-        return this._addField(field);
-    };
-
-    MARC.Record.prototype.removeField = function(fieldno) {
-        return this._removeField(fieldno);
-    };
-
-    MARC.Record.prototype.hasField = function(fieldno) {
-        return this._hasField(fieldno);
-    }
-
-    MARC.Record.prototype.XML = function() {
-        return this._XML();
-    };
-
-    MARC.Record.prototype.XMLString = function() {
-        return this._XMLString();
-    };
-
-    MARC.Record.prototype.loadMarcXml = function(xmldoc) {
-        return this._loadMarcXml(xmldoc);
-    }
     MARC.Field = function(tagnumber, indicator1, indicator2, subfields) {
-        var that = this;
-        var tagnumber = tagnumber;
-        var indicators = new Array(indicator1, indicator2);
-        var subfields = subfields;
+        this._tagnumber = tagnumber;
+        this._indicators = [ indicator1, indicator2 ];
+        this._subfields = subfields;
+    };
 
-        this._tagnumber = function() {
-            return tagnumber;
-        };
+    $.extend( MARC.Field.prototype, {
+        tagnumber: function() {
+            return this._tagnumber;
+        },
 
-        this._indicator = function(num, val) {
+        isControlField: function() {
+            return this._tagnumber < '010';
+        },
+
+        indicator: function(num, val) {
             if( val != null ) {
-                indicators[num] = val;
+                this._indicators[num] = val;
             }
-            return indicators[num];
-        };
+            return this._indicators[num];
+        },
 
-        this._indicators = function() {
-            return indicators;
-        };
+        indicators: function() {
+            return this._indicators;
+        },
 
-        this._hasSubfield = function(code) {
-            for(var i = 0; i<subfields.length; i++) {
-                if( subfields[i].code == code ) {
+        hasSubfield: function(code) {
+            for(var i = 0; i<this._subfields.length; i++) {
+                if( this._subfields[i][0] == code ) {
                     return true;
                 }
             }
             return false;
-        };
+        },
 
-        this._removeSubfield = function(code) {
-            for(var i = 0; i<subfields.length; i++) {
-                if( subfields[i].code == code ) {
-                    subfields.splice(i,1);
+        removeSubfield: function(code) {
+            for(var i = 0; i<this._subfields.length; i++) {
+                if( this._subfields[i][0] == code ) {
+                    this._subfields.splice(i,1);
                     return true;
                 }
             }
             return false;
-        }
+        },
 
-        this._subfields = function() {
-            return subfields;
-        };
+        subfields: function() {
+            return this._subfields;
+        },
 
-        this._addSubfield = function(sf) {
-            subfields.push(sf);
+        addSubfield: function(sf) {
+            this._subfields.push(sf);
             return true;
-        }
+        },
 
-        this._subfield = function(code, val) {
+        addSubfieldGrouped: function(sf) {
+            function _kind( sc ) {
+                if ( /[a-z]/.test( sc ) ) {
+                    return 0;
+                } else if ( /[0-9]/.test( sc ) ) {
+                    return 1;
+                } else {
+                    return 2;
+                }
+            }
+
+            for ( var i = this._subfields.length - 1; i >= 0; i-- ) {
+                if ( i == 0 && _kind( sf[0] ) < _kind( this._subfields[i][0] ) ) {
+                    this._subfields.splice( 0, 0, sf );
+                    return true;
+                } else if ( _kind( this._subfields[i][0] ) <= _kind( sf[0] )  ) {
+                    this._subfields.splice( i + 1, 0, sf );
+                    return true;
+                }
+            }
+
+            this._subfields.push(sf);
+            return true;
+        },
+
+        subfield: function(code, val) {
             var sf = '';
-            for(var i = 0; i<subfields.length; i++) {
-                if( subfields[i].code == code ) {
-                    sf = subfields[i];
+            for(var i = 0; i<this._subfields.length; i++) {
+                if( this._subfields[i][0] == code ) {
+                    sf = this._subfields[i];
                     if( val != null ) {
-                        sf.value = val;
+                        sf[1] = val;
                     }
-                    return sf;
+                    return sf[1];
                 }
             }
             return false;
-        };
+        },
 
-        this._XML = function() {
+        XML: function() {
             var marcxml = Sarissa.getDomDocument('', '');
             // decide if it's controlfield of datafield
-            if( tagnumber == '000') {
+            if( this._tagnumber == '000') {
                 var leader = marcxml.createElement('leader');
-                var lv = marcxml.createTextNode( subfields[0].value );
+                var lv = marcxml.createTextNode( this._subfields[0][1] );
                 leader.appendChild(lv);
                 marcxml.appendChild(leader);
                 return leader;
             }
-            else if( tagnumber < '010' ) {
+            else if( this._tagnumber < '010' ) {
                 var cf = marcxml.createElement('controlfield');
-                cf.setAttribute('tag', tagnumber);
-                var text = marcxml.createTextNode( subfields[0].value );
+                cf.setAttribute('tag', this._tagnumber);
+                var text = marcxml.createTextNode( this._subfields[0][1] );
                 cf.appendChild(text);
                 return cf;
             }
@@ -209,88 +227,25 @@ define( function() {
             else {
                 var df = marcxml.createElement('datafield');
                 var tagAttr = marcxml.createAttribute('tag');
-                tagAttr.nodeValue = tagnumber;
+                tagAttr.nodeValue = this._tagnumber;
                 df.setAttributeNode(tagAttr);
-                df.setAttribute('ind1', indicators[0]);
-                df.setAttribute('ind2', indicators[1]);
-                for( var i = 0; i< subfields.length; i++) {
+                df.setAttribute('ind1', this._indicators[0]);
+                df.setAttribute('ind2', this._indicators[1]);
+                for( var i = 0; i< this._subfields.length; i++) {
                     var sf = marcxml.createElement('subfield');
-                    sf.setAttribute('code', subfields[i].code);
-                    var text = marcxml.createTextNode( subfields[i].value );
+                    sf.setAttribute('code', this._subfields[i][0] );
+                    var text = marcxml.createTextNode( this._subfields[i][1] );
                     sf.appendChild(text);
                     df.appendChild(sf);
                 }
                 return df;
             }
-        };
+        },
 
-        this._XMLString = function() {
+        XMLString: function() {
             return xslTransform.serialize( this.XML() );
-        };
-    }
-
-    MARC.Field.prototype.XML = function() {
-        return this._XML();
-    };
-
-    MARC.Field.prototype.XMLString = function() {
-        return this._XMLString();
-    };
-
-    MARC.Field.prototype.subfields = function() {
-        return this._subfields();
-    };
-
-    MARC.Field.prototype.subfield = function(code, val) {
-        return this._subfield(code, val);
-    };
-
-    MARC.Field.prototype.hasSubfield = function(code) {
-        return this._hasSubfield(code);
-    };
-
-    MARC.Field.prototype.removeSubfield = function(code) {
-        return this._removeSubfield(code);
-    }
-
-    MARC.Field.prototype.addSubfield = function(sf) {
-        return this._addSubfield(sf);
-    }
-
-    MARC.Field.prototype.tagnumber = function() {
-        return this._tagnumber();
-    };
-
-    MARC.Field.prototype.indicator = function(num, val) {
-        return this._indicator(num, val);
-    };
-
-    MARC.Field.prototype.indicators = function() {
-        return this._indicators();
-    };
-
-
-    MARC.Subfield = function(code, value) {
-        var that = this;
-        that.code = code;
-        that.value = value;
-    }
-
-    MARC.Subfield.prototype.setCode = function(code) {
-        this.code = code;
-    };
-
-    MARC.Subfield.prototype.getCode = function(code) {
-        return this.code;
-    };
-
-    MARC.Subfield.prototype.setValue = function(value) {
-        this.value = value;
-    };
-
-    MARC.Subfield.prototype.getValue = function(value) {
-        return this.value;
-    };
+        }
+    } );
 
     return MARC;
 } );

@@ -21,7 +21,7 @@ CodeMirror.defineMode( 'marc', function() {
             var match;
             if ( stream.sol() ) {
                 this.startState( state );
-                if ( match = stream.match( /[0-9]+/ ) ) {
+                if ( match = stream.match( /[0-9A-Za-z]+/ ) ) {
                     match = match[0];
                     if ( match.length != 3 ) {
                         if ( stream.eol() && match.length < 3 ) {
@@ -33,8 +33,8 @@ CodeMirror.defineMode( 'marc', function() {
                         }
                     }
 
-                    state.tagNumber = parseInt( match );
-                    if ( state.tagNumber < 10 ) {
+                    state.tagNumber = match;
+                    if ( state.tagNumber < '010' ) {
                         // Control field
                         state.subAllowed = false;
                     }
@@ -77,7 +77,7 @@ CodeMirror.defineMode( 'marc', function() {
 
                 if ( stream.eat( /[$|ǂ]/ ) ) {
                     var subfieldCode;
-                    if ( ( subfieldCode = stream.eat( /[a-z0-9]/ ) ) && ( stream.eol() || stream.eat( ' ' ) ) ) {
+                    if ( ( subfieldCode = stream.eat( /[a-z0-9%]/ ) ) && ( stream.eol() || stream.eat( ' ' ) ) ) {
                         state.subfieldCode = subfieldCode;
                         return 'subfieldcode';
                     }

@@ -1,0 +1,28 @@
+#!/usr/bin/perl
+
+use Modern::Perl '2009';
+
+use CGI;
+use C4::Context;
+use C4::Biblio;
+use C4::Service;
+
+my ( $query, $response ) = C4::Service->init( editcatalogue => 'edit_catalogue' );
+
+my ( $frameworkcode ) = C4::Service->require_params( 'frameworkcode' );
+
+my $tagslib = GetMarcStructure( 1, $frameworkcode );
+
+my @tags;
+
+foreach my $tag ( sort keys %$tagslib ) {
+    my $taglib = $tagslib->{$tag};
+    my $taginfo = { map { $_, $taglib->{$_} } grep { length $_ > 1 } keys %$taglib };
+    $taginfo->{subfields} = [ map { [ $_, $taglib->{$_} ] } grep { length $_ == 1 } sort keys %$taglib ];
+
+    push @tags, [ $tag, $taginfo ];
+}
+
+$response->param( framework => \@tags );
+
+C4::Service->return_success( $response );
