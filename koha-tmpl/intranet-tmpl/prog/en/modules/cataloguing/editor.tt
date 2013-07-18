@@ -29,7 +29,15 @@
 
 <div id="yui-main"><div class="yui-b">
 
-<div id="editor"></div>
+<div id="editor">
+    [%# CodeMirror instance will be inserted here %]
+    <div id="statusbar">
+        <div id="status-tag-info">
+        </div>
+        <div id="status-subfield-info">
+        </div>
+    </div>
+</div>
 
 </div></div>
 
@@ -75,8 +83,8 @@ require( [ 'koha-backend', 'text-marc', 'marc-record' ], function( KohaBackend, 
 
     var backends = {
         'new': {
-            record_label: 'New record',
-            label: 'New record',
+            record_label: _("New record"),
+            label: _("New record"),
             get: function( id, display_cb ) {
                 record = new MARC.Record();
                 KohaBackend.FillRecord( '', record );
@@ -85,8 +93,8 @@ require( [ 'koha-backend', 'text-marc', 'marc-record' ], function( KohaBackend, 
             },
         },
         'new-full': {
-            record_label: 'New full record',
-            label: 'New record',
+            record_label: _("New full record"),
+            label: _("New record"),
             get: function( id, display_cb ) {
                 record = new MARC.Record();
                 KohaBackend.FillRecord( '', record, true );
@@ -94,13 +102,13 @@ require( [ 'koha-backend', 'text-marc', 'marc-record' ], function( KohaBackend, 
                 display_cb( record );
             },
         },
-        'koha': {
-            record_label: 'New record',
-            label: 'New record',
+        'catalog': {
+            record_label: _("Catalog record #{ID}"),
+            label: _("Catalog"),
             get: function( id, display_cb ) {
-                record = new MARC.Record();
+                if ( !id ) return false;
 
-                KohaBackend.FillRecord( '', record );
+                KohaBackend.GetRecord( id, display_cb );
             },
         }
     };
@@ -113,7 +121,7 @@ require( [ 'koha-backend', 'text-marc', 'marc-record' ], function( KohaBackend, 
         $( '#record-info-' + name ).show().find('span:eq(1)').text(value);
     }
 
-    function openRecord( recid, editor ) {
+    function openRecord( recid, editor, callback ) {
         var parts = recid.split(':');
         if ( parts.length != 2 ) return false;;
 
@@ -124,6 +132,8 @@ require( [ 'koha-backend', 'text-marc', 'marc-record' ], function( KohaBackend, 
             updateRecordInfo( 'source', backends[ parts[0] ].record_label.replace( '{ID}', parts[1] ) );
 
             editor.setValue( TextMARC.RecordToText(record) );
+
+            if (callback) callback(record);
         } );
 
         return true;
@@ -131,7 +141,7 @@ require( [ 'koha-backend', 'text-marc', 'marc-record' ], function( KohaBackend, 
 
     $(document).ready( function() {
         var editor = CodeMirror(
-            $('#editor')[0],
+            function (elt) { $('#editor').prepend(elt) },
             {
                 extraKeys: editorKeys,
                 lineWrapping: true,
@@ -140,21 +150,52 @@ require( [ 'koha-backend', 'text-marc', 'marc-record' ], function( KohaBackend, 
         );
 
         editor.on( 'cursorActivity', function( editor ) {
-            //var token = editor.getTokenAt( editor.getCursor() );
-        } );
+            var pos = editor.getCursor();
+            if ( pos.ch == 0 ) pos.ch++;
 
-        if ( !document.location.hash || !openRecord( document.location.hash.slice(1), editor ) ) {
-            openRecord( 'new:', editor );
-        }
+            var state = editor.getTokenAt( pos ).state;
+            $('#status-tag-info').empty();
+            $('#status-subfield-info').empty();
+
+            if ( !state.tagNumber ) return; // No tag at all on this line
+
+            var taginfo = KohaBackend.GetTagInfo( '', state.tagNumber );
+            $('#status-tag-info').html( '<strong>' + state.tagNumber + ':</strong> ' );
+
+            if ( taginfo ) {
+                $('#status-tag-info').append( taginfo.lib );
+
+                if ( !state.subfieldCode ) return; // No current subfield
+
+                var subfieldinfo = taginfo.subfields[state.subfieldCode];
+                $('#status-subfield-info').html( '<strong>$' + state.subfieldCode + ':</strong> ' );
+
+                if ( subfieldinfo ) {
+                    $('#status-subfield-info').append( subfieldinfo.lib );
+                } else {
+                    $('#status-subfield-info').append( '<em>' + _("Unknown subfield") + '</em>' );
+                }
+            } else {
+                $('#status-tag-info').append( '<em>' + _("Unknown tag") + '</em>' );
+            }
+        } );
 
         var resizeTimer = null;
         $( window ).resize( function() {
             if ( resizeTimer == null ) resizeTimer = setTimeout( function() {
                 resizeTimer = null;
-            }, 100);
-        } );
 
-        $("#loading").hide();
+                var pos = $('#editor .CodeMirror').position();
+                $('#editor .CodeMirror').height( $(window).height() - pos.top - 24 );
+            }, 100);
+        } ).resize();
+
+        function finish_cb() {
+            $("#loading").hide();
+        }
+        if ( !document.location.hash || !openRecord( document.location.hash.slice(1), editor, finish_cb ) ) {
+            openRecord( 'new:', editor, finish_cb );
+        }
     } );
 } )();
 

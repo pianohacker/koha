@@ -115,14 +115,15 @@ define( function() {
          * Truncates this record, and loads in the data from the given MARCXML
          * document.
          */
-        loadMarcXml: function(xmldoc) {
+        loadMARCXML: function(xmldoc) {
+            var record = this;
             this._fieldlist.length = 0;
             var leader = $('leader', xmldoc).text();
-            this._fieldlist.push( new MARC.Field('000', '', '', [ '@', leader ]) );
+            this._fieldlist.push( new MARC.Field('000', '', '', [ [ '@', leader ] ]) );
             $('controlfield', xmldoc).each( function(i) {
                 val = $(this).text();
                 tagnum = $(this).attr('tag');
-                this._fieldlist.push( new MARC.Field(tagnum, '', '', [ '@', val ]) );
+                record._fieldlist.push( new MARC.Field(tagnum, '', '', [ [ '@', val ] ]) );
             });
             $('datafield', xmldoc).each(function(i) {
                 var value = $(this).text();
@@ -135,7 +136,7 @@ define( function() {
                     var sfcode = $(this).attr('code');
                     subfields.push( [ sfcode, sfval ] );
                 });
-                this._fieldlist.push( new MARC.Field(tagnum, ind1, ind2, subfields) );
+                record._fieldlist.push( new MARC.Field(tagnum, ind1, ind2, subfields) );
             });
         }
     } );

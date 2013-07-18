@@ -23,6 +23,26 @@ define( [ 'marc-record' ], function( MARC ) {
         SetDefaultFramework: function( frameworkinfo ) {
             _importFramework( '', frameworkinfo );
         },
+
+        GetTagInfo: function( frameworkcode, tagnumber ) {
+            if ( !_framework_mappings[frameworkcode] ) return undefined;
+            return _framework_mappings[frameworkcode][tagnumber];
+        },
+
+        GetRecord: function( id, callback ) {
+            $.get(
+                '/cgi-bin/koha/svc/bib/' + id
+            ).done( function( data ) {
+                var record = new MARC.Record();
+                record.loadMARCXML(data);
+                console.log(record);
+                callback(record);
+            } ).fail( function( data ) {
+                alert('Record load failed.');
+                window.location.reload(true);
+            } );
+        },
+
         FillRecord: function( frameworkcode, record, allTags ) {
             $.each( _frameworks[frameworkcode], function( _, tag ) {
                 var tagnum = tag[0], taginfo = tag[1];

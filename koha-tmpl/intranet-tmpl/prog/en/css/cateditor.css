@@ -9,6 +9,7 @@
     width: 100%;
     z-index: 1000;
 }
+
 #loading div {
     background : transparent url(../../img/loading.gif) top left no-repeat;
     font-size : 175%;
@@ -24,6 +25,7 @@
 
 #editor .cm-tagnumber {
     color: #080;
+    font-weight: bold;
 }
 
 #editor .cm-indicator {
@@ -31,10 +33,36 @@
 }
 
 #editor .cm-subfieldcode {
-    color: #448;
+    background-color: #F4F4F4;
+    color: #383838;
+    -moz-border-radius: 3px 8px 8px 3px;
+    border-radius: 3px 8px 8px 3px;
     font-weight: bold;
 }
 
+#statusbar {
+    background-color: #F4F8F9;
+    border: solid 2px #b9d8d9;
+    border-bottom-style: none;
+    border-radius: 6px 6px 0 0;
+    height: 18px;
+    overflow: auto;
+    padding: 4px;
+    padding-bottom: 0;
+}
+
+#statusbar #status-tag-info, #statusbar #status-subfield-info {
+    float: left;
+    overflow: hidden;
+    padding-right: 2%;
+    width: 48%;
+}
+
 #record-info .label {
-    width: 4em;
+    float: none;
+}
+
+#record-info .label + span {
+    display: block;
+    padding-left: 1em;
 }

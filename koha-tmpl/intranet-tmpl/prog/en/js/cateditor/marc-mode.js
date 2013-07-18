@@ -73,11 +73,11 @@ CodeMirror.defineMode( 'marc', function() {
             }
 
             if ( state.subAllowed ) {
-                if ( stream.match( /[^$|ǂ]+/ ) ) return;
+                if ( stream.match( /[^$|ǂ‡]+/ ) ) return;
 
-                if ( stream.eat( /[$|ǂ]/ ) ) {
+                if ( stream.eat( /[$|ǂ‡]/ ) ) {
                     var subfieldCode;
-                    if ( ( subfieldCode = stream.eat( /[a-z0-9%]/ ) ) && ( stream.eol() || stream.eat( ' ' ) ) ) {
+                    if ( ( subfieldCode = stream.eat( /[a-z0-9%]/ ) ) && stream.eat( ' ' ) ) {
                         state.subfieldCode = subfieldCode;
                         return 'subfieldcode';
                     }
