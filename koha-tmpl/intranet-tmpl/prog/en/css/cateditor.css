@@ -34,3 +34,7 @@
     color: #448;
     font-weight: bold;
 }
+
+#record-info .label {
+    width: 4em;
+}

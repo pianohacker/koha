@@ -23,11 +23,11 @@ define( [ 'marc-record' ], function( MARC ) {
         SetDefaultFramework: function( frameworkinfo ) {
             _importFramework( '', frameworkinfo );
         },
-        FillRecord: function( frameworkcode, record ) {
+        FillRecord: function( frameworkcode, record, allTags ) {
             $.each( _frameworks[frameworkcode], function( _, tag ) {
                 var tagnum = tag[0], taginfo = tag[1];
 
-                if ( !taginfo.mandatory ) return;
+                if ( taginfo.mandatory != "1" && !allTags ) return;
 
                 var fields = record.fields(tagnum);
 
@@ -45,7 +45,7 @@ define( [ 'marc-record' ], function( MARC ) {
                 $.each( taginfo.subfields, function( _, subfield ) {
                     var subfieldcode = subfield[0], subfieldinfo = subfield[1];
 
-                    if ( !subfieldinfo.mandatory ) return;
+                    if ( subfieldinfo.mandatory != "1" && !allTags ) return;
 
                     $.each( fields, function( _, field ) {
                         if ( !field.hasSubfield(subfieldcode) ) field.addSubfieldGrouped( [ subfieldcode, '' ] );

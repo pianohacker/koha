@@ -34,7 +34,18 @@
 </div></div>
 
 <div class="yui-b">
-Editing sidebar
+<div id="record-info" class="rows">
+<ul>
+    <li id="record-info-source">
+        <span class="label">Source:</span>
+        <span></span>
+    </li>
+    <li id="record-info-save-to" style="display:none">
+        <span class="label">Saved to:</span>
+        <span></span>
+    </li>
+</ul>
+</div>
 </div>
 
 </div>
@@ -47,19 +58,77 @@ Editing sidebar
 <script src="/intranet-tmpl/lib/require.js"></script>
 <script>
 
-var editorKeys = {
-    Enter: function( editor ) {
-        var cursor = editor.getCursor();
-        editor.replaceRange( '\n', { line: cursor.line } );
-        editor.setCursor( { line: cursor.line + 1, column: 0 } );
-    }
-};
-
 require.config( {
     baseUrl: '[% themelang %]/js/cateditor/'
 } );
 
 require( [ 'koha-backend', 'text-marc', 'marc-record' ], function( KohaBackend, TextMARC, MARC ) {
+    KohaBackend.SetDefaultFramework( _preloadDefaultFramework.framework );
+
+    var editorKeys = {
+        Enter: function( editor ) {
+            var cursor = editor.getCursor();
+            editor.replaceRange( '\n', { line: cursor.line } );
+            editor.setCursor( { line: cursor.line + 1, column: 0 } );
+        }
+    };
+
+    var backends = {
+        'new': {
+            record_label: 'New record',
+            label: 'New record',
+            get: function( id, display_cb ) {
+                record = new MARC.Record();
+                KohaBackend.FillRecord( '', record );
+
+                display_cb( record );
+            },
+        },
+        'new-full': {
+            record_label: 'New full record',
+            label: 'New record',
+            get: function( id, display_cb ) {
+                record = new MARC.Record();
+                KohaBackend.FillRecord( '', record, true );
+
+                display_cb( record );
+            },
+        },
+        'koha': {
+            record_label: 'New record',
+            label: 'New record',
+            get: function( id, display_cb ) {
+                record = new MARC.Record();
+
+                KohaBackend.FillRecord( '', record );
+            },
+        }
+    };
+
+    function clearRecordInfo( name, value ) {
+        $( '#record-info li' ).hide().find('span:eq(1)').text('');
+    }
+
+    function updateRecordInfo( name, value ) {
+        $( '#record-info-' + name ).show().find('span:eq(1)').text(value);
+    }
+
+    function openRecord( recid, editor ) {
+        var parts = recid.split(':');
+        if ( parts.length != 2 ) return false;;
+
+        if ( !backends[ parts[0] ] || !backends[ parts[0] ].get ) return false;
+
+        clearRecordInfo();
+        backends[ parts[0] ].get( parts[1], function( record ) {
+            updateRecordInfo( 'source', backends[ parts[0] ].record_label.replace( '{ID}', parts[1] ) );
+
+            editor.setValue( TextMARC.RecordToText(record) );
+        } );
+
+        return true;
+    }
+
     $(document).ready( function() {
         var editor = CodeMirror(
             $('#editor')[0],
@@ -70,15 +139,19 @@ require( [ 'koha-backend', 'text-marc', 'marc-record' ], function( KohaBackend, 
             }
         );
 
-        KohaBackend.SetDefaultFramework( _preloadDefaultFramework.framework );
-
-        record = new MARC.Record();
-        KohaBackend.FillRecord( '', record );
-        console.log( record );
-        editor.setValue( TextMARC.RecordToText( record ) );
-
         editor.on( 'cursorActivity', function( editor ) {
             //var token = editor.getTokenAt( editor.getCursor() );
+        } );
+
+        if ( !document.location.hash || !openRecord( document.location.hash.slice(1), editor ) ) {
+            openRecord( 'new:', editor );
+        }
+
+        var resizeTimer = null;
+        $( window ).resize( function() {
+            if ( resizeTimer == null ) resizeTimer = setTimeout( function() {
+                resizeTimer = null;
+            }, 100);
         } );
 
         $("#loading").hide();
