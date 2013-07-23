@@ -90,36 +90,53 @@ require( [ 'koha-backend', 'text-marc', 'marc-record' ], function( KohaBackend, 
 
         if ( !info.tagNumber ) return;
 
-        var marks = editor.findMarksAt( { line: line, ch: 4 } );
+        var subfields = [];
 
-        if ( marks.length ) {
-            if ( marks[0].tag == info.tagNumber ) {
-                return;
-            } else {
-                marks[0].clear();
+        var end = editor.getLine( line ).length;
+        if ( info.tagNumber < '010' ) {
+            if ( end >= 4 ) subfields.push( { code: '@', from: 4, to: end } );
+        } else {
+            for ( var i = 0; i < info.subfields.length; i++ ) {
+                var next = ( i < info.subfields.length - 1 ) ? info.subfields[i + 1].ch : end;
+                subfields.push( { code: info.subfields[i].code, from: info.subfields[i].ch + 3, to: next } );
             }
         }
 
-        if ( !editorWidgets[info.tagNumber] ) return;
+        $.each( subfields, function ( _, subfield ) {
+            var id = info.tagNumber + subfield.code;
+            var marks = editor.findMarksAt( { line: line, ch: subfield.from } );
 
-        var end = editor.getLine( line ).length;
-        if ( end < 4 ) return;
+            if ( marks.length ) {
+                if ( marks[0].id == id ) {
+                    return;
+                } else {
+                    marks[0].clear();
+                }
+            }
 
-        var widget = editorWidgets[info.tagNumber];
-        var node = widget.init();
+            if ( !editorWidgets[id] ) return;
 
-        var mark = editor.markText( { line: line, ch: 4 }, { line: line, ch: end }, {
-            inclusiveLeft: false,
-            inclusiveRight: false,
-            replacedWith: node,
+            if ( subfield.from == subfield.to ) {
+                editor.replaceRange( widget.makeTemplate ? widget.makeTemplate() : '<empty>', { line: line, ch: subfield.from } );
+                return; // We'll do the actual work when the change event is triggered again
+            }
+
+            var widget = editorWidgets[id];
+            var node = widget.init( editor.getRange( { line: line, ch: subfield.from }, { line: line, ch: subfield.to } ) );
+
+            var mark = editor.markText( { line: line, ch: subfield.from }, { line: line, ch: subfield.to }, {
+                collapsed: true,
+                inclusiveLeft: false,
+                inclusiveRight: false,
+                replacedWith: node,
+            } );
+
+            mark.id = id;
+            mark.isWidget = true;
+
+            if ( widget.postCreate ) widget.postCreate( node, mark );
         } );
-
-        mark.tag = info.tagNumber;
-        mark.isWidget = true;
-
-        if ( widget.postCreate ) widget.postCreate( node, mark );
     }
-
 
     function editorChange( editor, change ) {
         var updatedLines = {};
