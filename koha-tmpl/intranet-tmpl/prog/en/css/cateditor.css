@@ -40,6 +40,15 @@
     font-weight: bold;
 }
 
+#editor .subfield-widget {
+    color: #538200;
+    display: inline-block;
+    border: solid 2px #538200;
+    border-radius: 6px;
+    margin: 3px 0;
+    padding: 4px;
+}
+
 #statusbar {
     background-color: #F4F8F9;
     border: solid 2px #b9d8d9;

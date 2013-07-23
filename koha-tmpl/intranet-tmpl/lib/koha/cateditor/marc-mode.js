@@ -50,13 +50,22 @@ CodeMirror.defineMode( 'marc', function() {
                 return;
             }
 
+            if ( !state.subAllowed && stream.pos == 3 ) {
+                if ( stream.next() == ' ' ) {
+                    return 'reqspace';
+                } else {
+                    stream.skipToEnd();
+                    return 'error';
+                }
+            }
+
             if ( stream.pos < 8 && state.subAllowed ) {
                 switch ( stream.pos ) {
                     case 3:
                     case 5:
                     case 7:
                         if ( stream.next() == ' ' ) {
-                            return;
+                            return 'reqspace';
                         } else {
                             stream.skipToEnd();
                             return 'error';
@@ -73,7 +82,7 @@ CodeMirror.defineMode( 'marc', function() {
             }
 
             if ( state.subAllowed ) {
-                if ( stream.match( /[^$|ǂ‡]+/ ) ) return;
+                if ( stream.pos != 8 && stream.match( /[^$|ǂ‡]+/ ) ) return;
 
                 if ( stream.eat( /[$|ǂ‡]/ ) ) {
                     var subfieldCode;
@@ -81,6 +90,11 @@ CodeMirror.defineMode( 'marc', function() {
                         state.subfieldCode = subfieldCode;
                         return 'subfieldcode';
                     }
+                }
+
+                if ( stream.pos < 11 && ( !stream.eol() || stream.pos == 8 ) ) {
+                    stream.skipToEnd();
+                    return 'error';
                 }
             } else {
                 stream.skipToEnd();
