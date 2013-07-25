@@ -78,4 +78,12 @@
 </div>
 </div>
 
+<script>
+$(document).ready( function() {
+    if ( document.location.hash ) {
+        $( '#loginform' ).append( '<input name="auth_forwarded_hash" type="hidden" value="' + document.location.hash + '"/>' );
+    }
+} );
+</script>
+
 [% INCLUDE 'intranet-bottom.inc' %]

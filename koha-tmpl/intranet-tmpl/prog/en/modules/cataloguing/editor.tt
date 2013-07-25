@@ -53,12 +53,13 @@
         <span></span>
     </li>
 </ul>
-</div>
-</div>
 
 </div>
 </div>
 
-[% INCLUDE 'cateditor-ui.inc' %]
+</div>
+</div>
+
+[% PROCESS 'cateditor-ui.inc' %]
 
 [% INCLUDE 'intranet-bottom.inc' %]
