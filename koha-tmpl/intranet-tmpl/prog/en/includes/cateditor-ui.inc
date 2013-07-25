@@ -19,6 +19,34 @@ require.config( {
 require( [ 'koha-backend', 'text-marc', 'marc-record' ], function( KohaBackend, TextMARC, MARC ) {
     KohaBackend.SetDefaultFramework( _preloadDefault.framework );
 
+    var widgetBase = {
+        getFixed: function( start, end ) {
+            return this.text.substring( start, end );
+        },
+
+        setFixed: function( start, end, value ) {
+            this.text = this.text.substring( 0, start ) + this.padString( value.toString().substr( 0, end - start ), end - start ) + this.text.substring( end );
+        },
+
+        setText: function( text ) {
+            this.text = text;
+        },
+
+        padNum: function( number, length ) {
+            var result = number.toString();
+
+            while ( result.length < length ) result = '0' + result;
+
+            return result;
+        },
+
+        padString: function( result, length ) {
+            while ( result.length < length ) result = ' ' + result;
+
+            return result;
+        }
+    };
+
     // Editor helper functions
     var editorKeys = {
         Enter: function( editor ) {
@@ -82,7 +110,7 @@ require( [ 'koha-backend', 'text-marc', 'marc-record' ], function( KohaBackend, 
 
     function editorBeforeChange( editor, change ) {
         // FIXME: Should only cancel changes if this is a control field/subfield widget
-        if ( editor.findMarksAt(change.from).length && editor.findMarksAt(change.to).length && !change.text[0].match(/^[$|ǂ‡]$/) ) change.cancel();
+        if ( change.from.line == change.to.line && change.from.ch == change.to.ch && editor.findMarksAt(change.from).length && !change.text[0].match(/^[$|ǂ‡]$/) ) change.cancel();
     }
 
     function updateWidgets( editor, line ) {
@@ -94,11 +122,11 @@ require( [ 'koha-backend', 'text-marc', 'marc-record' ], function( KohaBackend, 
 
         var end = editor.getLine( line ).length;
         if ( info.tagNumber < '010' ) {
-            if ( end >= 4 ) subfields.push( { code: '@', from: 4, to: end } );
+            if ( end >= 4 ) subfields.push( { code: '@', preFrom: { line: line - 1 }, from: 4, to: end } );
         } else {
             for ( var i = 0; i < info.subfields.length; i++ ) {
                 var next = ( i < info.subfields.length - 1 ) ? info.subfields[i + 1].ch : end;
-                subfields.push( { code: info.subfields[i].code, from: info.subfields[i].ch + 3, to: next } );
+                subfields.push( { code: info.subfields[i].code, preFrom: { line: line, ch: info.subfields[i].ch }, from: info.subfields[i].ch + 3, to: next } );
             }
         }
 
@@ -115,26 +143,41 @@ require( [ 'koha-backend', 'text-marc', 'marc-record' ], function( KohaBackend, 
             }
 
             if ( !editorWidgets[id] ) return;
+            var fullBase = $.extend( Object.create( widgetBase ), editorWidgets[id] );
+            var widget = Object.create( fullBase );
 
             if ( subfield.from == subfield.to ) {
                 editor.replaceRange( widget.makeTemplate ? widget.makeTemplate() : '<empty>', { line: line, ch: subfield.from } );
                 return; // We'll do the actual work when the change event is triggered again
             }
 
-            var widget = editorWidgets[id];
-            var node = widget.init( editor.getRange( { line: line, ch: subfield.from }, { line: line, ch: subfield.to } ) );
+            var text = editor.getRange( { line: line, ch: subfield.from }, { line: line, ch: subfield.to } );
 
-            var mark = editor.markText( { line: line, ch: subfield.from }, { line: line, ch: subfield.to }, {
-                collapsed: true,
-                inclusiveLeft: false,
-                inclusiveRight: false,
-                replacedWith: node,
-            } );
+            widget.text = text;
+            var node = widget.init();
+
+            if ( node ) {
+                var mark = editor.markText( { line: line, ch: subfield.from }, { line: line, ch: subfield.to }, {
+                    inclusiveLeft: false,
+                    inclusiveRight: false,
+                    replacedWith: node,
+                } );
+            } else {
+                // Hidden field/subfield
+                var mark = editor.markText( subfield.preFrom, { line: line, ch: subfield.to }, {
+                    collapsed: true,
+                    inclusiveLeft: false,
+                    inclusiveRight: false,
+                } );
+            }
 
             mark.id = id;
-            mark.isWidget = true;
+            mark.widget = widget;
 
-            if ( widget.postCreate ) widget.postCreate( node, mark );
+            widget.node = node;
+            widget.mark = mark;
+
+            if ( widget.postCreate ) widget.postCreate();
         } );
     }
 

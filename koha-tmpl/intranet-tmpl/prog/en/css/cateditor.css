@@ -42,11 +42,19 @@
 
 #editor .subfield-widget {
     color: #538200;
-    display: inline-block;
     border: solid 2px #538200;
     border-radius: 6px;
     margin: 3px 0;
     padding: 4px;
+}
+
+#editor .fixed-widget {
+    font-family: monospace;
+    line-height: 2.75;
+}
+
+#editor .fixed-widget select {
+    width: 3em;
 }
 
 #statusbar {

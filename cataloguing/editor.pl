@@ -40,4 +40,7 @@ my ( $template, $loggedinuser, $cookie ) = get_template_and_user(
     }
 );
 
+# Needed information for cataloging plugins
+$template->{VARS}->{DefaultLanguageField008} = pack( 'A3', C4::Context->preference('DefaultLanguageField008') || 'eng' );
+
 output_html_with_http_headers $input, $cookie, $template->output;
