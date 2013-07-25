@@ -288,8 +288,12 @@ require( [ 'koha-backend', 'text-marc', 'marc-record' ], function( KohaBackend, 
         function finish_cb() {
             $("#loading").hide();
         }
-        var hash = "[% auth_forwarded_hash %]" || document.location.hash;
-        if ( !hash || !openRecord( hash.slice(1), editor, finish_cb ) ) {
+
+        if ( "[% auth_forwarded_hash %]" ) {
+            document.location.hash = "[% auth_forwarded_hash %]";
+        }
+
+        if ( !document.location.hash || !openRecord( document.location.hash.slice(1), editor, finish_cb ) ) {
             openRecord( 'new:', editor, finish_cb );
         }
     } );
