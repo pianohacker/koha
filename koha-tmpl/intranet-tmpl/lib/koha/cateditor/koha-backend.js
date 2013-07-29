@@ -2,6 +2,21 @@ define( [ 'marc-record' ], function( MARC ) {
     var _frameworks = {};
     var _framework_mappings = {};
 
+    function _fromXMLStruct( data ) {
+        result = {};
+
+        $(data).children().eq(0).children().each( function() {
+            var $contents = $(this).contents();
+            if ( $contents.length == 1 && $contents[0].nodeType == Node.TEXT_NODE ) {
+                result[ this.localName ] = $contents[0].data;
+            } else {
+                result[ this.localName ] = $contents.toArray();
+            }
+        } );
+
+        return result;
+    }
+
     function _importFramework( frameworkcode, frameworkinfo ) {
         _frameworks[frameworkcode] = frameworkinfo;
         _framework_mappings[frameworkcode] = {};
@@ -35,11 +50,37 @@ define( [ 'marc-record' ], function( MARC ) {
             ).done( function( data ) {
                 var record = new MARC.Record();
                 record.loadMARCXML(data);
-                console.log(record);
                 callback(record);
             } ).fail( function( data ) {
                 alert('Record load failed.');
-                window.location.reload(true);
+            } );
+        },
+
+        CreateRecord: function( record, callback ) {
+            console.log( record );
+            $.ajax( {
+                type: 'POST',
+                url: '/cgi-bin/koha/svc/new_bib',
+                data: record.toXML(),
+                contentType: 'text/xml'
+            } ).done( function( data ) {
+                callback( _fromXMLStruct( data ) );
+            } ).fail( function( data ) {
+                alert('Record save failed.');
+            } );
+        },
+
+        SaveRecord: function( id, record, callback ) {
+            console.log( record );
+            $.ajax( {
+                type: 'POST',
+                url: '/cgi-bin/koha/svc/bib/' + id,
+                data: record.toXML(),
+                contentType: 'text/xml'
+            } ).done( function( data ) {
+                callback( _fromXMLStruct( data ) );
+            } ).fail( function( data ) {
+                alert('Record save failed.');
             } );
         },
 

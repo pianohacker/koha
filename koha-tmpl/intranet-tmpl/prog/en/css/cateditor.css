@@ -54,7 +54,9 @@
 }
 
 #editor .fixed-widget select {
+    height: 1.5em;
     width: 3em;
+    vertical-align: middle;
 }
 
 #statusbar {

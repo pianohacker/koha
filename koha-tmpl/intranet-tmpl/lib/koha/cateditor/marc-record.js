@@ -6,6 +6,16 @@
 define( function() {
     var MARC = {};
 
+    var _escape_map = {
+        "<": "&lt;",
+        "&": "&amp;",
+        "\"": "&quot;"
+    };
+
+    function _escape(str) {
+        return str.replace( /[<&"]/, function (c) { return _escape_map[c] } );
+    }
+
     MARC.Record = function (fieldlist) {
         this._fieldlist = fieldlist || [];
     }
@@ -91,21 +101,10 @@ define( function() {
             return false;
         },
 
-        XML: function() {
-            // fixme this isn't working correctly: it's failing on trying to add xml fragment
-            // returned from fields[i].XML()
-            //var xml = Sarissa.getDomDocument("", "record");
-            //for(var i=0; i<fields.length; i++){
-            //	xml.appendChild( fields[i].XML() );
-            //}
-            //return xml;
-            return xslTransform.loadString( this._XMLString() );
-        },
-
-        XMLString: function() {
+        toXML: function() {
             var xml = '<record xmlns="http://www.loc.gov/MARC21/slim">';
             for(var i=0; i<this._fieldlist.length; i++){
-                xml += this._fieldlist[i].XMLString();
+                xml += this._fieldlist[i].toXML();
             }
             xml += '</record>';
             return xml;
@@ -234,44 +233,25 @@ define( function() {
             return false;
         },
 
-        XML: function() {
-            var marcxml = Sarissa.getDomDocument('', '');
+        toXML: function() {
             // decide if it's controlfield of datafield
             if( this._tagnumber == '000') {
-                var leader = marcxml.createElement('leader');
-                var lv = marcxml.createTextNode( this._subfields[0][1] );
-                leader.appendChild(lv);
-                marcxml.appendChild(leader);
-                return leader;
-            }
-            else if( this._tagnumber < '010' ) {
-                var cf = marcxml.createElement('controlfield');
-                cf.setAttribute('tag', this._tagnumber);
-                var text = marcxml.createTextNode( this._subfields[0][1] );
-                cf.appendChild(text);
-                return cf;
-            }
-            // datafield
-            else {
-                var df = marcxml.createElement('datafield');
-                var tagAttr = marcxml.createAttribute('tag');
-                tagAttr.nodeValue = this._tagnumber;
-                df.setAttributeNode(tagAttr);
-                df.setAttribute('ind1', this._indicators[0]);
-                df.setAttribute('ind2', this._indicators[1]);
+                return '<leader>' + _escape( this._subfields[0][1] ) + '</leader>';
+            } else if ( this._tagnumber < '010' ) {
+                return '<controlfield tag="' + this._tagnumber + '">' + _escape( this._subfields[0][1] ) + '</controlfield>';
+            } else {
+                var result = '<datafield tag="' + this._tagnumber + '"';
+                result += ' ind1="' + this._indicators[0] + '"';
+                result += ' ind2="' + this._indicators[1] + '">';
                 for( var i = 0; i< this._subfields.length; i++) {
-                    var sf = marcxml.createElement('subfield');
-                    sf.setAttribute('code', this._subfields[i][0] );
-                    var text = marcxml.createTextNode( this._subfields[i][1] );
-                    sf.appendChild(text);
-                    df.appendChild(sf);
+                    result += '<subfield code="' + this._subfields[i][0] + '">';
+                    result += _escape( this._subfields[i][1] );
+                    result += '</subfield>';
                 }
-                return df;
-            }
-        },
+                result += '</datafield>';
 
-        XMLString: function() {
-            return xslTransform.serialize( this.XML() );
+                return result;
+            }
         }
     } );
 

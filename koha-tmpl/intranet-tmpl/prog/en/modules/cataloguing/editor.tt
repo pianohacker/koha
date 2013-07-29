@@ -1,5 +1,5 @@
 [% INCLUDE 'doc-head-open.inc' %]
-<title>Koha &rsaquo; Cataloging &rsaquo; [% IF ( biblionumber ) %]Editing [% title |html %] (Record number [% biblionumber %])[% ELSE %]Add MARC record[% END %]</title>
+<title>Koha &rsaquo; Cataloging &rsaquo; Editor</title>
 [% INCLUDE 'doc-head-close.inc' %]
 <script type="text/javascript" src="[% themelang %]/lib/jquery/plugins/jquery.fixFloat.js"></script>
 <link type="text/css" rel="stylesheet" href="[% themelang %]/css/cateditor.css" />
@@ -21,15 +21,21 @@
 <div id="doc2" class="yui-t2">
 <div id="bd">
 
-<h1>
-[% IF ( biblionumber ) %]Editing <em>[% title |html %]</em> (Record number [% biblionumber %])
-[% ELSE %]Add MARC record [% IF (circborrowernumber) %]<em>(fast cataloging)</em>[% END %]
-[% END %]
-</h1>
+<h1 id="title">Cataloging editor</h1>
 
 <div id="yui-main"><div class="yui-b">
 
 <div id="editor">
+    <div id="toolbar" class="btn-toolbar">
+        <div class="btn-group">
+            <button class="btn btn-small" id="save-record"><i class="icon-hdd"></i> Save</button>
+            <button class="btn btn-small dropdown-toggle" data-toggle="dropdown">
+            <span class="caret"></span>
+            </button>
+            <ul class="dropdown-menu" id="save-dropdown">
+            </ul>
+        </div>
+    </div>
     [%# CodeMirror instance will be inserted here %]
     <div id="statusbar">
         <div id="status-tag-info">

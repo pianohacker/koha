@@ -19,7 +19,29 @@ require.config( {
 require( [ 'koha-backend', 'text-marc', 'marc-record' ], function( KohaBackend, TextMARC, MARC ) {
     KohaBackend.SetDefaultFramework( _preloadDefault.framework );
 
+    var state = {
+        backend: '',
+        record_id: undefined,
+        saving: false
+    };
+
     var widgetBase = {
+        // Marker utils
+        clearToText: function() {
+            var range = this.mark.find();
+            this.mark.doc.replaceRange( this.text, range.from, range.to, 'marcAware' );
+        },
+
+        // Fixed field utils
+        bindFixed: function( sel, start, end ) {
+            var $node = $( this.node ).find( sel );
+            $node.val( this.getFixed( start, end ) );
+
+            $node.change( $.proxy( function() {
+                this.setFixed( start, end, $node.val() );
+            }, this ) );
+        },
+
         getFixed: function( start, end ) {
             return this.text.substring( start, end );
         },
@@ -30,6 +52,16 @@ require( [ 'koha-backend', 'text-marc', 'marc-record' ], function( KohaBackend, 
 
         setText: function( text ) {
             this.text = text;
+        },
+
+        // Template utils
+        insertTemplate: function( sel ) {
+            var wsOnly = /^\s*$/;
+            $( sel ).contents().clone().each( function() {
+                if ( this.nodeType == Node.TEXT_NODE ) {
+                    this.data = this.data.replace( /^\s+|\s+$/g, '' );
+                }
+            } ).appendTo( this.node );
         },
 
         padNum: function( number, length ) {
@@ -47,76 +79,26 @@ require( [ 'koha-backend', 'text-marc', 'marc-record' ], function( KohaBackend, 
         }
     };
 
-    // Editor helper functions
-    var editorKeys = {
-        Enter: function( editor ) {
-            var cursor = editor.getCursor();
-            editor.replaceRange( '\n', { line: cursor.line } );
-            editor.setCursor( { line: cursor.line + 1, column: 0 } );
-        }
-    };
+    function makeHiddenWidgets( frameworkCode ) {
 
-    function getLineInfo( editor, pos ) {
-        var contents = editor.getLine( pos.line );
-        var tagNumber = contents.match( /^[A-Za-z0-9]{3}/ );
-
-        if ( !tagNumber ) return {}; // No tag at all on this line
-        tagNumber = tagNumber[0];
-
-        if ( tagNumber < '010' ) return { tagNumber: tagNumber }; // No current subfield
-
-        var matcher = /[$|ǂ‡]([a-z0-9%]) /g;
-        var match;
-
-        var subfields = [];
-        var currentSubfield;
-
-        while ( ( match = matcher.exec(contents) ) ) {
-            subfields.push( { code: match[1], ch: match.index } );
-            if ( match.index < pos.ch ) currentSubfield = match[1];
-        }
-
-        return { tagNumber: tagNumber, subfields: subfields, currentSubfield: currentSubfield };
-    }
-
-    function editorCursorActivity( editor ) {
-        $('#status-tag-info').empty();
-        $('#status-subfield-info').empty();
-
-        var info = getLineInfo( editor, editor.getCursor() );
-
-        if ( !info.tagNumber ) return; // No tag at all on this line
-
-        var taginfo = KohaBackend.GetTagInfo( '', info.tagNumber );
-        $('#status-tag-info').html( '<strong>' + info.tagNumber + ':</strong> ' );
-
-        if ( taginfo ) {
-            $('#status-tag-info').append( taginfo.lib );
-
-            if ( !info.currentSubfield ) return; // No current subfield
-
-            var subfieldinfo = taginfo.subfields[info.currentSubfield];
-            $('#status-subfield-info').html( '<strong>$' + info.currentSubfield + ':</strong> ' );
-
-            if ( subfieldinfo ) {
-                $('#status-subfield-info').append( subfieldinfo.lib );
-            } else {
-                $('#status-subfield-info').append( '<em>' + _("Unknown subfield") + '</em>' );
-            }
-        } else {
-            $('#status-tag-info').append( '<em>' + _("Unknown tag") + '</em>' );
-        }
-    }
-
-    function editorBeforeChange( editor, change ) {
-        // FIXME: Should only cancel changes if this is a control field/subfield widget
-        if ( change.from.line == change.to.line && change.from.ch == change.to.ch && editor.findMarksAt(change.from).length && !change.text[0].match(/^[$|ǂ‡]$/) ) change.cancel();
     }
 
     function updateWidgets( editor, line ) {
         var info = getLineInfo( editor, { line: line, ch: 0 } );
 
-        if ( !info.tagNumber ) return;
+        if ( !info.tagNumber ) {
+            var lineh = editor.getLineHandle( line );
+
+            if ( lineh.markedSpans ) {
+                $.each( lineh.markedSpans, function ( _, span ) {
+                    var mark = span.marker;
+                    if ( !mark.widget ) return;
+
+                    mark.widget.clearToText();
+                } );
+            }
+            return;
+        }
 
         var subfields = [];
 
@@ -138,7 +120,7 @@ require( [ 'koha-backend', 'text-marc', 'marc-record' ], function( KohaBackend, 
                 if ( marks[0].id == id ) {
                     return;
                 } else {
-                    marks[0].clear();
+                    marks[0].widget.clearToText();
                 }
             }
 
@@ -169,6 +151,7 @@ require( [ 'koha-backend', 'text-marc', 'marc-record' ], function( KohaBackend, 
                     inclusiveLeft: false,
                     inclusiveRight: false,
                 } );
+                widget.text = editor.getRange( subfield.preFrom, { line: line, ch: subfield.to } );
             }
 
             mark.id = id;
@@ -181,7 +164,85 @@ require( [ 'koha-backend', 'text-marc', 'marc-record' ], function( KohaBackend, 
         } );
     }
 
+    // Editor helper functions
+    var editorKeys = {
+        Enter: function( editor ) {
+            var cursor = editor.getCursor();
+            editor.replaceRange( '\n', { line: cursor.line }, null, 'marcAware' );
+            editor.setCursor( { line: cursor.line + 1, column: 0 } );
+        }
+    };
+
+    function getLineInfo( editor, pos ) {
+        var contents = editor.getLine( pos.line );
+        var tagNumber = contents.match( /^([A-Za-z0-9]{3}) / );
+
+        if ( !tagNumber ) return {}; // No tag at all on this line
+        tagNumber = tagNumber[1];
+
+        if ( tagNumber < '010' ) return { tagNumber: tagNumber }; // No current subfield
+
+        var matcher = /[$|ǂ‡]([a-z0-9%]) /g;
+        var match;
+
+        var subfields = [];
+        var currentSubfield;
+
+        while ( ( match = matcher.exec(contents) ) ) {
+            subfields.push( { code: match[1], ch: match.index } );
+            if ( match.index < pos.ch ) currentSubfield = match[1];
+        }
+
+        return { tagNumber: tagNumber, subfields: subfields, currentSubfield: currentSubfield };
+    }
+
+    function editorCursorActivity( editor ) {
+        if ( state.saving ) return;
+
+        $('#status-tag-info').empty();
+        $('#status-subfield-info').empty();
+
+        var info = getLineInfo( editor, editor.getCursor() );
+
+        if ( !info.tagNumber ) return; // No tag at all on this line
+
+        var taginfo = KohaBackend.GetTagInfo( '', info.tagNumber );
+        $('#status-tag-info').html( '<strong>' + info.tagNumber + ':</strong> ' );
+
+        if ( taginfo ) {
+            $('#status-tag-info').append( taginfo.lib );
+
+            if ( !info.currentSubfield ) return; // No current subfield
+
+            var subfieldinfo = taginfo.subfields[info.currentSubfield];
+            $('#status-subfield-info').html( '<strong>$' + info.currentSubfield + ':</strong> ' );
+
+            if ( subfieldinfo ) {
+                $('#status-subfield-info').append( subfieldinfo.lib );
+            } else {
+                $('#status-subfield-info').append( '<em>' + _("Unknown subfield") + '</em>' );
+            }
+        } else {
+            $('#status-tag-info').append( '<em>' + _("Unknown tag") + '</em>' );
+        }
+    }
+
+    function editorBeforeChange( editor, change ) {
+        if ( state.saving || change.origin == 'marcAware' ) return;
+
+        // FIXME: Should only cancel changes if this is a control field/subfield widget
+        if ( change.from.line !== change.to.line || Math.abs( change.from.ch - change.to.ch ) > 1 ) return; // Not single-char change
+
+        if ( change.from.ch == change.to.ch - 1 && editor.findMarksAt( { line: change.from.line, ch: change.from.ch + 1 } ).length ) {
+            change.cancel();
+        } else if ( change.from.ch == change.to.ch && editor.findMarksAt(change.from).length && !change.text[0].match(/^[$|ǂ‡]$/) ) {
+            change.cancel();
+        }
+    }
+
     function editorChange( editor, change ) {
+        if ( state.saving ) return;
+
         var updatedLines = {};
         do {
             var startLine = change.from.line;
@@ -203,8 +264,7 @@ require( [ 'koha-backend', 'text-marc', 'marc-record' ], function( KohaBackend, 
     // Record loading
     var backends = {
        'new': {
-            record_label: _("New record"),
-            label: _("New record"),
+            record_label: _("new record"),
             get: function( id, display_cb ) {
                 record = new MARC.Record();
                 KohaBackend.FillRecord( '', record );
@@ -213,8 +273,7 @@ require( [ 'koha-backend', 'text-marc', 'marc-record' ], function( KohaBackend, 
             },
         },
         'new-full': {
-            record_label: _("New full record"),
-            label: _("New record"),
+            record_label: _("new full record"),
             get: function( id, display_cb ) {
                 record = new MARC.Record();
                 KohaBackend.FillRecord( '', record, true );
@@ -223,13 +282,24 @@ require( [ 'koha-backend', 'text-marc', 'marc-record' ], function( KohaBackend, 
             },
         },
         'catalog': {
-            record_label: _("Catalog record #{ID}"),
-            label: _("Catalog"),
+            record_label: _("catalog record #{ID}"),
+            save_label: _("To catalog"),
             get: function( id, display_cb ) {
                 if ( !id ) return false;
 
                 KohaBackend.GetRecord( id, display_cb );
             },
+            save: function( id, record, done ) {
+                function finish_cb( data ) {
+                    done( { error: data.error, newRecord: data.marcxml, newId: data.biblionumber && [ 'catalog', data.biblionumber ] } );
+                }
+
+                if ( id ) {
+                    KohaBackend.SaveRecord( id, record, finish_cb );
+                } else {
+                    KohaBackend.CreateRecord( record, finish_cb );
+                }
+            }
         }
     };
 
@@ -241,19 +311,62 @@ require( [ 'koha-backend', 'text-marc', 'marc-record' ], function( KohaBackend, 
         $( '#record-info-' + name ).show().find('span:eq(1)').text(value);
     }
 
+    function setSource(parts) {
+        state.backend = parts[0];
+        state.record_id = parts[1];
+
+        document.location.hash = '#' + parts[0] + ':' + parts[1];
+        $( '#title' ).text( _("Editing ") + backends[ parts[0] ].record_label.replace( '{ID}', parts[1] ) );
+        $( 'title', document.head ).html( _("Koha &rsaquo; Cataloging &rsaquo; Editing ") + backends[ parts[0] ].record_label.replace( '{ID}', parts[1] ) );
+    }
+
+    function displayRecord( editor, record ) {
+        editor.setValue( TextMARC.RecordToText(record) );
+
+        for ( var line = 0; line < editor.lineCount(); line++ ) updateWidgets( editor, line );
+    }
+
+    function saveRecord( recid, editor, callback ) {
+        var parts = recid.split(':');
+        if ( parts.length != 2 ) return false;
+
+        if ( !backends[ parts[0] ] || !backends[ parts[0] ].save ) return false;
+
+        state.saving = true;
+        $.each( editor.getAllMarks(), function( _, mark ) {
+            if ( mark.widget ) mark.widget.clearToText();
+        } );
+        var record = TextMARC.TextToRecord( editor.getValue() );
+        state.saving = false;
+        for ( var line = 0; line < editor.lineCount(); line++ ) updateWidgets( editor, line );
+        if ( !record ) return;
+
+        backends[ parts[0] ].save( parts[1], record, function(data) {
+            if (data.newRecord) {
+                var record = new MARC.Record();
+                record.loadMARCXML(data.newRecord);
+                displayRecord( editor, record );
+            }
+
+            if (data.newId) {
+                setSource(data.newId);
+            }
+
+            if (callback) callback();
+        } );
+    }
+
     function openRecord( recid, editor, callback ) {
         var parts = recid.split(':');
-        if ( parts.length != 2 ) return false;;
+        if ( parts.length != 2 ) return false;
 
         if ( !backends[ parts[0] ] || !backends[ parts[0] ].get ) return false;
 
         clearRecordInfo();
         backends[ parts[0] ].get( parts[1], function( record ) {
-            updateRecordInfo( 'source', backends[ parts[0] ].record_label.replace( '{ID}', parts[1] ) );
+            setSource( parts );
 
-            editor.setValue( TextMARC.RecordToText(record) );
-
-            for ( var line = 0; line < editor.lineCount(); line++ ) updateWidgets( editor, line );
+            displayRecord( editor, record );
 
             if (callback) callback(record);
         } );
@@ -263,13 +376,15 @@ require( [ 'koha-backend', 'text-marc', 'marc-record' ], function( KohaBackend, 
 
     $(document).ready( function() {
         var editor = CodeMirror(
-            function (elt) { $('#editor').prepend(elt) },
+            function (elt) { $(elt).insertAfter('#toolbar') },
             {
                 extraKeys: editorKeys,
                 lineWrapping: true,
                 mode: 'marc'
             }
         );
+
+        makeHiddenWidgets('');
 
         editor.on( 'beforeChange', editorBeforeChange );
         editor.on( 'change', editorChange );
@@ -284,6 +399,26 @@ require( [ 'koha-backend', 'text-marc', 'marc-record' ], function( KohaBackend, 
                 $('#editor .CodeMirror').height( $(window).height() - pos.top - 24 );
             }, 100);
         } ).resize();
+
+        var saveable_backends = [];
+        $.each( backends, function( id, backend ) {
+            if ( backend.save ) saveable_backends.push( [ backend.save_label, id ] );
+        } );
+        saveable_backends.sort();
+        $.each( saveable_backends, function( _, backend ) {
+            $( '#save-dropdown' ).append( '<li><a href="#" data-backend="' + backend[1] + '">' + backend[0] + '</a></li>' );
+        } );
+
+        $( '#save-record, #save-dropdown a' ).click( function() {
+            var backend = $( this ).data( 'backend' ) || 'catalog';
+            if ( state.backend == backend ) {
+                saveRecord( backend + ':' + state.record_id, editor );
+            } else {
+                saveRecord( backend + ':', editor );
+            }
+
+            return;
+        } );
 
         function finish_cb() {
             $("#loading").hide();
