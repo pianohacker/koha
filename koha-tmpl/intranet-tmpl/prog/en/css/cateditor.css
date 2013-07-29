@@ -59,6 +59,13 @@
     vertical-align: middle;
 }
 
+#editor .hidden-widget {
+    color: #999999;
+    border: solid 2px #AAAAAA;
+    line-height: 2;
+    padding: 2px;
+}
+
 #statusbar {
     background-color: #F4F8F9;
     border: solid 2px #b9d8d9;

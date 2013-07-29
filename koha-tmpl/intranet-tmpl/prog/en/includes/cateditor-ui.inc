@@ -80,7 +80,19 @@ require( [ 'koha-backend', 'text-marc', 'marc-record' ], function( KohaBackend, 
     };
 
     function makeHiddenWidgets( frameworkCode ) {
+        var hiddenWidget = {
+            init: function() {
+                return $( '<span class="subfield-widget hidden-widget"><span class="hint">hidden</span></span>' )[0];
+            },
+            postCreate: function( node, mark ) {
+            }
+        };
 
+        $.each( KohaBackend.GetAllTagsInfo( frameworkCode ), function( tag, tagInfo ) {
+            $.each( tagInfo.subfields, function( subfield, subfieldInfo ) {
+                if ( subfieldInfo.hidden < -3 || subfieldInfo.hidden > 4 ) editorWidgets[ tag + subfield ] = hiddenWidget;
+            } );
+        } );
     }
 
     function updateWidgets( editor, line ) {

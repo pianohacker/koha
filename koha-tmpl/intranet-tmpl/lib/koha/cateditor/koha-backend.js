@@ -39,6 +39,10 @@ define( [ 'marc-record' ], function( MARC ) {
             _importFramework( '', frameworkinfo );
         },
 
+        GetAllTagsInfo: function( frameworkcode, tagnumber ) {
+            return _framework_mappings[frameworkcode];
+        },
+
         GetTagInfo: function( frameworkcode, tagnumber ) {
             if ( !_framework_mappings[frameworkcode] ) return undefined;
             return _framework_mappings[frameworkcode][tagnumber];
