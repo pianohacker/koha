@@ -1,5 +1,3 @@
-<script src="/cgi-bin/koha/svc/cateditor/framework?frameworkcode=&amp;callback=var+_preloadDefault%3D"></script>
-
 <script src="/intranet-tmpl/lib/codemirror/codemirror.js"></script>
 <script src="/intranet-tmpl/lib/koha/cateditor/marc-mode.js"></script>
 <script src="/intranet-tmpl/lib/require.js"></script>
@@ -16,67 +14,11 @@ require.config( {
 [% END %]
 
 <script>
-require( [ 'koha-backend', 'text-marc', 'marc-record' ], function( KohaBackend, TextMARC, MARC ) {
-    KohaBackend.SetDefaultFramework( _preloadDefault.framework );
-
+require( [ 'koha-backend', 'marc-record', 'text-marc', 'widget-utils' ], function( KohaBackend, MARC, TextMARC, Widget ) {
     var state = {
         backend: '',
         record_id: undefined,
         saving: false
-    };
-
-    var widgetBase = {
-        // Marker utils
-        clearToText: function() {
-            var range = this.mark.find();
-            this.mark.doc.replaceRange( this.text, range.from, range.to, 'marcAware' );
-        },
-
-        // Fixed field utils
-        bindFixed: function( sel, start, end ) {
-            var $node = $( this.node ).find( sel );
-            $node.val( this.getFixed( start, end ) );
-
-            $node.change( $.proxy( function() {
-                this.setFixed( start, end, $node.val() );
-            }, this ) );
-        },
-
-        getFixed: function( start, end ) {
-            return this.text.substring( start, end );
-        },
-
-        setFixed: function( start, end, value ) {
-            this.text = this.text.substring( 0, start ) + this.padString( value.toString().substr( 0, end - start ), end - start ) + this.text.substring( end );
-        },
-
-        setText: function( text ) {
-            this.text = text;
-        },
-
-        // Template utils
-        insertTemplate: function( sel ) {
-            var wsOnly = /^\s*$/;
-            $( sel ).contents().clone().each( function() {
-                if ( this.nodeType == Node.TEXT_NODE ) {
-                    this.data = this.data.replace( /^\s+|\s+$/g, '' );
-                }
-            } ).appendTo( this.node );
-        },
-
-        padNum: function( number, length ) {
-            var result = number.toString();
-
-            while ( result.length < length ) result = '0' + result;
-
-            return result;
-        },
-
-        padString: function( result, length ) {
-            while ( result.length < length ) result = ' ' + result;
-
-            return result;
-        }
     };
 
     function makeHiddenWidgets( frameworkCode ) {
@@ -95,87 +37,6 @@ require( [ 'koha-backend', 'text-marc', 'marc-record' ], function( KohaBackend, 
         } );
     }
 
-    function updateWidgets( editor, line ) {
-        var info = getLineInfo( editor, { line: line, ch: 0 } );
-
-        if ( !info.tagNumber ) {
-            var lineh = editor.getLineHandle( line );
-
-            if ( lineh.markedSpans ) {
-                $.each( lineh.markedSpans, function ( _, span ) {
-                    var mark = span.marker;
-                    if ( !mark.widget ) return;
-
-                    mark.widget.clearToText();
-                } );
-            }
-            return;
-        }
-
-        var subfields = [];
-
-        var end = editor.getLine( line ).length;
-        if ( info.tagNumber < '010' ) {
-            if ( end >= 4 ) subfields.push( { code: '@', preFrom: { line: line - 1 }, from: 4, to: end } );
-        } else {
-            for ( var i = 0; i < info.subfields.length; i++ ) {
-                var next = ( i < info.subfields.length - 1 ) ? info.subfields[i + 1].ch : end;
-                subfields.push( { code: info.subfields[i].code, preFrom: { line: line, ch: info.subfields[i].ch }, from: info.subfields[i].ch + 3, to: next } );
-            }
-        }
-
-        $.each( subfields, function ( _, subfield ) {
-            var id = info.tagNumber + subfield.code;
-            var marks = editor.findMarksAt( { line: line, ch: subfield.from } );
-
-            if ( marks.length ) {
-                if ( marks[0].id == id ) {
-                    return;
-                } else {
-                    marks[0].widget.clearToText();
-                }
-            }
-
-            if ( !editorWidgets[id] ) return;
-            var fullBase = $.extend( Object.create( widgetBase ), editorWidgets[id] );
-            var widget = Object.create( fullBase );
-
-            if ( subfield.from == subfield.to ) {
-                editor.replaceRange( widget.makeTemplate ? widget.makeTemplate() : '<empty>', { line: line, ch: subfield.from } );
-                return; // We'll do the actual work when the change event is triggered again
-            }
-
-            var text = editor.getRange( { line: line, ch: subfield.from }, { line: line, ch: subfield.to } );
-
-            widget.text = text;
-            var node = widget.init();
-
-            if ( node ) {
-                var mark = editor.markText( { line: line, ch: subfield.from }, { line: line, ch: subfield.to }, {
-                    inclusiveLeft: false,
-                    inclusiveRight: false,
-                    replacedWith: node,
-                } );
-            } else {
-                // Hidden field/subfield
-                var mark = editor.markText( subfield.preFrom, { line: line, ch: subfield.to }, {
-                    collapsed: true,
-                    inclusiveLeft: false,
-                    inclusiveRight: false,
-                } );
-                widget.text = editor.getRange( subfield.preFrom, { line: line, ch: subfield.to } );
-            }
-
-            mark.id = id;
-            mark.widget = widget;
-
-            widget.node = node;
-            widget.mark = mark;
-
-            if ( widget.postCreate ) widget.postCreate();
-        } );
-    }
-
     // Editor helper functions
     var editorKeys = {
         Enter: function( editor ) {
@@ -185,36 +46,13 @@ require( [ 'koha-backend', 'text-marc', 'marc-record' ], function( KohaBackend, 
         }
     };
 
-    function getLineInfo( editor, pos ) {
-        var contents = editor.getLine( pos.line );
-        var tagNumber = contents.match( /^([A-Za-z0-9]{3}) / );
-
-        if ( !tagNumber ) return {}; // No tag at all on this line
-        tagNumber = tagNumber[1];
-
-        if ( tagNumber < '010' ) return { tagNumber: tagNumber }; // No current subfield
-
-        var matcher = /[$|ǂ‡]([a-z0-9%]) /g;
-        var match;
-
-        var subfields = [];
-        var currentSubfield;
-
-        while ( ( match = matcher.exec(contents) ) ) {
-            subfields.push( { code: match[1], ch: match.index } );
-            if ( match.index < pos.ch ) currentSubfield = match[1];
-        }
-
-        return { tagNumber: tagNumber, subfields: subfields, currentSubfield: currentSubfield };
-    }
-
     function editorCursorActivity( editor ) {
         if ( state.saving ) return;
 
         $('#status-tag-info').empty();
         $('#status-subfield-info').empty();
 
-        var info = getLineInfo( editor, editor.getCursor() );
+        var info = Widget.getLineInfo( editor, editor.getCursor() );
 
         if ( !info.tagNumber ) return; // No tag at all on this line
 
@@ -267,7 +105,7 @@ require( [ 'koha-backend', 'text-marc', 'marc-record' ], function( KohaBackend, 
             for ( var line = startLine; line <= endLine; line++ ) {
                 if ( updatedLines[line] ) continue;
 
-                updateWidgets( editor, line );
+                Widget.UpdateLine( editor, line );
                 updatedLines[line] = true;
             }
         } while ( change = change.next )
@@ -335,7 +173,7 @@ require( [ 'koha-backend', 'text-marc', 'marc-record' ], function( KohaBackend, 
     function displayRecord( editor, record ) {
         editor.setValue( TextMARC.RecordToText(record) );
 
-        for ( var line = 0; line < editor.lineCount(); line++ ) updateWidgets( editor, line );
+        for ( var line = 0; line < editor.lineCount(); line++ ) Widget.UpdateLine( editor, line );
     }
 
     function saveRecord( recid, editor, callback ) {
@@ -350,7 +188,7 @@ require( [ 'koha-backend', 'text-marc', 'marc-record' ], function( KohaBackend, 
         } );
         var record = TextMARC.TextToRecord( editor.getValue() );
         state.saving = false;
-        for ( var line = 0; line < editor.lineCount(); line++ ) updateWidgets( editor, line );
+        for ( var line = 0; line < editor.lineCount(); line++ ) Widget.UpdateLine( editor, line );
         if ( !record ) return;
 
         backends[ parts[0] ].save( parts[1], record, function(data) {

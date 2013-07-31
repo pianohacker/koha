@@ -35,6 +35,12 @@
             <ul class="dropdown-menu" id="save-dropdown">
             </ul>
         </div>
+        <div class="btn-group">
+            <button class="btn btn-small dropdown-toggle" data-toggle="dropdown"><i class="icon-cog"></i> Settings <span class="caret"></span></button>
+            <ul class="dropdown-menu">
+                <li><a id="switcheditor" href="#">Switch to basic editor</a></li>
+            </ul>
+        </div>
     </div>
     [%# CodeMirror instance will be inserted here %]
     <div id="statusbar">

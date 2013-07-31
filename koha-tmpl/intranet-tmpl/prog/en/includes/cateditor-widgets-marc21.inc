@@ -73,8 +73,7 @@
 
 /**
  * Each widget should provide one to three methods:
- *   init( text ): Returns the DOM node for this widget. Return null to hide the
- *                 subfield completely.
+ *   init( text ): Returns the DOM node for this widget.
  *   postCreate( node, mark ): Optional, called once the mark has been created
  *                             and the node shown. Bind event handlers here.
  *   makeTemplate(): Optional, should return some sane default contents for a

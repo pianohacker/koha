@@ -1,4 +1,4 @@
-define( [ 'marc-record' ], function( MARC ) {
+define( [ '/cgi-bin/koha/svc/cateditor/framework?frameworkcode=&amp;callback=define', 'marc-record' ], function( defaultFramework, MARC ) {
     var _frameworks = {};
     var _framework_mappings = {};
 
@@ -34,11 +34,9 @@ define( [ 'marc-record' ], function( MARC ) {
         } );
     }
 
-    return {
-        SetDefaultFramework: function( frameworkinfo ) {
-            _importFramework( '', frameworkinfo );
-        },
+    _importFramework( '', defaultFramework.framework );
 
+    return {
         GetAllTagsInfo: function( frameworkcode, tagnumber ) {
             return _framework_mappings[frameworkcode];
         },
