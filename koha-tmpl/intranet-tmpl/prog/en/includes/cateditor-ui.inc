@@ -52,7 +52,7 @@ require( [ 'koha-backend', 'marc-record', 'text-marc', 'widget-utils' ], functio
         $('#status-tag-info').empty();
         $('#status-subfield-info').empty();
 
-        var info = Widget.getLineInfo( editor, editor.getCursor() );
+        var info = Widget.GetLineInfo( editor, editor.getCursor() );
 
         if ( !info.tagNumber ) return; // No tag at all on this line
 
@@ -141,7 +141,7 @@ require( [ 'koha-backend', 'marc-record', 'text-marc', 'widget-utils' ], functio
             },
             save: function( id, record, done ) {
                 function finish_cb( data ) {
-                    done( { error: data.error, newRecord: data.marcxml, newId: data.biblionumber && [ 'catalog', data.biblionumber ] } );
+                    done( { error: data.error, newRecord: data.marcxml && data.marcxml[0], newId: data.biblionumber && [ 'catalog', data.biblionumber ] } );
                 }
 
                 if ( id ) {
@@ -177,17 +177,18 @@ require( [ 'koha-backend', 'marc-record', 'text-marc', 'widget-utils' ], functio
     }
 
     function saveRecord( recid, editor, callback ) {
+        if (state.saving) return;
+        state.saving = true;
+
         var parts = recid.split(':');
         if ( parts.length != 2 ) return false;
 
         if ( !backends[ parts[0] ] || !backends[ parts[0] ].save ) return false;
 
-        state.saving = true;
         $.each( editor.getAllMarks(), function( _, mark ) {
             if ( mark.widget ) mark.widget.clearToText();
         } );
         var record = TextMARC.TextToRecord( editor.getValue() );
-        state.saving = false;
         for ( var line = 0; line < editor.lineCount(); line++ ) Widget.UpdateLine( editor, line );
         if ( !record ) return;
 
@@ -202,6 +203,7 @@ require( [ 'koha-backend', 'marc-record', 'text-marc', 'widget-utils' ], functio
                 setSource(data.newId);
             }
 
+            state.saving = false;
             if (callback) callback();
         } );
     }
@@ -225,16 +227,20 @@ require( [ 'koha-backend', 'marc-record', 'text-marc', 'widget-utils' ], functio
     }
 
     $(document).ready( function() {
+        makeHiddenWidgets('');
+
         var editor = CodeMirror(
             function (elt) { $(elt).insertAfter('#toolbar') },
             {
                 extraKeys: editorKeys,
                 lineWrapping: true,
-                mode: 'marc'
+                mode: {
+                    name: 'marc',
+                    nonRepeatableTags: KohaBackend.GetTagsBy( '', 'repeatable', '0' ),
+                    nonRepeatableSubfields: KohaBackend.GetSubfieldsBy( '', 'repeatable', '0' )
+                }
             }
         );
-
-        makeHiddenWidgets('');
 
         editor.on( 'beforeChange', editorBeforeChange );
         editor.on( 'change', editorChange );
@@ -260,14 +266,19 @@ require( [ 'koha-backend', 'marc-record', 'text-marc', 'widget-utils' ], functio
         } );
 
         $( '#save-record, #save-dropdown a' ).click( function() {
-            var backend = $( this ).data( 'backend' ) || 'catalog';
-            if ( state.backend == backend ) {
-                saveRecord( backend + ':' + state.record_id, editor );
-            } else {
-                saveRecord( backend + ':', editor );
+            $( '#save-record' ).find('i').attr( 'class', 'icon-loading' ).siblings( 'span' ).text( _( 'Saving...' ) );
+            function finish_cb() {
+                $( '#save-record' ).find('i').attr( 'class', 'icon-hdd' ).siblings( 'span' ).text( _( 'Save' ) );
             }
 
-            return;
+            var backend = $( this ).data( 'backend' ) || 'catalog';
+            if ( state.backend == backend ) {
+                saveRecord( backend + ':' + state.record_id, editor, finish_cb );
+            } else {
+                saveRecord( backend + ':', editor, finish_cb );
+            }
+
+            return false;
         } );
 
         function finish_cb() {

@@ -86,6 +86,38 @@ define( [ '/cgi-bin/koha/svc/cateditor/framework?frameworkcode=&amp;callback=def
             } );
         },
 
+        GetTagsBy: function( frameworkcode, field, value ) {
+            var result = {};
+
+            $.each( _frameworks[frameworkcode], function( _, tag ) {
+                var tagnum = tag[0], taginfo = tag[1];
+
+                if ( taginfo[field] == value ) result[tagnum] = true;
+            } );
+
+            return result;
+        },
+
+        GetSubfieldsBy: function( frameworkcode, field, value ) {
+            var result = {};
+
+            $.each( _frameworks[frameworkcode], function( _, tag ) {
+                var tagnum = tag[0], taginfo = tag[1];
+
+                $.each( taginfo.subfields, function( _, subfield ) {
+                    var subfieldcode = subfield[0], subfieldinfo = subfield[1];
+
+                    if ( subfieldinfo[field] == value ) {
+                        if ( !result[tagnum] ) result[tagnum] = {};
+
+                        result[tagnum][subfieldcode] = true;
+                    }
+                } );
+            } );
+
+            return result;
+        },
+
         FillRecord: function( frameworkcode, record, allTags ) {
             $.each( _frameworks[frameworkcode], function( _, tag ) {
                 var tagnum = tag[0], taginfo = tag[1];
@@ -115,6 +147,9 @@ define( [ '/cgi-bin/koha/svc/cateditor/framework?frameworkcode=&amp;callback=def
                     } );
                 } );
             } );
+        },
+
+        ValidateRecord: function() {
         },
     };
 } );

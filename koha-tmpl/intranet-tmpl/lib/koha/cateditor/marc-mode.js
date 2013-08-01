@@ -5,17 +5,29 @@
 
 // Expected format: 245 _ 1 $a Pizza |c 34ars
 
-CodeMirror.defineMode( 'marc', function() {
-    var result = {
+CodeMirror.defineMode( 'marc', function( config, modeConfig ) {
+    return {
         startState: function( prevState ) {
             var state = prevState || {};
+
+            if ( !prevState ) {
+                state.seenTags = {};
+            }
 
             state.indicatorNeeded = false;
             state.subAllowed = true;
             state.subfieldCode = undefined;
             state.tagNumber = undefined;
+            state.seenSubfields = {};
 
             return state;
+        },
+        copyState: function( prevState ) {
+            var result = $.extend( {}, prevState );
+            result.seenTags = $.extend( {}, prevState.seenTags );
+            result.seenSubfields = $.extend( {}, prevState.seenSubfields );
+
+            return result;
         },
         token: function( stream, state ) {
             var match;
@@ -39,7 +51,12 @@ CodeMirror.defineMode( 'marc', function() {
                         state.subAllowed = false;
                     }
 
-                    return 'tagnumber';
+                    if ( state.seenTags[state.tagNumber] && modeConfig.nonRepeatableTags[state.tagNumber] ) {
+                        return 'bad-tagnumber';
+                    } else {
+                        state.seenTags[state.tagNumber] = true;
+                        return 'tagnumber';
+                    }
                 } else {
                     stream.skipToEnd();
                     return 'error';
@@ -88,7 +105,12 @@ CodeMirror.defineMode( 'marc', function() {
                     var subfieldCode;
                     if ( ( subfieldCode = stream.eat( /[a-z0-9%]/ ) ) && stream.eat( ' ' ) ) {
                         state.subfieldCode = subfieldCode;
-                        return 'subfieldcode';
+                        if ( state.seenSubfields[state.subfieldCode] && modeConfig.nonRepeatableSubfields[state.tagNumber][state.subfieldCode] ) {
+                            return 'bad-subfieldcode';
+                        } else {
+                            state.seenSubfields[state.subfieldCode] = true;
+                            return 'subfieldcode';
+                        }
                     }
                 }
 
@@ -101,6 +123,4 @@ CodeMirror.defineMode( 'marc', function() {
             }
         }
     };
-    console.log( result.token );
-    return result;
 } );

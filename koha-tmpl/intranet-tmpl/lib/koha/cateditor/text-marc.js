@@ -29,7 +29,7 @@ define( [ 'marc-record' ], function( MARC ) {
         TextToRecord: function( text ) {
             var record = new MARC.Record();
 
-            $.each( text.split('\n'), function( _, line ) {
+            $.each( text.split('\n'), function( i, line ) {
                 var tagNumber = line.match( /^([A-Za-z0-9]{3}) / );
 
                 if ( !tagNumber ) {
@@ -64,6 +64,8 @@ define( [ 'marc-record' ], function( MARC ) {
 
                         field.addSubfield( [ subfields.code, line.substring( subfields.ch + 3, next ? next.ch : line.length ) ] );
                     } );
+
+                    field.sourceLine = i;
 
                     record.addField( field );
                 }

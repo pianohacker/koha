@@ -55,7 +55,7 @@ define( function() {
         }
     };
 
-    Widget.getLineInfo = function( editor, pos ) {
+    Widget.GetLineInfo = function( editor, pos ) {
         var contents = editor.getLine( pos.line );
         var tagNumber = contents.match( /^([A-Za-z0-9]{3}) / );
 
@@ -79,7 +79,7 @@ define( function() {
     };
 
     Widget.UpdateLine = function( editor, line ) {
-        var info = Widget.getLineInfo( editor, { line: line, ch: 0 } );
+        var info = Widget.GetLineInfo( editor, { line: line, ch: 0 } );
 
         if ( !info.tagNumber ) {
             var lineh = editor.getLineHandle( line );

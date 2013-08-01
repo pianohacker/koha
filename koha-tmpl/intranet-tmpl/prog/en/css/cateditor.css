@@ -28,6 +28,11 @@
     font-weight: bold;
 }
 
+#editor .cm-bad-tagnumber {
+    color: #A20;
+    font-weight: bold;
+}
+
 #editor .cm-indicator {
     color: #884;
 }
@@ -35,7 +40,13 @@
 #editor .cm-subfieldcode {
     background-color: #F4F4F4;
     color: #383838;
-    -moz-border-radius: 3px 8px 8px 3px;
+    border-radius: 3px 8px 8px 3px;
+    font-weight: bold;
+}
+
+#editor .cm-bad-subfieldcode {
+    background-color: #E9E9FF;
+    color: #282848;
     border-radius: 3px 8px 8px 3px;
     font-weight: bold;
 }
@@ -91,4 +102,13 @@
 #record-info .label + span {
     display: block;
     padding-left: 1em;
+}
+
+.icon-loading {
+    display: inline-block;
+    height: 16px;
+    width: 16px;
+    background: transparent url("../../img/spinner-small.gif") top left no-repeat;
+    padding: -1px;
+    vertical-align: text-top;
 }
