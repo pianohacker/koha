@@ -190,7 +190,19 @@ require( [ 'koha-backend', 'marc-record', 'text-marc', 'widget-utils' ], functio
         } );
         var record = TextMARC.TextToRecord( editor.getValue() );
         for ( var line = 0; line < editor.lineCount(); line++ ) Widget.UpdateLine( editor, line );
-        if ( !record ) return;
+        if ( !record ) {
+            state.saving = false;
+            callback( { error: 'syntax' } );
+            return;
+        }
+
+        var errors = KohaBackend.ValidateRecord( '', record );
+        if ( errors.length || true ) {
+            console.log( errors );
+            state.saving = false;
+            callback( { error: 'invalid', errors: errors } );
+            return;
+        }
 
         backends[ parts[0] ].save( parts[1], record, function(data) {
             if (data.newRecord) {
@@ -267,7 +279,13 @@ require( [ 'koha-backend', 'marc-record', 'text-marc', 'widget-utils' ], functio
 
         $( '#save-record, #save-dropdown a' ).click( function() {
             $( '#save-record' ).find('i').attr( 'class', 'icon-loading' ).siblings( 'span' ).text( _( 'Saving...' ) );
-            function finish_cb() {
+            function finish_cb(result) {
+                if ( result.error == 'syntax' ) {
+                    humanMsg.displayAlert( _( 'Incorrect syntax, cannot save' ) );
+                } else if ( result.error == 'invalid' ) {
+                    humanMsg.displayAlert( _( 'Record structure invalid, cannot save' ) );
+                }
+
                 $( '#save-record' ).find('i').attr( 'class', 'icon-hdd' ).siblings( 'span' ).text( _( 'Save' ) );
             }
 

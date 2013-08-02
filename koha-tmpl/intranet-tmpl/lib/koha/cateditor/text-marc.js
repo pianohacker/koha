@@ -40,6 +40,7 @@ define( [ 'marc-record' ], function( MARC ) {
 
                 if ( tagNumber < '010' ) {
                     var field = new MARC.Field( tagNumber, ' ', ' ', [ [ '@', line.substring( 4 ) ] ] );
+                    field.sourceLine = i;
                     record.addField( field );
                 } else {
                     var indicators = line.match( /^... ([0-9A-Za-z_]) ([0-9A-Za-z_])/ );
@@ -66,7 +67,6 @@ define( [ 'marc-record' ], function( MARC ) {
                     } );
 
                     field.sourceLine = i;
-
                     record.addField( field );
                 }
             } );

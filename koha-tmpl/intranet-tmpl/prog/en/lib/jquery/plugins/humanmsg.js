@@ -44,6 +44,7 @@ var humanMsg = {
 			life = Infinity
 		}
 
+		clearTimeout(humanMsg.t1);
 		clearTimeout(humanMsg.t2);
 
 		// Inject message

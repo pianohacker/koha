@@ -36,7 +36,7 @@ define( [ '/cgi-bin/koha/svc/cateditor/framework?frameworkcode=&amp;callback=def
 
     _importFramework( '', defaultFramework.framework );
 
-    return {
+    var KohaBackend = {
         GetAllTagsInfo: function( frameworkcode, tagnumber ) {
             return _framework_mappings[frameworkcode];
         },
@@ -149,7 +149,48 @@ define( [ '/cgi-bin/koha/svc/cateditor/framework?frameworkcode=&amp;callback=def
             } );
         },
 
-        ValidateRecord: function() {
+        ValidateRecord: function( frameworkcode, record ) {
+            var errors = [];
+
+            var mandatoryTags = KohaBackend.GetTagsBy( '', 'mandatory', '1' );
+            var mandatorySubfields = KohaBackend.GetSubfieldsBy( '', 'mandatory', '1' );
+            var nonRepeatableTags = KohaBackend.GetTagsBy( '', 'repeatable', '0' );
+            var nonRepeatableSubfields = KohaBackend.GetSubfieldsBy( '', 'repeatable', '0' );
+
+            $.each( mandatoryTags, function( tag ) {
+                if ( !record.hasField( tag ) ) errors.push( { type: 'missingTag', tag: tag } );
+            } );
+
+            var seenTags = {};
+
+            $.each( record.fields(), function( _, field ) {
+                if ( seenTags[ field.tagnumber() ] && nonRepeatableTags[ field.tagnumber() ] ) {
+                    errors.push( { type: 'unrepeatableTag', line: field.sourceLine } );
+                    return;
+                }
+
+                seenTags[ field.tagnumber() ] = true;
+
+                var seenSubfields = {};
+
+                $.each( field.subfields(), function( _, subfield ) {
+                    if ( seenSubfields[ subfield[0] ] != null && nonRepeatableSubfields[ field.tagnumber() ][ subfield[0] ] ) {
+                        errors.push( { type: 'unrepeatableSubfield', subfield: subfield[0], line: field.sourceLine } );
+                    } else {
+                        seenSubfields[ subfield[0] ] = subfield[1];
+                    }
+                } );
+
+                $.each( mandatorySubfields[ field.tagnumber() ] || {}, function( subfield ) {
+                    if ( !seenSubfields[ subfield ] ) {
+                        errors.push( { type: 'missingSubfield', subfield: subfield[0], line: field.sourceLine } );
+                    }
+                } );
+            } );
+
+            return errors;
         },
     };
+
+    return KohaBackend;
 } );
