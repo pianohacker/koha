@@ -23,8 +23,12 @@ require( [ 'koha-backend', 'marc-record', 'text-marc', 'widget-utils' ], functio
 
     function makeHiddenWidgets( frameworkCode ) {
         var hiddenWidget = {
+            clearToText: function() {
+                var range = this.mark.find();
+                this.mark.doc.replaceRange( '', range.from, range.to, 'marcAware' );
+            },
             init: function() {
-                return $( '<span class="subfield-widget hidden-widget"><span class="hint">hidden</span></span>' )[0];
+                return $( '<span class="subfield-widget hidden-widget hint">' + _("hidden") + '</span>' )[0];
             },
             postCreate: function( node, mark ) {
             }
@@ -185,20 +189,21 @@ require( [ 'koha-backend', 'marc-record', 'text-marc', 'widget-utils' ], functio
 
         if ( !backends[ parts[0] ] || !backends[ parts[0] ].save ) return false;
 
-        $.each( editor.getAllMarks(), function( _, mark ) {
+        Widget.RemoveErrors( editor );
+
+        $.each( editor.getAllMarks(), function( undef, mark ) {
             if ( mark.widget ) mark.widget.clearToText();
         } );
         var record = TextMARC.TextToRecord( editor.getValue() );
         for ( var line = 0; line < editor.lineCount(); line++ ) Widget.UpdateLine( editor, line );
-        if ( !record ) {
+        if ( record.errors ) {
             state.saving = false;
-            callback( { error: 'syntax' } );
+            callback( { error: 'syntax', errors: record.errors } );
             return;
         }
 
         var errors = KohaBackend.ValidateRecord( '', record );
         if ( errors.length || true ) {
-            console.log( errors );
             state.saving = false;
             callback( { error: 'invalid', errors: errors } );
             return;
@@ -273,20 +278,47 @@ require( [ 'koha-backend', 'marc-record', 'text-marc', 'widget-utils' ], functio
             if ( backend.save ) saveable_backends.push( [ backend.save_label, id ] );
         } );
         saveable_backends.sort();
-        $.each( saveable_backends, function( _, backend ) {
+        $.each( saveable_backends, function( undef, backend ) {
             $( '#save-dropdown' ).append( '<li><a href="#" data-backend="' + backend[1] + '">' + backend[0] + '</a></li>' );
         } );
 
         $( '#save-record, #save-dropdown a' ).click( function() {
-            $( '#save-record' ).find('i').attr( 'class', 'icon-loading' ).siblings( 'span' ).text( _( 'Saving...' ) );
+            $( '#save-record' ).find('i').attr( 'class', 'icon-loading' ).siblings( 'span' ).text( _("Saving...") );
             function finish_cb(result) {
                 if ( result.error == 'syntax' ) {
-                    humanMsg.displayAlert( _( 'Incorrect syntax, cannot save' ) );
+                    humanMsg.displayAlert( _("Incorrect syntax, cannot save") );
                 } else if ( result.error == 'invalid' ) {
-                    humanMsg.displayAlert( _( 'Record structure invalid, cannot save' ) );
+                    humanMsg.displayAlert( _("Record structure invalid, cannot save") );
                 }
 
-                $( '#save-record' ).find('i').attr( 'class', 'icon-hdd' ).siblings( 'span' ).text( _( 'Save' ) );
+                $.each( result.errors || [], function( undef, error ) {
+                    switch ( error.type ) {
+                        case 'noTag':
+                            Widget.AddError( editor, error.line, _("Invalid tag number") );
+                            break;
+                        case 'noIndicators':
+                            Widget.AddError( editor, error.line, _("Invalid indicators") );
+                            break;
+                        case 'missingTag':
+                            Widget.AddError( editor, null, _("Missing mandatory tag: ") + error.tag );
+                            break;
+                        case 'missingSubfield':
+                            if ( error.subfield == '@' ) {
+                                Widget.AddError( editor, error.line, _("Missing control field contents") );
+                            } else {
+                                Widget.AddError( editor, error.line, _("Missing mandatory subfield: $") + error.subfield );
+                            }
+                            break;
+                        case 'unrepeatableTag':
+                            Widget.AddError( editor, error.line, _("Tag ") + error.tag + _(" cannot be repeated") );
+                            break;
+                        case 'unrepeatableSubfield':
+                            Widget.AddError( editor, error.line, _("Subfield $") + error.subfield + _(" cannot be repeated") );
+                            break;
+                    }
+                } );
+
+                $( '#save-record' ).find('i').attr( 'class', 'icon-hdd' ).siblings( 'span' ).text( _("Save") );
             }
 
             var backend = $( this ).data( 'backend' ) || 'catalog';

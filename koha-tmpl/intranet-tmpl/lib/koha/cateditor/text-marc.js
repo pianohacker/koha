@@ -28,13 +28,14 @@ define( [ 'marc-record' ], function( MARC ) {
 
         TextToRecord: function( text ) {
             var record = new MARC.Record();
+            var errors = [];
 
             $.each( text.split('\n'), function( i, line ) {
                 var tagNumber = line.match( /^([A-Za-z0-9]{3}) / );
 
                 if ( !tagNumber ) {
-                    record = null;
-                    return false;
+                    errors.push( { type: 'noTag', line: i } );
+                    return;
                 }
                 tagNumber = tagNumber[1];
 
@@ -45,8 +46,8 @@ define( [ 'marc-record' ], function( MARC ) {
                 } else {
                     var indicators = line.match( /^... ([0-9A-Za-z_]) ([0-9A-Za-z_])/ );
                     if ( !indicators ) {
-                        record = null;
-                        return false;
+                        errors.push( { type: 'noIndicators', line: i } );
+                        return;
                     }
 
                     var field = new MARC.Field( tagNumber, ( indicators[1] == '_' ? ' ' : indicators[1] ), ( indicators[2] == '_' ? ' ' : indicators[2] ), [] );
@@ -71,7 +72,7 @@ define( [ 'marc-record' ], function( MARC ) {
                 }
             } );
 
-            return record;
+            return errors.length ? { errors: errors } : record;
         }
     };
 } );

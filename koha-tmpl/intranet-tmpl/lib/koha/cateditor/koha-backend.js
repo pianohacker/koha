@@ -89,7 +89,7 @@ define( [ '/cgi-bin/koha/svc/cateditor/framework?frameworkcode=&amp;callback=def
         GetTagsBy: function( frameworkcode, field, value ) {
             var result = {};
 
-            $.each( _frameworks[frameworkcode], function( _, tag ) {
+            $.each( _frameworks[frameworkcode], function( undef, tag ) {
                 var tagnum = tag[0], taginfo = tag[1];
 
                 if ( taginfo[field] == value ) result[tagnum] = true;
@@ -101,10 +101,10 @@ define( [ '/cgi-bin/koha/svc/cateditor/framework?frameworkcode=&amp;callback=def
         GetSubfieldsBy: function( frameworkcode, field, value ) {
             var result = {};
 
-            $.each( _frameworks[frameworkcode], function( _, tag ) {
+            $.each( _frameworks[frameworkcode], function( undef, tag ) {
                 var tagnum = tag[0], taginfo = tag[1];
 
-                $.each( taginfo.subfields, function( _, subfield ) {
+                $.each( taginfo.subfields, function( undef, subfield ) {
                     var subfieldcode = subfield[0], subfieldinfo = subfield[1];
 
                     if ( subfieldinfo[field] == value ) {
@@ -119,7 +119,7 @@ define( [ '/cgi-bin/koha/svc/cateditor/framework?frameworkcode=&amp;callback=def
         },
 
         FillRecord: function( frameworkcode, record, allTags ) {
-            $.each( _frameworks[frameworkcode], function( _, tag ) {
+            $.each( _frameworks[frameworkcode], function( undef, tag ) {
                 var tagnum = tag[0], taginfo = tag[1];
 
                 if ( taginfo.mandatory != "1" && !allTags ) return;
@@ -137,12 +137,12 @@ define( [ '/cgi-bin/koha/svc/cateditor/framework?frameworkcode=&amp;callback=def
                     }
                 }
 
-                $.each( taginfo.subfields, function( _, subfield ) {
+                $.each( taginfo.subfields, function( undef, subfield ) {
                     var subfieldcode = subfield[0], subfieldinfo = subfield[1];
 
                     if ( subfieldinfo.mandatory != "1" && !allTags ) return;
 
-                    $.each( fields, function( _, field ) {
+                    $.each( fields, function( undef, field ) {
                         if ( !field.hasSubfield(subfieldcode) ) field.addSubfieldGrouped( [ subfieldcode, '' ] );
                     } );
                 } );
@@ -163,7 +163,7 @@ define( [ '/cgi-bin/koha/svc/cateditor/framework?frameworkcode=&amp;callback=def
 
             var seenTags = {};
 
-            $.each( record.fields(), function( _, field ) {
+            $.each( record.fields(), function( undef, field ) {
                 if ( seenTags[ field.tagnumber() ] && nonRepeatableTags[ field.tagnumber() ] ) {
                     errors.push( { type: 'unrepeatableTag', line: field.sourceLine } );
                     return;
@@ -173,7 +173,7 @@ define( [ '/cgi-bin/koha/svc/cateditor/framework?frameworkcode=&amp;callback=def
 
                 var seenSubfields = {};
 
-                $.each( field.subfields(), function( _, subfield ) {
+                $.each( field.subfields(), function( undef, subfield ) {
                     if ( seenSubfields[ subfield[0] ] != null && nonRepeatableSubfields[ field.tagnumber() ][ subfield[0] ] ) {
                         errors.push( { type: 'unrepeatableSubfield', subfield: subfield[0], line: field.sourceLine } );
                     } else {

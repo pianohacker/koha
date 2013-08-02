@@ -77,6 +77,18 @@
     padding: 2px;
 }
 
+.structure-error {
+    background: #FFEEEE;
+    font-size: 0.9em;
+    line-height: 1.5;
+    margin: .5em;
+    padding: 0 .5em;
+}
+
+.structure-error i {
+    vertical-align: text-bottom;
+}
+
 #statusbar {
     background-color: #F4F8F9;
     border: solid 2px #b9d8d9;
