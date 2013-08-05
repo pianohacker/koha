@@ -203,7 +203,7 @@ require( [ 'koha-backend', 'marc-record', 'text-marc', 'widget-utils' ], functio
         }
 
         var errors = KohaBackend.ValidateRecord( '', record );
-        if ( errors.length || true ) {
+        if ( errors.length ) {
             state.saving = false;
             callback( { error: 'invalid', errors: errors } );
             return;
@@ -286,9 +286,9 @@ require( [ 'koha-backend', 'marc-record', 'text-marc', 'widget-utils' ], functio
             $( '#save-record' ).find('i').attr( 'class', 'icon-loading' ).siblings( 'span' ).text( _("Saving...") );
             function finish_cb(result) {
                 if ( result.error == 'syntax' ) {
-                    humanMsg.displayAlert( _("Incorrect syntax, cannot save") );
+                    humanMsg.displayAlert( _("Incorrect syntax, cannot save"), { className: 'humanError' } );
                 } else if ( result.error == 'invalid' ) {
-                    humanMsg.displayAlert( _("Record structure invalid, cannot save") );
+                    humanMsg.displayAlert( _("Record structure invalid, cannot save"), { className: 'humanError' } );
                 }
 
                 $.each( result.errors || [], function( undef, error ) {

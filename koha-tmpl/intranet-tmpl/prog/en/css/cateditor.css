@@ -23,6 +23,10 @@
     width: 15em;
 }
 
+#editor .CodeMirror {
+    line-height: 1.2;
+}
+
 #editor .cm-tagnumber {
     color: #080;
     font-weight: bold;
@@ -45,8 +49,8 @@
 }
 
 #editor .cm-bad-subfieldcode {
-    background-color: #E9E9FF;
-    color: #282848;
+    background-color: #FFD9D9;
+    color: #482828;
     border-radius: 3px 8px 8px 3px;
     font-weight: bold;
 }

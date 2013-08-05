@@ -161,7 +161,7 @@ define( function() {
                 options.above = true;
             }
 
-            $.each( editor.getLineHandle( line ).widgets || [], function( undef, widget ) {
+            $.each( editor.getLineHandle(line).widgets || [], function( undef, widget ) {
                 if ( !widget.isErrorMarker ) return;
 
                 found = true;
