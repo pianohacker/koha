@@ -61,10 +61,10 @@ define( [ 'marc-record' ], function( MARC ) {
                         subfields.push( { code: match[1], ch: match.index } );
                     }
 
-                    $.each( subfields, function( i, subfields ) {
+                    $.each( subfields, function( i, subfield ) {
                         var next = subfields[ i + 1 ];
 
-                        field.addSubfield( [ subfields.code, line.substring( subfields.ch + 3, next ? next.ch : line.length ) ] );
+                        field.addSubfield( [ subfield.code, line.substring( subfield.ch + 3, next ? next.ch : line.length ) ] );
                     } );
 
                     field.sourceLine = i;

@@ -85,7 +85,7 @@ require( [ 'koha-backend', 'marc-record', 'text-marc', 'widget-utils' ], functio
         if ( state.saving || change.origin == 'marcAware' ) return;
 
         // FIXME: Should only cancel changes if this is a control field/subfield widget
-        if ( change.from.line !== change.to.line || Math.abs( change.from.ch - change.to.ch ) > 1 ) return; // Not single-char change
+        if ( change.from.line !== change.to.line || Math.abs( change.from.ch - change.to.ch ) > 1 || change.text.length != 1 || change.text[0].length != 0 ) return; // Not single-char change
 
         if ( change.from.ch == change.to.ch - 1 && editor.findMarksAt( { line: change.from.line, ch: change.from.ch + 1 } ).length ) {
             change.cancel();
@@ -106,7 +106,7 @@ require( [ 'koha-backend', 'marc-record', 'text-marc', 'widget-utils' ], functio
                 endLine = change.start.line;
             }
 
-            for ( var line = startLine; line <= endLine; line++ ) {
+            for ( var line = startLine; line <= endLine + change.text.length - 1; line++ ) {
                 if ( updatedLines[line] ) continue;
 
                 Widget.UpdateLine( editor, line );
@@ -210,6 +210,8 @@ require( [ 'koha-backend', 'marc-record', 'text-marc', 'widget-utils' ], functio
         }
 
         backends[ parts[0] ].save( parts[1], record, function(data) {
+            state.saving = false;
+
             if (data.newRecord) {
                 var record = new MARC.Record();
                 record.loadMARCXML(data.newRecord);
@@ -220,8 +222,7 @@ require( [ 'koha-backend', 'marc-record', 'text-marc', 'widget-utils' ], functio
                 setSource(data.newId);
             }
 
-            state.saving = false;
-            if (callback) callback();
+            if (callback) callback( data );
         } );
     }
 
@@ -289,6 +290,8 @@ require( [ 'koha-backend', 'marc-record', 'text-marc', 'widget-utils' ], functio
                     humanMsg.displayAlert( _("Incorrect syntax, cannot save"), { className: 'humanError' } );
                 } else if ( result.error == 'invalid' ) {
                     humanMsg.displayAlert( _("Record structure invalid, cannot save"), { className: 'humanError' } );
+                } else if ( !result.error ) {
+                    humanMsg.displayAlert( _("Record saved "), { className: 'humanSuccess' } );
                 }
 
                 $.each( result.errors || [], function( undef, error ) {

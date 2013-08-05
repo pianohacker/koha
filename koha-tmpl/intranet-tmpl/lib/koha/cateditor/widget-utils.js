@@ -82,6 +82,7 @@ define( function() {
         UpdateLine: function( editor, line ) {
             var info = Widget.GetLineInfo( editor, { line: line, ch: 0 } );
             var lineh = editor.getLineHandle( line );
+            if ( !lineh) return;
 
             if ( !info.tagNumber ) {
                 if ( lineh.markedSpans ) {

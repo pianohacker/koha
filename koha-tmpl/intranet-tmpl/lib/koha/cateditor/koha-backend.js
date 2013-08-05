@@ -10,7 +10,7 @@ define( [ '/cgi-bin/koha/svc/cateditor/framework?frameworkcode=&amp;callback=def
             if ( $contents.length == 1 && $contents[0].nodeType == Node.TEXT_NODE ) {
                 result[ this.localName ] = $contents[0].data;
             } else {
-                result[ this.localName ] = $contents.toArray();
+                result[ this.localName ] = $contents.filter( function() { return this.nodeType != Node.TEXT_NODE || !this.data.match( /^\s+$/ ) } ).toArray();
             }
         } );
 
@@ -37,6 +37,8 @@ define( [ '/cgi-bin/koha/svc/cateditor/framework?frameworkcode=&amp;callback=def
     _importFramework( '', defaultFramework.framework );
 
     var KohaBackend = {
+        NOT_EMPTY: {}, // Sentinel value
+
         GetAllTagsInfo: function( frameworkcode, tagnumber ) {
             return _framework_mappings[frameworkcode];
         },
@@ -165,7 +167,7 @@ define( [ '/cgi-bin/koha/svc/cateditor/framework?frameworkcode=&amp;callback=def
 
             $.each( record.fields(), function( undef, field ) {
                 if ( seenTags[ field.tagnumber() ] && nonRepeatableTags[ field.tagnumber() ] ) {
-                    errors.push( { type: 'unrepeatableTag', line: field.sourceLine } );
+                    errors.push( { type: 'unrepeatableTag', line: field.sourceLine, tag: field.tagnumber() } );
                     return;
                 }
 

@@ -28,6 +28,10 @@ html, body {
 	background-color: #400;
 }
 
+.humanSuccess {
+	background-color: #040;
+}
+
 .humanMsg h3 {
 	margin: 0.3em;
 	margin-top: 0;
