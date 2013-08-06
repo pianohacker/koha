@@ -30,7 +30,7 @@
 <div id="editor">
     <div id="toolbar" class="btn-toolbar">
         <div class="btn-group">
-            <button class="btn btn-small" id="save-record"><i class="icon-hdd"></i> <span>Save</span></button>
+            <button class="btn btn-small" id="save-record" title="Save current record (Ctrl-S)"><i class="icon-hdd"></i> <span>Save</span></button>
             <button class="btn btn-small dropdown-toggle" data-toggle="dropdown">
             <span class="caret"></span>
             </button>
@@ -55,7 +55,7 @@
 
 </div></div>
 
-<div class="yui-b">
+<div class="yui-b" id="sidebar">
 <div id="record-info" class="rows">
 <ul>
     <li id="record-info-source">
@@ -69,6 +69,14 @@
 </ul>
 
 </div>
+
+<h3>Search</h3>
+<form id="search">
+<input id="q" name="q" placeholder="Keywords" /><br />
+<input id="catalog-search" name="source" value="catalog" type="radio" /><label for="catalog-search">Catalog</label>
+<input id="z3950-search" name="source" value="z3950" type="radio" /><label for="z3950-search">Z39.50</label>
+</form>
+
 </div>
 
 </div>

@@ -1,6 +1,7 @@
 <script src="/intranet-tmpl/lib/codemirror/codemirror.js"></script>
 <script src="/intranet-tmpl/lib/koha/cateditor/marc-mode.js"></script>
 <script src="/intranet-tmpl/lib/require.js"></script>
+<script src="/intranet-tmpl/lib/jquery/plugins/jquery.hotkeys.js"></script>
 <script>
 require.config( {
     baseUrl: '/intranet-tmpl/lib/koha/cateditor/'
@@ -247,6 +248,7 @@ require( [ 'koha-backend', 'marc-record', 'text-marc', 'widget-utils' ], functio
     $(document).ready( function() {
         makeHiddenWidgets('');
 
+        // Editor setup
         var editor = CodeMirror(
             function (elt) { $(elt).insertAfter('#toolbar') },
             {
@@ -283,6 +285,7 @@ require( [ 'koha-backend', 'marc-record', 'text-marc', 'widget-utils' ], functio
             $( '#save-dropdown' ).append( '<li><a href="#" data-backend="' + backend[1] + '">' + backend[0] + '</a></li>' );
         } );
 
+        // Click bindings
         $( '#save-record, #save-dropdown a' ).click( function() {
             $( '#save-record' ).find('i').attr( 'class', 'icon-loading' ).siblings( 'span' ).text( _("Saving...") );
             function finish_cb(result) {
@@ -348,6 +351,35 @@ require( [ 'koha-backend', 'marc-record', 'text-marc', 'widget-utils' ], functio
             }
         } );
 
+        // Key bindings
+        function bindKey( key, handler ) {
+            $( document ).bind( 'keypress', key, handler );
+            $( '#sidebar input' ).bind( 'keypress', key, handler );
+            $( '#editor textarea' ).bind( 'keypress', key, handler );
+        }
+
+        bindKey( 'ctrl+s', function(event) {
+            console.dir( event );
+            $( '#save-record' ).click();
+
+            event.preventDefault();
+        } );
+
+        bindKey( 'alt+s', function(event) {
+            $( '#catalog-search' )[0].checked = true;
+            $( '#q' ).focus();
+
+            return false;
+        } );
+
+        bindKey( 'alt+z', function(event) {
+            $( '#z3950-search' )[0].checked = true;
+            $( '#q' ).focus();
+
+            return false;
+        } );
+
+        // Start editor
         function finish_cb() {
             $("#loading").hide();
         }
