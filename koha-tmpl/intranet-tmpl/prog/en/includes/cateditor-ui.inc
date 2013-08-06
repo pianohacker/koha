@@ -1,7 +1,6 @@
 <script src="/intranet-tmpl/lib/codemirror/codemirror.js"></script>
 <script src="/intranet-tmpl/lib/koha/cateditor/marc-mode.js"></script>
 <script src="/intranet-tmpl/lib/require.js"></script>
-<script src="/intranet-tmpl/lib/jquery/plugins/jquery.hotkeys.js"></script>
 <script>
 require.config( {
     baseUrl: '/intranet-tmpl/lib/koha/cateditor/'
@@ -48,7 +47,13 @@ require( [ 'koha-backend', 'marc-record', 'text-marc', 'widget-utils' ], functio
             var cursor = editor.getCursor();
             editor.replaceRange( '\n', { line: cursor.line }, null, 'marcAware' );
             editor.setCursor( { line: cursor.line + 1, column: 0 } );
-        }
+        },
+
+        'Ctrl-D': function( editor ) {
+            var cur = editor.getCursor();
+
+            editor.replaceRange( "", { line: cur.line, ch: 0 }, { line: cur.line + 1, ch: 0 }, 'marcAware' );
+        },
     };
 
     function editorCursorActivity( editor ) {
@@ -359,20 +364,19 @@ require( [ 'koha-backend', 'marc-record', 'text-marc', 'widget-utils' ], functio
         }
 
         bindKey( 'ctrl+s', function(event) {
-            console.dir( event );
             $( '#save-record' ).click();
 
             event.preventDefault();
         } );
 
-        bindKey( 'alt+s', function(event) {
+        bindKey( 'ctrl+k', function(event) {
             $( '#catalog-search' )[0].checked = true;
             $( '#q' ).focus();
 
             return false;
         } );
 
-        bindKey( 'alt+z', function(event) {
+        bindKey( 'ctrl+shift+k', function(event) {
             $( '#z3950-search' )[0].checked = true;
             $( '#q' ).focus();
 
