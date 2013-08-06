@@ -334,6 +334,20 @@ require( [ 'koha-backend', 'marc-record', 'text-marc', 'widget-utils' ], functio
             return false;
         } );
 
+        $( '#switcheditor' ).click( function() {
+            if ( !confirm( _("Any changes will not be saved. Continue?") ) ) return;
+
+            $.cookie( 'catalogue_editor_[% USER_INFO.0.borrowernumber %]', 'basic', { expires: 365, path: '/' } );
+
+            if ( state.backend == 'catalog' ) {
+                window.location = '/cgi-bin/koha/cataloguing/addbiblio.pl?biblionumber=' + state.record_id;
+            } else if ( state.backend == 'new' ) {
+                window.location = '/cgi-bin/koha/cataloguing/addbiblio.pl';
+            } else {
+                humanMsg.displayAlert( _("Cannot open this record in the basic editor"), { className: 'humanError' } );
+            }
+        } );
+
         function finish_cb() {
             $("#loading").hide();
         }

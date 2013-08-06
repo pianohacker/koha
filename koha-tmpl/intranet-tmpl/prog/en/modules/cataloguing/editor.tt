@@ -20,7 +20,7 @@
 
 <div id="breadcrumbs"><a href="/cgi-bin/koha/mainpage.pl">Home</a> &rsaquo; <a href="/cgi-bin/koha/cataloguing/addbooks.pl">Cataloging</a>  &rsaquo; [% IF ( biblionumber ) %]Editing <em>[% title |html %]</em> (Record number [% biblionumber %])[% ELSE %]Add MARC record[% END %]</div>
 
-<div id="doc2" class="yui-t2">
+<div id="doc3" class="yui-t2">
 <div id="bd">
 
 <h1 id="title">Cataloging editor</h1>
