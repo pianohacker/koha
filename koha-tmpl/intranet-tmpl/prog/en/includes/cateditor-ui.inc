@@ -14,7 +14,7 @@ require.config( {
 [% END %]
 
 <script>
-require( [ 'koha-backend', 'marc-record', 'text-marc', 'widget-utils' ], function( KohaBackend, MARC, TextMARC, Widget ) {
+require( [ 'koha-backend', 'search', 'marc-record', 'text-marc', 'widget-utils' ], function( KohaBackend, Search, MARC, TextMARC, Widget ) {
     var state = {
         backend: '',
         record_id: undefined,
