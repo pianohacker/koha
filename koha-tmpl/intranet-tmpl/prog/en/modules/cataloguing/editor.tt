@@ -73,8 +73,8 @@
 <h3>Search</h3>
 <form id="search">
 <input id="q" name="q" placeholder="Keywords" /><br />
-<input id="catalog-search" name="source" value="catalog" type="radio" /><label for="catalog-search">Catalog</label>
-<input id="z3950-search" name="source" value="z3950" type="radio" /><label for="z3950-search">Z39.50</label>
+<input id="catalog-search" name="source" value="catalog" type="radio" /><label for="catalog-search" title="Search local records (Ctrl-K)">Catalog</label>
+<input id="z3950-search" name="source" value="z3950" type="radio" /><label for="z3950-search" title="Search external records using Z39.50 (Ctrl-Shift-K)">Z39.50</label>
 </form>
 
 </div>
