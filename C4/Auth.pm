@@ -33,7 +33,7 @@ use POSIX qw/strftime/;
 use List::MoreUtils qw/ any /;
 
 # use utf8;
-use vars qw($VERSION @ISA @EXPORT @EXPORT_OK %EXPORT_TAGS $debug $ldap $cas $caslogout $ExtAuthSrc);
+use vars qw($VERSION @ISA @EXPORT @EXPORT_OK %EXPORT_TAGS $debug $ldap $cas $caslogout $saml);
 
 BEGIN {
     sub psgi_env { any { /^psgi\./ } keys %ENV }
@@ -53,9 +53,9 @@ BEGIN {
     $ldap        = C4::Context->config('useldapserver') || 0;
     $cas         = C4::Context->preference('casAuthentication');
     $caslogout   = C4::Context->preference('casLogout');
-    $ExtAuthSrc  = C4::Context->config('useExtAuthSrc') || 0;
+    $saml  = C4::Context->config('usesaml') || 0;
     require C4::Auth_with_cas;             # no import
-    require C4::Auth_with_ExtAuthSrc;
+    require C4::Auth_with_saml;
     if ($ldap) {
     require C4::Auth_with_ldap;
     import C4::Auth_with_ldap qw(checkpw_ldap);
@@ -63,8 +63,8 @@ BEGIN {
     if ($cas) {
         import  C4::Auth_with_cas qw(check_api_auth_cas checkpw_cas login_cas logout_cas login_cas_url);
     }
-    if ($ExtAuthSrc) {
-        import  C4::Auth_with_ExtAuthSrc qw(logout_extauthsrc login_extauthsrc_url);
+    if ($saml) {
+        import  C4::Auth_with_saml qw(logout_saml login_saml_url);
     }
 
 }
@@ -613,9 +613,9 @@ sub checkauth {
     my $flagsrequired   = shift;
     my $type            = shift;
     my $persona         = shift;
-    my $extauthsrc_id   = shift;
+    my $saml_id   = shift;
     $type = 'opac' unless $type;
-    print STDERR "EXTAUTHSRC_ID=$extauthsrc_id\n";
+    print STDERR "saml_ID=$saml_id\n";
 
     my $dbh     = C4::Context->dbh;
     my $timeout = _timeout_syspref();
@@ -641,7 +641,7 @@ sub checkauth {
         );
         $loggedin = 1;
     }
-    elsif ( $persona || $extauthsrc_id){
+    elsif ( $persona || $saml_id){
       # we dont want to set a session because we are being called by a persona callback
     }
     elsif ( $sessionID = $query->cookie("CGISESSID") )
@@ -690,13 +690,13 @@ sub checkauth {
         if ($cas and $caslogout) {
         logout_cas($query);
         }
-            if ( $ExtAuthSrc and $type eq 'opac' ) {
+            if ( $saml and $type eq 'opac' ) {
                 # Note: $type eq 'opac' should be removed when External
                 #       Authentication Source is implemented for the
                 #       Staff Client.
-                $debug and printf STDERR sprintf("\$ExtAuthSrc=%s\n",$ExtAuthSrc);
+                $debug and printf STDERR sprintf("\$saml=%s\n",$saml);
                 $debug and printf STDERR sprintf("\$type=%s\n",$type);
-                logout_extauthsrc($query);
+                logout_saml($query);
             }
         }
         elsif ( $lasttime < time() - $timeout ) {
@@ -747,7 +747,7 @@ sub checkauth {
             -value    => $session->id,
             -HttpOnly => 1
         );
-        $userid = $query->param('userid') || $extauthsrc_id;
+        $userid = $query->param('userid') || $saml_id;
         print STDERR "USERID=$userid\n";
         if (   ( $cas && $query->param('ticket') )
             || $userid
@@ -764,7 +764,7 @@ sub checkauth {
                 $userid = $retuserid;
                 $info{'invalidCasLogin'} = 1 unless ($return);
             }
-            elsif ( $extauthsrc_id ) {
+            elsif ( $saml_id ) {
                 print STDERR "RETURN=1\n";
                 $return = 1;
             } 
@@ -1009,7 +1009,7 @@ sub checkauth {
         login                => 1,
         INPUTS               => \@inputs,
         casAuthentication    => C4::Context->preference("casAuthentication"),
-        useExtAuthSrc        => C4::Context->config("useExtAuthSrc"),
+        usesaml        => C4::Context->config("usesaml"),
         suggestion           => C4::Context->preference("suggestion"),
         virtualshelves       => C4::Context->preference("virtualshelves"),
         LibraryName          => "" . C4::Context->preference("LibraryName"),
@@ -1081,9 +1081,9 @@ sub checkauth {
         );
     }
 
-    if ($ExtAuthSrc) {
+    if ($saml) {
         $template->param(
-            ExtAuthSrcLoginURL => login_extauthsrc_url($query),
+            samlLoginURL => login_saml_url($query),
         );
     }
 
