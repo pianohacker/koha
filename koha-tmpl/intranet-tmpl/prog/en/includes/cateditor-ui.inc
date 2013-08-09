@@ -3,7 +3,13 @@
 <script src="/intranet-tmpl/lib/require.js"></script>
 <script>
 require.config( {
-    baseUrl: '/intranet-tmpl/lib/koha/cateditor/'
+    baseUrl: '/intranet-tmpl/lib/koha/cateditor/',
+    paths: {
+        pz2: '../../pz2',
+    },
+    shim: {
+        pz2: { exports: 'pz2' },
+    },
 } );
 </script>
 
@@ -15,6 +21,19 @@ require.config( {
 
 <script>
 require( [ 'koha-backend', 'search', 'marc-record', 'text-marc', 'widget-utils' ], function( KohaBackend, Search, MARC, TextMARC, Widget ) {
+    var targets = {
+        [% FOREACH target = z3950_targets %]
+            '[% target.host %]:[% target.port %]/[% target.db %]': {
+                'name': '[% target.name %]',
+                'userid': '[% target.userid %]',
+                'password': '[% target.password %]',
+                'syntax': '[% target.syntax %]',
+                'encoding': '[% target.encoding %]',
+                'checked': '[% target.checked %]',
+            },
+        [% END %]
+    };
+
     var state = {
         backend: '',
         record_id: undefined,
@@ -358,9 +377,10 @@ require( [ 'koha-backend', 'search', 'marc-record', 'text-marc', 'widget-utils' 
 
         // Key bindings
         function bindKey( key, handler ) {
+            $( document ).bind( 'keydown', key, handler );
             $( document ).bind( 'keypress', key, handler );
-            $( '#sidebar input' ).bind( 'keypress', key, handler );
-            $( '#editor textarea' ).bind( 'keypress', key, handler );
+            $( '#sidebar input' ).bind( 'keydown', key, handler );
+            $( '#editor textarea' ).bind( 'keydown', key, handler );
         }
 
         bindKey( 'ctrl+s', function(event) {
