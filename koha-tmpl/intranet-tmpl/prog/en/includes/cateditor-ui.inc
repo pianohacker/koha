@@ -97,17 +97,72 @@ require( [ 'koha-backend', 'search', 'marc-record', 'text-marc', 'widget-utils' 
     }
 
     // Editor helper functions
+    function getTabPositions( editor ) {
+        var info = Widget.GetLineInfo( editor, editor.getCursor() );
+
+        if ( info.tagNumber ) {
+            if ( info.subfields ) {
+                var positions = [ 0, 4, 6 ];
+
+                $.each( info.subfields, function( undef, subfield ) {
+                    positions.push( subfield.ch + 3 );
+                } );
+
+                return positions;
+            } else {
+                return [ 0, 4 ];
+            }
+        } else {
+            return [];
+        }
+    }
+
     var editorKeys = {
         Enter: function( editor ) {
             var cursor = editor.getCursor();
             editor.replaceRange( '\n', { line: cursor.line }, null, 'marcAware' );
-            editor.setCursor( { line: cursor.line + 1, column: 0 } );
+            editor.setCursor( { line: cursor.line + 1, ch: 0 } );
         },
 
         'Ctrl-D': function( editor ) {
+            // Delete line
             var cur = editor.getCursor();
 
             editor.replaceRange( "", { line: cur.line, ch: 0 }, { line: cur.line + 1, ch: 0 }, 'marcAware' );
+        },
+
+        Tab: function( editor ) {
+            // Move through parts of tag/fixed fields
+            var positions = getTabPositions( editor );
+            var cur = editor.getCursor();
+            var done = false;
+
+            for ( var i = 0; i < positions.length; i++ ) {
+                if ( positions[i] > cur.ch ) {
+                    editor.setCursor( { line: cur.line, ch: positions[i] } );
+                    done = true;
+                    return false;
+                }
+            }
+
+            editor.setCursor( { line: cur.line + 1, ch: 0 } );
+        },
+
+        'Shift-Tab': function( editor ) {
+            // Move backwards through parts of tag/fixed fields
+            var positions = getTabPositions( editor );
+            var cur = editor.getCursor();
+            var done = false;
+
+            for ( var i = positions.length - 1; i >= 0; i-- ) {
+                if ( positions[i] < cur.ch ) {
+                    editor.setCursor( { line: cur.line, ch: positions[i] } );
+                    done = true;
+                    return false;
+                }
+            }
+
+            editor.setCursor( { line: cur.line - 1, ch: 0 } );
         },
     };
 

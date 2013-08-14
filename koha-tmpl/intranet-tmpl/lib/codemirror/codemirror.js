@@ -3396,6 +3396,7 @@ window.CodeMirror = (function() {
     indentLess: function(cm) {cm.indentSelection("subtract");},
     insertTab: function(cm) {cm.replaceSelection("\t", "end", "+input");},
     defaultTab: function(cm) {
+        console.trace();
       if (cm.somethingSelected()) cm.indentSelection("add");
       else cm.replaceSelection("\t", "end", "+input");
     },
