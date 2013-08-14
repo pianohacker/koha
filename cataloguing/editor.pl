@@ -43,4 +43,11 @@ my ( $template, $loggedinuser, $cookie ) = get_template_and_user(
 # Needed information for cataloging plugins
 $template->{VARS}->{DefaultLanguageField008} = pack( 'A3', C4::Context->preference('DefaultLanguageField008') || 'eng' );
 
+# Z39.50 servers
+my $dbh = C4::Context->dbh;
+$template->{VARS}->{z3950_targets} = $dbh->selectall_arrayref( q{
+    SELECT * FROM z3950servers
+    ORDER BY name
+}, { Slice => {} } );
+
 output_html_with_http_headers $input, $cookie, $template->output;

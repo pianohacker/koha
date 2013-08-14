@@ -1,6 +1,7 @@
 <script src="/intranet-tmpl/lib/codemirror/codemirror.js"></script>
 <script src="/intranet-tmpl/lib/koha/cateditor/marc-mode.js"></script>
 <script src="/intranet-tmpl/lib/require.js"></script>
+<script src="/intranet-tmpl/lib/jquery/plugins/jquery.lightbox_me.js"></script>
 <script>
 require.config( {
     baseUrl: '/intranet-tmpl/lib/koha/cateditor/',
@@ -21,15 +22,14 @@ require.config( {
 
 <script>
 require( [ 'koha-backend', 'search', 'marc-record', 'text-marc', 'widget-utils' ], function( KohaBackend, Search, MARC, TextMARC, Widget ) {
-    var targets = {
+    var z3950_targets = {
         [% FOREACH target = z3950_targets %]
             '[% target.host %]:[% target.port %]/[% target.db %]': {
                 'name': '[% target.name %]',
-                'userid': '[% target.userid %]',
-                'password': '[% target.password %]',
+                'authentication': '[% target.userid %]:[% target.password %]',
                 'syntax': '[% target.syntax %]',
                 'encoding': '[% target.encoding %]',
-                'checked': '[% target.checked %]',
+                'checked': [% target.checked ? 'true' : 'false' %],
             },
         [% END %]
     };
@@ -57,6 +57,42 @@ require( [ 'koha-backend', 'search', 'marc-record', 'text-marc', 'widget-utils' 
             $.each( tagInfo.subfields, function( subfield, subfieldInfo ) {
                 if ( subfieldInfo.hidden < -3 || subfieldInfo.hidden > 4 ) editorWidgets[ tag + subfield ] = hiddenWidget;
             } );
+        } );
+    }
+
+    function bindGlobalKeys() {
+        function bindKey( key, handler ) {
+            $( document ).bind( 'keydown', key, handler );
+            $( document ).bind( 'keypress', key, handler );
+            $( '#sidebar input' ).bind( 'keydown', key, handler );
+            $( '#editor textarea' ).bind( 'keydown', key, handler );
+        }
+
+        bindKey( 'ctrl+s', function(event) {
+            $( '#save-record' ).click();
+
+            event.preventDefault();
+        } );
+
+        bindKey( 'ctrl+k', function(event) {
+            $( '#catalog-source' )[0].checked = true;
+            $( '#q' ).focus();
+
+            return false;
+        } );
+
+        bindKey( 'alt+ctrl+k', function(event) {
+            $( '#reservoir-source' )[0].checked = true;
+            $( '#q' ).focus();
+
+            return false;
+        } );
+
+        bindKey( 'ctrl+shift+k', function(event) {
+            $( '#z3950-source' )[0].checked = true;
+            $( '#q' ).focus();
+
+            return false;
         } );
     }
 
@@ -269,6 +305,27 @@ require( [ 'koha-backend', 'search', 'marc-record', 'text-marc', 'widget-utils' 
         return true;
     }
 
+    // Search functions
+    function showResultsBox(data) {
+        $('#search-results-ui').lightbox_me();
+    }
+
+    function showSearchResults(data) {
+        $('#searchresults table').empty();
+
+        $.each( data.hits, function( undef, hit ) {
+            $('#searchresults table').append( '<tr><td>' + hit['md-work-title'][0] + '</td></tr>' );
+        } );
+    }
+
+    function showSearchTargets(data) {
+        $('#search-targetsinfo').empty();
+
+        $.each( data, function( undef, target ) {
+            $('#search-targetsinfo').append( '<li>' + target.name + ' (' + target.hits + ')' + '</li>' );
+        } );
+    }
+
     $(document).ready( function() {
         makeHiddenWidgets('');
 
@@ -376,34 +433,21 @@ require( [ 'koha-backend', 'search', 'marc-record', 'text-marc', 'widget-utils' 
         } );
 
         // Key bindings
-        function bindKey( key, handler ) {
-            $( document ).bind( 'keydown', key, handler );
-            $( document ).bind( 'keypress', key, handler );
-            $( '#sidebar input' ).bind( 'keydown', key, handler );
-            $( '#editor textarea' ).bind( 'keydown', key, handler );
-        }
+        bindGlobalKeys();
 
-        bindKey( 'ctrl+s', function(event) {
-            $( '#save-record' ).click();
+        $('#quicksearch').submit( function() {
+            var q = this.q.value;
+            if (!q) return;
 
-            event.preventDefault();
-        } );
-
-        bindKey( 'ctrl+k', function(event) {
-            $( '#catalog-search' )[0].checked = true;
-            $( '#q' ).focus();
-
-            return false;
-        } );
-
-        bindKey( 'ctrl+shift+k', function(event) {
-            $( '#z3950-search' )[0].checked = true;
-            $( '#q' ).focus();
+            showResultsBox();
+            Search.Start( z3950_targets, q, 20 );
 
             return false;
         } );
 
         // Start editor
+        Search.Init( z3950_targets, { onshow: showSearchResults, onbytarget: showSearchTargets } );
+
         function finish_cb() {
             $("#loading").hide();
         }

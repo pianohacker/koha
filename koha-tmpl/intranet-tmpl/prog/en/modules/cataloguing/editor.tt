@@ -71,15 +71,40 @@
 </div>
 
 <h3>Search</h3>
-<form id="search">
-<input id="q" name="q" placeholder="Keywords" /><br />
-<input id="catalog-search" name="source" value="catalog" type="radio" /><label for="catalog-search" title="Search local records (Ctrl-K)">Catalog</label>
-<input id="z3950-search" name="source" value="z3950" type="radio" /><label for="z3950-search" title="Search external records using Z39.50 (Ctrl-Shift-K)">Z39.50</label>
+<form id="quicksearch">
+    <fieldset class="brief">
+    <ol>
+        <li><input id="q" name="q" placeholder="Keywords" /></li>
+        <li><label title="Search local records (Ctrl-K)"><input id="catalog-source" name="source" value="catalog" type="radio" /> Catalog</label></li>
+        <li><label title="Search records in the reservoir (Ctrl-Alt-K)"><input id="reservoir-source" name="source" value="reservoir" type="radio" /> Reservoir</label></li>
+        <li><label title="Search external records using Z39.50 (Ctrl-Shift-K)"><input id="z3950-source" name="source" value="z3950" type="radio" /> Z39.50</label></li>
+    </fieldset>
 </form>
 
 </div>
 
 </div>
+</div>
+
+<div id="search-results-ui" style="display: none">
+
+<h1>Results</h1>
+<div class="yui-gf">
+    <div class="yui-u first">
+        <div id="search-facets">
+            <ul>
+                <li>Targets:<ul id="search-targetsinfo"></ul></li>
+            </ul>
+        </div>
+    </div>
+    <div class="yui-u">
+        <div id="searchresults">
+            <table>
+            </table>
+        </div>
+    </div>
+</div>
+
 </div>
 
 [% PROCESS 'cateditor-ui.inc' %]
