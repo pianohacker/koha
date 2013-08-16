@@ -1,4 +1,4 @@
-define( [ 'pz2' ], function( Pazpar2 ) {
+define( [ 'marc-record', 'pz2' ], function( MARC, Pazpar2 ) {
     function _transformToFragment( xmlDoc, xslDoc ) {
         if ( window.XSLTProcessor ) {
             var proc = new XSLTProcessor();
@@ -50,7 +50,12 @@ define( [ 'pz2' ], function( Pazpar2 ) {
             _pz.show( offset );
         },
         GetDetailedRecord: function( recid, callback ) {
-            _pz.record( recid, 0, undefined, { callback: callback } );
+            _pz.record( recid, 0, undefined, { callback: function(data) {
+                var record = new MARC.Record();
+                record.loadMARCXML(data.xmlDoc);
+
+                callback(record);
+            } } );
         },
     };
 

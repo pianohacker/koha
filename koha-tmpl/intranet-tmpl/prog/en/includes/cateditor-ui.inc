@@ -235,29 +235,29 @@ require( [ 'koha-backend', 'search', 'marc-record', 'text-marc', 'widget-utils' 
     var backends = {
        'new': {
             record_label: _("new record"),
-            get: function( id, display_cb ) {
+            get: function( id, callback ) {
                 record = new MARC.Record();
                 KohaBackend.FillRecord( '', record );
 
-                display_cb( record );
+                callback( record );
             },
         },
         'new-full': {
             record_label: _("new full record"),
-            get: function( id, display_cb ) {
+            get: function( id, callback ) {
                 record = new MARC.Record();
                 KohaBackend.FillRecord( '', record, true );
 
-                display_cb( record );
+                callback( record );
             },
         },
         'catalog': {
             record_label: _("catalog record #{ID}"),
             save_label: _("To catalog"),
-            get: function( id, display_cb ) {
+            get: function( id, callback ) {
                 if ( !id ) return false;
 
-                KohaBackend.GetRecord( id, display_cb );
+                KohaBackend.GetRecord( id, callback );
             },
             save: function( id, record, done ) {
                 function finish_cb( data ) {
@@ -270,7 +270,15 @@ require( [ 'koha-backend', 'search', 'marc-record', 'text-marc', 'widget-utils' 
                     KohaBackend.CreateRecord( record, finish_cb );
                 }
             }
-        }
+        },
+        'search': {
+            record_label: _("search result"),
+            get: function( id, callback ) {
+                if ( !id ) return false;
+
+                Search.GetDetailedRecord( decodeURIComponent(id), callback );
+            },
+        },
     };
 
     function clearRecordInfo( name, value ) {
@@ -365,11 +373,16 @@ require( [ 'koha-backend', 'search', 'marc-record', 'text-marc', 'widget-utils' 
         $('#search-results-ui').lightbox_me();
     }
 
-    function showSearchResults(data) {
+    function showSearchResults( editor, data ) {
         $('#searchresults table').empty();
 
         $.each( data.hits, function( undef, hit ) {
-            $('#searchresults table').append( '<tr><td>' + hit['md-work-title'][0] + '</td></tr>' );
+            var $tr = $( '<tr><td>' + hit['md-work-title'][0] + '</td></tr>' );
+            $tr.click( function() {
+                $( '#search-results-ui' ).trigger( 'close' );
+                openRecord( 'search:' + encodeURIComponent( hit.recid[0] ), editor );
+            } );
+            $('#searchresults table').append( $tr );
         } );
     }
 
@@ -501,7 +514,7 @@ require( [ 'koha-backend', 'search', 'marc-record', 'text-marc', 'widget-utils' 
         } );
 
         // Start editor
-        Search.Init( z3950_targets, { onshow: showSearchResults, onbytarget: showSearchTargets } );
+        Search.Init( z3950_targets, { onshow: function(data) { showSearchResults( editor, data ) }, onbytarget: showSearchTargets } );
 
         function finish_cb() {
             $("#loading").hide();
