@@ -27,6 +27,7 @@ use C4::Auth;
 use C4::Biblio;
 use C4::Context;
 use C4::Output;
+use C4::XSLT qw( XSLTGetFilename );
 
 my $input = CGI->new;
 
@@ -49,5 +50,21 @@ $template->{VARS}->{z3950_targets} = $dbh->selectall_arrayref( q{
     SELECT * FROM z3950servers
     ORDER BY name
 }, { Slice => {} } );
+
+my @xsltResultStylesheets;
+my @xsltDetailStylesheets;
+
+foreach my $syntax ( qw( MARC21 UNIMARC NORMARC ) ) {
+    if ( XSLTGetFilename( $syntax, 'XSLTResultsDisplay' ) =~ m,/intranet-tmpl/.*|^https:?.*, ) {
+        push @xsltResultStylesheets, { syntax => $syntax, url => $& };
+    }
+
+    if ( XSLTGetFilename( $syntax, 'XSLTDetailsDisplay' ) =~ m,/intranet-tmpl/.*|^https:?.*, ) {
+        push @xsltDetailStylesheets, { syntax => $syntax, url => $& };
+    }
+}
+
+$template->{VARS}->{xslt_result_stylesheets} = \@xsltResultStylesheets;
+$template->{VARS}->{xslt_detail_stylesheets} = \@xsltDetailStylesheets;
 
 output_html_with_http_headers $input, $cookie, $template->output;

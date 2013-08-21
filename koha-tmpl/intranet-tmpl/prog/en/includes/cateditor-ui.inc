@@ -21,7 +21,19 @@ require.config( {
 [% END %]
 
 <script>
-require( [ 'koha-backend', 'search', 'marc-record', 'text-marc', 'widget-utils' ], function( KohaBackend, Search, MARC, TextMARC, Widget ) {
+require( [ 'koha-backend', 'search', 'marc-record', 'text-marc', 'widget-utils', 'xslt' ], function( KohaBackend, Search, MARC, TextMARC, Widget, XSLT ) {
+    var xsltResultStylesheets = {
+        [% FOREACH stylesheet IN xslt_result_stylesheets %]
+        '[% stylesheet.syntax %]': XSLT.Get( '[% stylesheet.url %]' ),
+        [% END %]
+    };
+
+    var xsltDetailStylesheets = {
+        [% FOREACH stylesheet IN xslt_detail_stylesheets %]
+        '[% stylesheet.syntax %]': XSLT.Get( '[% stylesheet.url %]' ),
+        [% END %]
+    };
+
     var z3950_targets = {
         [% FOREACH target = z3950_targets %]
             '[% target.host %]:[% target.port %]/[% target.db %]': {
@@ -373,6 +385,14 @@ require( [ 'koha-backend', 'search', 'marc-record', 'text-marc', 'widget-utils' 
         $('#search-results-ui').lightbox_me();
     }
 
+    function showDetailedResult( recid, $tr ) {
+        Search.GetDetailedRecord( recid, function( record ) {
+            xsltResultStylesheets[ z3950_targets[ hit.location[0]['@id'] ].syntax ].done( function( xslDoc ) {
+                $tr.find( 'td' ).html( XSLT.TransformToFragment( record, xslDoc ) );
+            } );
+        } );
+    }
+
     function showSearchResults( editor, data ) {
         $('#searchresults table').empty();
 
@@ -380,9 +400,11 @@ require( [ 'koha-backend', 'search', 'marc-record', 'text-marc', 'widget-utils' 
             var $tr = $( '<tr><td>' + hit['md-work-title'][0] + '</td></tr>' );
             $tr.click( function() {
                 $( '#search-results-ui' ).trigger( 'close' );
-                openRecord( 'search:' + encodeURIComponent( hit.recid[0] ), editor );
+                openRecord( hit.id, editor );
             } );
             $('#searchresults table').append( $tr );
+
+            showDetailedResult( hit, $tr );
         } );
     }
 
@@ -395,8 +417,6 @@ require( [ 'koha-backend', 'search', 'marc-record', 'text-marc', 'widget-utils' 
     }
 
     $(document).ready( function() {
-        makeHiddenWidgets('');
-
         // Editor setup
         var editor = CodeMirror(
             function (elt) { $(elt).insertAfter('#toolbar') },
@@ -514,7 +534,7 @@ require( [ 'koha-backend', 'search', 'marc-record', 'text-marc', 'widget-utils' 
         } );
 
         // Start editor
-        Search.Init( z3950_targets, { onshow: function(data) { showSearchResults( editor, data ) }, onbytarget: showSearchTargets } );
+        Search.Init( z3950_targets, { onresults: function(data) { showSearchResults( editor, data ) }, onbytarget: showSearchTargets } );
 
         function finish_cb() {
             $("#loading").hide();

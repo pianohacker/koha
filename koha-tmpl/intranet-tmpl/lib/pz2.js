@@ -5,6 +5,7 @@
 
 /**
  * Additions to support custom settings for Koha
+ * Modified by Jesse Weaver
  */
 
 //since explorer is flawed

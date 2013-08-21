@@ -1,28 +1,12 @@
 define( [ 'marc-record', 'pz2' ], function( MARC, Pazpar2 ) {
-    function _transformToFragment( xmlDoc, xslDoc ) {
-        if ( window.XSLTProcessor ) {
-            var proc = new XSLTProcessor();
-            proc.importStylesheet( xslDoc );
-            proc.setParameter( null, 'showAvailability', false );
-            return (new XMLSerializer).serializeToString( proc.transformToFragment( xmlDoc, document ) );
-        } else if ( window.ActiveXObject ) {
-            var xslt = new ActiveXObject( "Msxml2.XSLTemplate" );
-            xslt.stylesheet = xslDoc;
-            var xslProc = xslt.createProcessor();
-            xslProc.input = xmlDoc;
-            xslProc.addParameter( 'showAvailability', false );
-            xslProc.transform();
-            return xslProc.output;
-        } else {
-            alert( 'Unable to perform XSLT transformation in this browser' );
-        }
-    };
-
     var _pz;
+    var _onresults;
 
     var Search = {
         Init: function( targets, options ) {
             var initOpts = {};
+
+            _onresults = options.onresults;
 
             $.each( targets, function ( url, info ) {
                 initOpts[ 'pz:name[' + url + ']' ] = info.name;
@@ -34,6 +18,7 @@ define( [ 'marc-record', 'pz2' ], function( MARC, Pazpar2 ) {
 
             _pz = new Pazpar2( $.extend( {
                 initopts: initOpts,
+                onshow: Search._onshow,
                 errorhandler: function ( error ) { callback( { error: error } ) },
             }, options ) );
         },
@@ -56,6 +41,13 @@ define( [ 'marc-record', 'pz2' ], function( MARC, Pazpar2 ) {
 
                 callback(record);
             } } );
+        },
+        _onshow: function( data ) {
+            $.each( data.hits, function( undef, hit ) {
+                hit.id = 'search:' + encodeURIComponent( hit.recid[0] );
+            } );
+
+            _onresults( data.hits );
         },
     };
 
