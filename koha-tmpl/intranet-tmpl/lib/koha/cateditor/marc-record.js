@@ -116,6 +116,7 @@ define( function() {
          */
         loadMARCXML: function(xmldoc) {
             var record = this;
+            record.xmlSource = xmldoc;
             this._fieldlist.length = 0;
             var leader = $('leader', xmldoc).text();
             this._fieldlist.push( new MARC.Field('000', '', '', [ [ '@', leader ] ]) );

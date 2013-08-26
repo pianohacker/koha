@@ -84,7 +84,7 @@ define( [ '/cgi-bin/koha/svc/cataloguing/framework?frameworkcode=&amp;callback=d
             } ).done( function( data ) {
                 callback( _fromXMLStruct( data ) );
             } ).fail( function( data ) {
-                alert('Record save failed.');
+                console.log( data );
             } );
         },
 

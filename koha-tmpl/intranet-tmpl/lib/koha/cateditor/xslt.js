@@ -1,5 +1,5 @@
 define( function() {
-    return {
+    var XSLT = {
         TransformToFragment: function( xmlDoc, xslDoc ) {
             if ( window.XSLTProcessor ) {
                 var proc = new XSLTProcessor();
@@ -44,7 +44,7 @@ define( function() {
                         var path = $( importElem ).attr( 'href' );
                         if ( !/^(\/|https?:)/.test( path ) ) path = basepath + path;
 
-                        KOHA.XSLTGet( path ).done( function( subDoc ) {
+                        XSLT.Get( path ).done( function( subDoc ) {
                             importsRemaining--;
                             $( importElem ).replaceWith( subDoc.documentElement.childNodes );
 
@@ -63,4 +63,6 @@ define( function() {
             };
         } )(),
     };
+
+    return XSLT;
 } );

@@ -40,6 +40,7 @@ require( [ 'koha-backend', 'search', 'marc-record', 'text-marc', 'widget-utils',
                 'name': '[% target.name %]',
                 'authentication': '[% target.userid %]:[% target.password %]',
                 'syntax': '[% target.syntax %]',
+                'kohasyntax': '[% target.syntax == 'USMARC' ? 'MARC21' : target.syntax %]',
                 'encoding': '[% target.encoding %]',
                 'checked': [% target.checked ? 'true' : 'false' %],
             },
@@ -48,6 +49,7 @@ require( [ 'koha-backend', 'search', 'marc-record', 'text-marc', 'widget-utils',
 
     var state = {
         backend: '',
+        save_backend: 'catalog',
         record_id: undefined,
         saving: false
     };
@@ -265,7 +267,7 @@ require( [ 'koha-backend', 'search', 'marc-record', 'text-marc', 'widget-utils',
         },
         'catalog': {
             record_label: _("catalog record #{ID}"),
-            save_label: _("To catalog"),
+            save_label: _("to catalog"),
             get: function( id, callback ) {
                 if ( !id ) return false;
 
@@ -304,10 +306,13 @@ require( [ 'koha-backend', 'search', 'marc-record', 'text-marc', 'widget-utils',
     function setSource(parts) {
         state.backend = parts[0];
         state.record_id = parts[1];
+        state.can_save = backends[ state.backend ].save != null;
+        state.save_backend = state.can_save ? state.backend : 'catalog';
 
         document.location.hash = '#' + parts[0] + ':' + parts[1];
-        $( '#title' ).text( _("Editing ") + backends[ parts[0] ].record_label.replace( '{ID}', parts[1] ) );
-        $( 'title', document.head ).html( _("Koha &rsaquo; Cataloging &rsaquo; Editing ") + backends[ parts[0] ].record_label.replace( '{ID}', parts[1] ) );
+        $( '#title' ).text( _("Editing ") + backends[ state.backend ].record_label.replace( '{ID}', parts[1] ) );
+        $( 'title', document.head ).html( _("Koha &rsaquo; Cataloging &rsaquo; Editing ") + backends[ state.backend ].record_label.replace( '{ID}', parts[1] ) );
+        $( '#save-record span' ).text( _("Save ") + backends[ state.save_backend ].save_label );
     }
 
     function displayRecord( editor, record ) {
@@ -362,16 +367,13 @@ require( [ 'koha-backend', 'search', 'marc-record', 'text-marc', 'widget-utils',
         } );
     }
 
-    function openRecord( recid, editor, callback ) {
+    function loadRecord( recid, editor, callback ) {
         var parts = recid.split(':');
         if ( parts.length != 2 ) return false;
 
         if ( !backends[ parts[0] ] || !backends[ parts[0] ].get ) return false;
 
-        clearRecordInfo();
         backends[ parts[0] ].get( parts[1], function( record ) {
-            setSource( parts );
-
             displayRecord( editor, record );
 
             if (callback) callback(record);
@@ -380,15 +382,26 @@ require( [ 'koha-backend', 'search', 'marc-record', 'text-marc', 'widget-utils',
         return true;
     }
 
+    function openRecord( recid, editor, callback ) {
+        return loadRecord( recid, editor, function ( record ) {
+            clearRecordInfo();
+            setSource( recid.split(':') );
+
+            if (callback) callback( record );
+        } );
+    }
+
     // Search functions
     function showResultsBox(data) {
+        $('#searchresults table').empty();
+        $('#search-targetsinfo').empty().append('<li>' + _("Loading...") + '</li>');
         $('#search-results-ui').lightbox_me();
     }
 
-    function showDetailedResult( recid, $tr ) {
-        Search.GetDetailedRecord( recid, function( record ) {
-            xsltResultStylesheets[ z3950_targets[ hit.location[0]['@id'] ].syntax ].done( function( xslDoc ) {
-                $tr.find( 'td' ).html( XSLT.TransformToFragment( record, xslDoc ) );
+    function showDetailedResult( hit, $tr ) {
+        Search.GetDetailedRecord( hit.recid, function( record ) {
+            xsltResultStylesheets[ z3950_targets[ hit.location[0]['@id'] ].kohasyntax ].done( function( xslDoc ) {
+                $tr.find( '.results-info' ).html( XSLT.TransformToFragment( record.xmlSource, xslDoc ) );
             } );
         } );
     }
@@ -397,10 +410,25 @@ require( [ 'koha-backend', 'search', 'marc-record', 'text-marc', 'widget-utils',
         $('#searchresults table').empty();
 
         $.each( data.hits, function( undef, hit ) {
-            var $tr = $( '<tr><td>' + hit['md-work-title'][0] + '</td></tr>' );
-            $tr.click( function() {
+            var result = '<tr>';
+            result += '<td class="sourcecol">' + hit.location[0]['@name'] + '</td>';
+            result += '<td><div class="results-info">' + hit['md-work-title'][0] + '</div></td>';
+            result += '<td class="toolscol"><ul><li><a href="#" class="open-link">' + _("Open") + '</a></li>';
+            if ( state.can_save ) result += '<li><a href="#" class="substitute-link">' + _("Substitute") + '</li>';
+            result += '</ul></td></tr>';
+
+            var $tr = $( result );
+            $tr.find( '.open-link' ).click( function() {
                 $( '#search-results-ui' ).trigger( 'close' );
                 openRecord( hit.id, editor );
+
+                return false;
+            } );
+            $tr.find( '.substitute-link' ).click( function() {
+                $( '#search-results-ui' ).trigger( 'close' );
+                loadRecord( hit.id, editor );
+
+                return false;
             } );
             $('#searchresults table').append( $tr );
 
@@ -451,12 +479,13 @@ require( [ 'koha-backend', 'search', 'marc-record', 'text-marc', 'widget-utils',
         } );
         saveable_backends.sort();
         $.each( saveable_backends, function( undef, backend ) {
-            $( '#save-dropdown' ).append( '<li><a href="#" data-backend="' + backend[1] + '">' + backend[0] + '</a></li>' );
+            $( '#save-dropdown' ).append( '<li><a href="#" data-backend="' + backend[1] + '">' + _("Save ") + backend[0] + '</a></li>' );
         } );
 
         // Click bindings
         $( '#save-record, #save-dropdown a' ).click( function() {
             $( '#save-record' ).find('i').attr( 'class', 'icon-loading' ).siblings( 'span' ).text( _("Saving...") );
+
             function finish_cb(result) {
                 if ( result.error == 'syntax' ) {
                     humanMsg.displayAlert( _("Incorrect syntax, cannot save"), { className: 'humanError' } );
@@ -493,10 +522,15 @@ require( [ 'koha-backend', 'search', 'marc-record', 'text-marc', 'widget-utils',
                     }
                 } );
 
-                $( '#save-record' ).find('i').attr( 'class', 'icon-hdd' ).siblings( 'span' ).text( _("Save") );
+                $( '#save-record' ).find('i').attr( 'class', 'icon-hdd' );
+
+                if ( result.error ) {
+                    // Reset backend info
+                    setSource( [ state.backend, state.record_id ] );
+                }
             }
 
-            var backend = $( this ).data( 'backend' ) || 'catalog';
+            var backend = $( this ).data( 'backend' ) || ( state.save_backend );
             if ( state.backend == backend ) {
                 saveRecord( backend + ':' + state.record_id, editor, finish_cb );
             } else {

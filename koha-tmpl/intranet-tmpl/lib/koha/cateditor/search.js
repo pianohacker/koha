@@ -11,7 +11,7 @@ define( [ 'marc-record', 'pz2' ], function( MARC, Pazpar2 ) {
             $.each( targets, function ( url, info ) {
                 initOpts[ 'pz:name[' + url + ']' ] = info.name;
                 initOpts[ 'pz:queryencoding[' + url + ']' ] = info.encoding;
-                initOpts[ 'pz:xslt[' + url + ']' ] = ( info.syntax == 'USMARC' ? 'marc21' : info.syntax.toLowerCase() ) + '-work-groups.xsl';
+                initOpts[ 'pz:xslt[' + url + ']' ] = info.kohasyntax.toLowerCase() + '-work-groups.xsl';
                 initOpts[ 'pz:requestsyntax[' + url + ']' ] = info.syntax;
                 if ( info.authentication ) initOpts[ 'pz:authentication[' + url + ']' ] = info.authentication;
             } );
@@ -47,7 +47,7 @@ define( [ 'marc-record', 'pz2' ], function( MARC, Pazpar2 ) {
                 hit.id = 'search:' + encodeURIComponent( hit.recid[0] );
             } );
 
-            _onresults( data.hits );
+            _onresults( data );
         },
     };
 

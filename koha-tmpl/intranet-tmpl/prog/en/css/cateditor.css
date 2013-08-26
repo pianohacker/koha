@@ -149,3 +149,36 @@ body {
     padding: 10px;
     width: 90%;
 }
+
+#searchresults table {
+    width: 100%;
+}
+
+.sourcecol {
+    width: 50px;
+}
+
+.results-info {
+    height: 100px;
+    overflow: auto;
+}
+
+.toolscol {
+    padding: 0;
+}
+
+.toolscol ul {
+    margin: 0;
+    padding: 0;
+}
+
+#searchresults .toolscol li {
+    list-style-type: none;
+}
+
+.toolscol a {
+    border-bottom: 1px solid #BCBCBC;
+    display: block;
+    padding: 0 1em;
+    line-height: 24px;
+}
