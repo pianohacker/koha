@@ -31,28 +31,28 @@ body {
     line-height: 1.2;
 }
 
-#editor .cm-tagnumber {
+.cm-tagnumber {
     color: #080;
     font-weight: bold;
 }
 
-#editor .cm-bad-tagnumber {
+.cm-bad-tagnumber {
     color: #A20;
     font-weight: bold;
 }
 
-#editor .cm-indicator {
+.cm-indicator {
     color: #884;
 }
 
-#editor .cm-subfieldcode {
+.cm-subfieldcode {
     background-color: #F4F4F4;
     color: #383838;
     border-radius: 3px 8px 8px 3px;
     font-weight: bold;
 }
 
-#editor .cm-bad-subfieldcode {
+.cm-bad-subfieldcode {
     background-color: #FFD9D9;
     color: #482828;
     border-radius: 3px 8px 8px 3px;
@@ -165,6 +165,7 @@ body {
 
 .toolscol {
     padding: 0;
+    width: 100px;
 }
 
 .toolscol ul {
@@ -174,6 +175,7 @@ body {
 
 #searchresults .toolscol li {
     list-style-type: none;
+    list-style-image: none;
 }
 
 .toolscol a {
@@ -181,4 +183,9 @@ body {
     display: block;
     padding: 0 1em;
     line-height: 24px;
+}
+
+.results-marc {
+    font-family: monospace;
+    white-space: pre-wrap;
 }

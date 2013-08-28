@@ -1,4 +1,5 @@
 <script src="/intranet-tmpl/lib/codemirror/codemirror.js"></script>
+<script src="/intranet-tmpl/lib/codemirror/lib/runmode.js"></script>
 <script src="/intranet-tmpl/lib/koha/cateditor/marc-mode.js"></script>
 <script src="/intranet-tmpl/lib/require.js"></script>
 <script src="/intranet-tmpl/lib/jquery/plugins/jquery.lightbox_me.js"></script>
@@ -413,11 +414,21 @@ require( [ 'koha-backend', 'search', 'marc-record', 'text-marc', 'widget-utils',
             var result = '<tr>';
             result += '<td class="sourcecol">' + hit.location[0]['@name'] + '</td>';
             result += '<td><div class="results-info">' + hit['md-work-title'][0] + '</div></td>';
-            result += '<td class="toolscol"><ul><li><a href="#" class="open-link">' + _("Open") + '</a></li>';
+            result += '<td class="toolscol"><ul><li><a href="#" class="marc-link">' + _("View MARC") + '</a></li>';
+            result += '<li><a href="#" class="open-link">' + _("Open") + '</a></li>';
             if ( state.can_save ) result += '<li><a href="#" class="substitute-link">' + _("Substitute") + '</li>';
             result += '</ul></td></tr>';
 
             var $tr = $( result );
+            $tr.find( '.marc-link' ).click( function() {
+                $tr.find( '.results-info' ).addClass( 'results-marc' ).empty();
+
+                Search.GetDetailedRecord( hit.recid, function( record ) {
+                    CodeMirror.runMode( TextMARC.RecordToText( record ), 'marc', $tr.find( '.results-info' )[0] );
+                } );
+
+                return false;
+            } );
             $tr.find( '.open-link' ).click( function() {
                 $( '#search-results-ui' ).trigger( 'close' );
                 openRecord( hit.id, editor );

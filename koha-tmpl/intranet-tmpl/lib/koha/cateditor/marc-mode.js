@@ -6,6 +6,9 @@
 // Expected format: 245 _ 1 $a Pizza |c 34ars
 
 CodeMirror.defineMode( 'marc', function( config, modeConfig ) {
+    modeConfig.nonRepeatableTags = modeConfig.nonRepeatableTags || {};
+    modeConfig.nonRepeatableSubfields = modeConfig.nonRepeatableSubfields || {};
+
     return {
         startState: function( prevState ) {
             var state = prevState || {};
@@ -105,7 +108,7 @@ CodeMirror.defineMode( 'marc', function( config, modeConfig ) {
                     var subfieldCode;
                     if ( ( subfieldCode = stream.eat( /[a-z0-9%]/ ) ) && stream.eat( ' ' ) ) {
                         state.subfieldCode = subfieldCode;
-                        if ( state.seenSubfields[state.subfieldCode] && modeConfig.nonRepeatableSubfields[state.tagNumber][state.subfieldCode] ) {
+                        if ( state.seenSubfields[state.subfieldCode] && ( modeConfig.nonRepeatableSubfields[state.tagNumber] || {} )[state.subfieldCode] ) {
                             return 'bad-subfieldcode';
                         } else {
                             state.seenSubfields[state.subfieldCode] = true;

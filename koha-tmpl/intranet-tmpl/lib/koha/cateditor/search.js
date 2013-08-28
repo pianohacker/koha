@@ -1,6 +1,7 @@
 define( [ 'marc-record', 'pz2' ], function( MARC, Pazpar2 ) {
     var _pz;
     var _onresults;
+    var _recordCache = {};
 
     var Search = {
         Init: function( targets, options ) {
@@ -24,6 +25,7 @@ define( [ 'marc-record', 'pz2' ], function( MARC, Pazpar2 ) {
         },
         Start: function( targets, q, limit ) {
             var includedTargets = [];
+            recordcache = {};
 
             $.each( targets, function ( url, info ) {
                 if ( !info.disabled ) includedTargets.push( url );
@@ -35,8 +37,13 @@ define( [ 'marc-record', 'pz2' ], function( MARC, Pazpar2 ) {
             _pz.show( offset );
         },
         GetDetailedRecord: function( recid, callback ) {
+            if ( _recordCache[recid] ) {
+                callback( _recordCache[recid] );
+                return;
+            }
+
             _pz.record( recid, 0, undefined, { callback: function(data) {
-                var record = new MARC.Record();
+                var record = _recordCache[recid] = new MARC.Record();
                 record.loadMARCXML(data.xmlDoc);
 
                 callback(record);
