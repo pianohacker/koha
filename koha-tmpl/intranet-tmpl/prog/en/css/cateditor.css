@@ -187,5 +187,6 @@ body {
 
 .results-marc {
     font-family: monospace;
+    height: 200px;
     white-space: pre-wrap;
 }

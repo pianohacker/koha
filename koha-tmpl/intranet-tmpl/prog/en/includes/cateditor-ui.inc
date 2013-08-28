@@ -416,7 +416,7 @@ require( [ 'koha-backend', 'search', 'marc-record', 'text-marc', 'widget-utils',
             result += '<td><div class="results-info">' + hit['md-work-title'][0] + '</div></td>';
             result += '<td class="toolscol"><ul><li><a href="#" class="marc-link">' + _("View MARC") + '</a></li>';
             result += '<li><a href="#" class="open-link">' + _("Open") + '</a></li>';
-            if ( state.can_save ) result += '<li><a href="#" class="substitute-link">' + _("Substitute") + '</li>';
+            if ( state.can_save ) result += '<li><a href="#" class="substitute-link" title=' + _("Replace the current record's contents") + '>' + _("Substitute") + '</li>';
             result += '</ul></td></tr>';
 
             var $tr = $( result );
