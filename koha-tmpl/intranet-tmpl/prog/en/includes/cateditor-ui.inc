@@ -22,7 +22,7 @@ require.config( {
 [% END %]
 
 <script>
-require( [ 'koha-backend', 'search', 'marc-record', 'text-marc', 'widget-utils', 'xslt' ], function( KohaBackend, Search, MARC, TextMARC, Widget, XSLT ) {
+require( [ 'koha-backend', 'search', 'marc-record', 'preferences', 'text-marc', 'widget-utils', 'xslt' ], function( KohaBackend, Search, MARC, Preferences, TextMARC, Widget, XSLT ) {
     var xsltResultStylesheets = {
         [% FOREACH stylesheet IN xslt_result_stylesheets %]
         '[% stylesheet.syntax %]': XSLT.Get( '[% stylesheet.url %]' ),
@@ -112,8 +112,8 @@ require( [ 'koha-backend', 'search', 'marc-record', 'text-marc', 'widget-utils',
     }
 
     // Editor helper functions
-    function getTabPositions( editor ) {
-        var info = Widget.GetLineInfo( editor, editor.getCursor() );
+    function getTabPositions( editor, cur ) {
+        var info = Widget.GetLineInfo( editor, cur || editor.getCursor() );
 
         if ( info.tagNumber ) {
             if ( info.subfields ) {
@@ -177,7 +177,10 @@ require( [ 'koha-backend', 'search', 'marc-record', 'text-marc', 'widget-utils',
                 }
             }
 
-            editor.setCursor( { line: cur.line - 1, ch: 0 } );
+            if ( cur.line == 0 ) return;
+
+            var prev_positions = getTabPositions( editor, { line: cur.line - 1, ch: editor.getLine( cur.line - 1 ).length } );
+            editor.setCursor( { line: cur.line - 1, ch: prev_positions.length ? prev_positions[ prev_positions.length - 1 ] : 0 }  );
         },
     };
 
@@ -226,7 +229,7 @@ require( [ 'koha-backend', 'search', 'marc-record', 'text-marc', 'widget-utils',
     }
 
     function editorChange( editor, change ) {
-        if ( state.saving ) return;
+        if ( state.saving || !Preferences.user.field_widgets ) return;
 
         var updatedLines = {};
         do {
@@ -318,8 +321,6 @@ require( [ 'koha-backend', 'search', 'marc-record', 'text-marc', 'widget-utils',
 
     function displayRecord( editor, record ) {
         editor.setValue( TextMARC.RecordToText(record) );
-
-        for ( var line = 0; line < editor.lineCount(); line++ ) Widget.UpdateLine( editor, line );
     }
 
     function saveRecord( recid, editor, callback ) {
@@ -337,7 +338,7 @@ require( [ 'koha-backend', 'search', 'marc-record', 'text-marc', 'widget-utils',
             if ( mark.widget ) mark.widget.clearToText();
         } );
         var record = TextMARC.TextToRecord( editor.getValue() );
-        for ( var line = 0; line < editor.lineCount(); line++ ) Widget.UpdateLine( editor, line );
+        editor.setValue( editor.getValue ); // Poke change handler
         if ( record.errors ) {
             state.saving = false;
             callback( { error: 'syntax', errors: record.errors } );
@@ -570,7 +571,7 @@ require( [ 'koha-backend', 'search', 'marc-record', 'text-marc', 'widget-utils',
 
         $('#quicksearch').submit( function() {
             var q = this.q.value;
-            if (!q) return;
+            if (!q) return false;
 
             showResultsBox();
             Search.Start( z3950_targets, q, 20 );
@@ -579,6 +580,7 @@ require( [ 'koha-backend', 'search', 'marc-record', 'text-marc', 'widget-utils',
         } );
 
         // Start editor
+        Preferences.Load( [% USER_INFO.0.borrowernumber %] );
         Search.Init( z3950_targets, { onresults: function(data) { showSearchResults( editor, data ) }, onbytarget: showSearchTargets } );
 
         function finish_cb() {
