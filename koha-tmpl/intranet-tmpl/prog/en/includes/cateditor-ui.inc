@@ -35,7 +35,7 @@ require( [ 'koha-backend', 'search', 'marc-record', 'preferences', 'text-marc', 
         [% END %]
     };
 
-    var z3950_targets = {
+    var z3950Targets = {
         [% FOREACH target = z3950_targets %]
             '[% target.host %]:[% target.port %]/[% target.db %]': {
                 'name': '[% target.name %]',
@@ -50,8 +50,8 @@ require( [ 'koha-backend', 'search', 'marc-record', 'preferences', 'text-marc', 
 
     var state = {
         backend: '',
-        save_backend: 'catalog',
-        record_id: undefined,
+        saveBackend: 'catalog',
+        recordID: undefined,
         saving: false
     };
 
@@ -179,8 +179,8 @@ require( [ 'koha-backend', 'search', 'marc-record', 'preferences', 'text-marc', 
 
             if ( cur.line == 0 ) return;
 
-            var prev_positions = getTabPositions( editor, { line: cur.line - 1, ch: editor.getLine( cur.line - 1 ).length } );
-            editor.setCursor( { line: cur.line - 1, ch: prev_positions.length ? prev_positions[ prev_positions.length - 1 ] : 0 }  );
+            var prevPositions = getTabPositions( editor, { line: cur.line - 1, ch: editor.getLine( cur.line - 1 ).length } );
+            editor.setCursor( { line: cur.line - 1, ch: prevPositions.length ? prevPositions[ prevPositions.length - 1 ] : 0 }  );
         },
     };
 
@@ -229,7 +229,7 @@ require( [ 'koha-backend', 'search', 'marc-record', 'preferences', 'text-marc', 
     }
 
     function editorChange( editor, change ) {
-        if ( state.saving || !Preferences.user.field_widgets ) return;
+        if ( state.saving || !Preferences.user.fieldWidgets ) return;
 
         var updatedLines = {};
         do {
@@ -252,7 +252,7 @@ require( [ 'koha-backend', 'search', 'marc-record', 'preferences', 'text-marc', 
     // Record loading
     var backends = {
        'new': {
-            record_label: _("new record"),
+            recordLabel: _("new record"),
             get: function( id, callback ) {
                 record = new MARC.Record();
                 KohaBackend.FillRecord( '', record );
@@ -261,7 +261,7 @@ require( [ 'koha-backend', 'search', 'marc-record', 'preferences', 'text-marc', 
             },
         },
         'new-full': {
-            record_label: _("new full record"),
+            recordLabel: _("new full record"),
             get: function( id, callback ) {
                 record = new MARC.Record();
                 KohaBackend.FillRecord( '', record, true );
@@ -270,27 +270,27 @@ require( [ 'koha-backend', 'search', 'marc-record', 'preferences', 'text-marc', 
             },
         },
         'catalog': {
-            record_label: _("catalog record #{ID}"),
-            save_label: _("to catalog"),
+            recordLabel: _("catalog record #{ID}"),
+            saveLabel: _("to catalog"),
             get: function( id, callback ) {
                 if ( !id ) return false;
 
                 KohaBackend.GetRecord( id, callback );
             },
             save: function( id, record, done ) {
-                function finish_cb( data ) {
+                function finishCb( data ) {
                     done( { error: data.error, newRecord: data.marcxml && data.marcxml[0], newId: data.biblionumber && [ 'catalog', data.biblionumber ] } );
                 }
 
                 if ( id ) {
-                    KohaBackend.SaveRecord( id, record, finish_cb );
+                    KohaBackend.SaveRecord( id, record, finishCb );
                 } else {
-                    KohaBackend.CreateRecord( record, finish_cb );
+                    KohaBackend.CreateRecord( record, finishCb );
                 }
             }
         },
         'search': {
-            record_label: _("search result"),
+            recordLabel: _("search result"),
             get: function( id, callback ) {
                 if ( !id ) return false;
 
@@ -309,14 +309,14 @@ require( [ 'koha-backend', 'search', 'marc-record', 'preferences', 'text-marc', 
 
     function setSource(parts) {
         state.backend = parts[0];
-        state.record_id = parts[1];
-        state.can_save = backends[ state.backend ].save != null;
-        state.save_backend = state.can_save ? state.backend : 'catalog';
+        state.recordID = parts[1];
+        state.canSave = backends[ state.backend ].save != null;
+        state.saveBackend = state.canSave ? state.backend : 'catalog';
 
         document.location.hash = '#' + parts[0] + ':' + parts[1];
-        $( '#title' ).text( _("Editing ") + backends[ state.backend ].record_label.replace( '{ID}', parts[1] ) );
-        $( 'title', document.head ).html( _("Koha &rsaquo; Cataloging &rsaquo; Editing ") + backends[ state.backend ].record_label.replace( '{ID}', parts[1] ) );
-        $( '#save-record span' ).text( _("Save ") + backends[ state.save_backend ].save_label );
+        $( '#title' ).text( _("Editing ") + backends[ state.backend ].recordLabel.replace( '{ID}', parts[1] ) );
+        $( 'title', document.head ).html( _("Koha &rsaquo; Cataloging &rsaquo; Editing ") + backends[ state.backend ].recordLabel.replace( '{ID}', parts[1] ) );
+        $( '#save-record span' ).text( _("Save ") + backends[ state.saveBackend ].saveLabel );
     }
 
     function displayRecord( editor, record ) {
@@ -338,7 +338,7 @@ require( [ 'koha-backend', 'search', 'marc-record', 'preferences', 'text-marc', 
             if ( mark.widget ) mark.widget.clearToText();
         } );
         var record = TextMARC.TextToRecord( editor.getValue() );
-        editor.setValue( editor.getValue ); // Poke change handler
+        editor.setValue( editor.getValue() ); // Poke change handler
         if ( record.errors ) {
             state.saving = false;
             callback( { error: 'syntax', errors: record.errors } );
@@ -398,11 +398,13 @@ require( [ 'koha-backend', 'search', 'marc-record', 'preferences', 'text-marc', 
         $('#searchresults table').empty();
         $('#search-targetsinfo').empty().append('<li>' + _("Loading...") + '</li>');
         $('#search-results-ui').lightbox_me();
+
+        var $loadingOverlay = $('#search-loading-overlay');
     }
 
     function showDetailedResult( hit, $tr ) {
         Search.GetDetailedRecord( hit.recid, function( record ) {
-            xsltResultStylesheets[ z3950_targets[ hit.location[0]['@id'] ].kohasyntax ].done( function( xslDoc ) {
+            xsltResultStylesheets[ z3950Targets[ hit.location[0]['@id'] ].kohasyntax ].done( function( xslDoc ) {
                 $tr.find( '.results-info' ).html( XSLT.TransformToFragment( record.xmlSource, xslDoc ) );
             } );
         } );
@@ -417,7 +419,7 @@ require( [ 'koha-backend', 'search', 'marc-record', 'preferences', 'text-marc', 
             result += '<td><div class="results-info">' + hit['md-work-title'][0] + '</div></td>';
             result += '<td class="toolscol"><ul><li><a href="#" class="marc-link">' + _("View MARC") + '</a></li>';
             result += '<li><a href="#" class="open-link">' + _("Open") + '</a></li>';
-            if ( state.can_save ) result += '<li><a href="#" class="substitute-link" title=' + _("Replace the current record's contents") + '>' + _("Substitute") + '</li>';
+            if ( state.canSave ) result += '<li><a href="#" class="substitute-link" title=' + _("Replace the current record's contents") + '>' + _("Substitute") + '</li>';
             result += '</ul></td></tr>';
 
             var $tr = $( result );
@@ -456,6 +458,51 @@ require( [ 'koha-backend', 'search', 'marc-record', 'preferences', 'text-marc', 
         } );
     }
 
+    // Preference functions
+    function showPreference( pref ) {
+        var value = Preferences.user[pref];
+
+        switch (pref) {
+            case 'fieldWidgets':
+                $( '#set-field-widgets' ).text( value ? _("Show fields verbatim") : _("Show helpers for fixed and coded fields") );
+                break;
+        }
+    }
+
+    function bindPreference( editor, pref ) {
+        function _addHandler( sel, event, handler ) {
+            $( sel ).on( event, function (e) {
+                e.preventDefault();
+                handler( e, Preferences.User[pref] );
+                Preferences.Save( [% USER_INFO.0.borrowernumber %] );
+                showPreference(pref);
+            } );
+        }
+
+        switch (pref) {
+            case 'fieldWidgets':
+                _addHandler( '#set-field-widgets', 'click', function( e, oldValue ) {
+                    if ( Preferences.user.fieldWidgets ) {
+                        Preferences.user.fieldWidgets = false;
+                        $.each( editor.getAllMarks(), function( undef, mark ) {
+                            if ( mark.widget ) mark.widget.clearToText();
+                        } );
+                    } else {
+                        Preferences.user.fieldWidgets = true;
+                        editor.setValue( editor.getValue() ); // Poke change handler
+                    }
+                } );
+                break;
+        }
+    }
+
+    function displayPreferences( editor ) {
+        $.each( Preferences.user, function( pref, value ) {
+            showPreference( pref );
+            bindPreference( editor, pref );
+        } );
+    }
+
     $(document).ready( function() {
         // Editor setup
         var editor = CodeMirror(
@@ -485,12 +532,12 @@ require( [ 'koha-backend', 'search', 'marc-record', 'preferences', 'text-marc', 
             }, 100);
         } ).resize();
 
-        var saveable_backends = [];
+        var saveableBackends = [];
         $.each( backends, function( id, backend ) {
-            if ( backend.save ) saveable_backends.push( [ backend.save_label, id ] );
+            if ( backend.save ) saveableBackends.push( [ backend.saveLabel, id ] );
         } );
-        saveable_backends.sort();
-        $.each( saveable_backends, function( undef, backend ) {
+        saveableBackends.sort();
+        $.each( saveableBackends, function( undef, backend ) {
             $( '#save-dropdown' ).append( '<li><a href="#" data-backend="' + backend[1] + '">' + _("Save ") + backend[0] + '</a></li>' );
         } );
 
@@ -498,7 +545,7 @@ require( [ 'koha-backend', 'search', 'marc-record', 'preferences', 'text-marc', 
         $( '#save-record, #save-dropdown a' ).click( function() {
             $( '#save-record' ).find('i').attr( 'class', 'icon-loading' ).siblings( 'span' ).text( _("Saving...") );
 
-            function finish_cb(result) {
+            function finishCb(result) {
                 if ( result.error == 'syntax' ) {
                     humanMsg.displayAlert( _("Incorrect syntax, cannot save"), { className: 'humanError' } );
                 } else if ( result.error == 'invalid' ) {
@@ -538,27 +585,27 @@ require( [ 'koha-backend', 'search', 'marc-record', 'preferences', 'text-marc', 
 
                 if ( result.error ) {
                     // Reset backend info
-                    setSource( [ state.backend, state.record_id ] );
+                    setSource( [ state.backend, state.recordID ] );
                 }
             }
 
-            var backend = $( this ).data( 'backend' ) || ( state.save_backend );
+            var backend = $( this ).data( 'backend' ) || ( state.saveBackend );
             if ( state.backend == backend ) {
-                saveRecord( backend + ':' + state.record_id, editor, finish_cb );
+                saveRecord( backend + ':' + state.recordID, editor, finishCb );
             } else {
-                saveRecord( backend + ':', editor, finish_cb );
+                saveRecord( backend + ':', editor, finishCb );
             }
 
             return false;
         } );
 
-        $( '#switcheditor' ).click( function() {
+        $( '#switch-editor' ).click( function() {
             if ( !confirm( _("Any changes will not be saved. Continue?") ) ) return;
 
             $.cookie( 'catalogue_editor_[% USER_INFO.0.borrowernumber %]', 'basic', { expires: 365, path: '/' } );
 
             if ( state.backend == 'catalog' ) {
-                window.location = '/cgi-bin/koha/cataloguing/addbiblio.pl?biblionumber=' + state.record_id;
+                window.location = '/cgi-bin/koha/cataloguing/addbiblio.pl?biblionumber=' + state.recordID;
             } else if ( state.backend == 'new' ) {
                 window.location = '/cgi-bin/koha/cataloguing/addbiblio.pl';
             } else {
@@ -574,16 +621,17 @@ require( [ 'koha-backend', 'search', 'marc-record', 'preferences', 'text-marc', 
             if (!q) return false;
 
             showResultsBox();
-            Search.Start( z3950_targets, q, 20 );
+            Search.Start( z3950Targets, q, 20 );
 
             return false;
         } );
 
         // Start editor
         Preferences.Load( [% USER_INFO.0.borrowernumber %] );
-        Search.Init( z3950_targets, { onresults: function(data) { showSearchResults( editor, data ) }, onbytarget: showSearchTargets } );
+        displayPreferences(editor);
+        Search.Init( z3950Targets, { onresults: function(data) { showSearchResults( editor, data ) }, onbytarget: showSearchTargets } );
 
-        function finish_cb() {
+        function finishCb() {
             $("#loading").hide();
         }
 
@@ -591,8 +639,8 @@ require( [ 'koha-backend', 'search', 'marc-record', 'preferences', 'text-marc', 
             document.location.hash = "[% auth_forwarded_hash %]";
         }
 
-        if ( !document.location.hash || !openRecord( document.location.hash.slice(1), editor, finish_cb ) ) {
-            openRecord( 'new:', editor, finish_cb );
+        if ( !document.location.hash || !openRecord( document.location.hash.slice(1), editor, finishCb ) ) {
+            openRecord( 'new:', editor, finishCb );
         }
     } );
 } )();

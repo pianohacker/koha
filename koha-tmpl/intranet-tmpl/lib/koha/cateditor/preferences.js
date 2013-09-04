@@ -15,11 +15,7 @@ define( function() {
         Save: function( borrowernumber ) {
             if ( !Preferences.user ) Preferences.Load(borrowenumber);
 
-            $.cookie( 'cateditor_preferences_' + borrowernumber, JSON.stringify(Preferences.user), { expires: 365, path: '/' } );
-
-            Preferences.user = $.extend( {
-                field_widgets: true,
-            }, saved_prefs );
+            $.cookie( 'cateditor_preferences_' + borrowernumber, JSON.stringify(Preferences.user), { expires: 3650, path: '/' } );
         },
     };
 

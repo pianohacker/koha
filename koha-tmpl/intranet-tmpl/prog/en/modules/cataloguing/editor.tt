@@ -40,7 +40,8 @@
         <div class="btn-group">
             <button class="btn btn-small dropdown-toggle" data-toggle="dropdown"><i class="icon-cog"></i> Settings <span class="caret"></span></button>
             <ul class="dropdown-menu">
-                <li><a id="switcheditor" href="#">Switch to basic editor</a></li>
+                <li><a id="switch-editor" href="#">Switch to basic editor</a></li>
+                <li><a id="set-field-widgets" href="#"></a></li>
             </ul>
         </div>
     </div>
