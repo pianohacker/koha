@@ -398,12 +398,12 @@ require( [ 'koha-backend', 'search', 'marc-record', 'preferences', 'text-marc', 
         $('#searchresults table').empty();
         $('#search-targetsinfo').empty().append('<li>' + _("Loading...") + '</li>');
         $('#search-results-ui').lightbox_me();
-
-        var $loadingOverlay = $('#search-loading-overlay');
     }
 
-    function showDetailedResult( hit, $tr ) {
+    function showDetailedResult( hit, $tr, fetchOnly ) {
         Search.GetDetailedRecord( hit.recid, function( record ) {
+            if ( fetchOnly ) return;
+
             xsltResultStylesheets[ z3950Targets[ hit.location[0]['@id'] ].kohasyntax ].done( function( xslDoc ) {
                 $tr.find( '.results-info' ).html( XSLT.TransformToFragment( record.xmlSource, xslDoc ) );
             } );
@@ -446,8 +446,21 @@ require( [ 'koha-backend', 'search', 'marc-record', 'preferences', 'text-marc', 
             } );
             $('#searchresults table').append( $tr );
 
-            showDetailedResult( hit, $tr );
+            showDetailedResult( hit, $tr, !!data.activeclients );
         } );
+
+        var $loadingOverlay = $('#search-loading-overlay');
+
+        if ( data.activeclients ) {
+            if ( !$loadingOverlay.length ) {
+                $loadingOverlay = $( '<div id="search-loading-overlay">' + _("Loading...") + '</div>' );
+                $loadingOverlay.css( { position: 'absolute', zIndex: 9001, top: 0, right: 0, bottom: 0, left: 0 } );
+                $loadingOverlay.appendTo( '#searchresults' );
+            }
+            $loadingOverlay.show();
+        } else {
+            $loadingOverlay.fadeOut();
+        }
     }
 
     function showSearchTargets(data) {

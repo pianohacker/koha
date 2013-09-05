@@ -190,3 +190,15 @@ body {
     height: 200px;
     white-space: pre-wrap;
 }
+
+#searchresults {
+    position: relative;
+}
+
+#search-loading-overlay {
+    background: white;
+    font-size: 2em;
+    opacity: .7;
+    padding: 2em;
+    text-align: center;
+}
