@@ -8,7 +8,7 @@ define( function() {
 
             Preferences.user = $.extend( {
                 // Preference defaults
-                field_widgets: true,
+                fieldWidgets: true,
             }, saved_prefs );
         },
 

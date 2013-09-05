@@ -418,7 +418,7 @@ require( [ 'koha-backend', 'search', 'marc-record', 'preferences', 'text-marc', 
             result += '<td class="sourcecol">' + hit.location[0]['@name'] + '</td>';
             result += '<td><div class="results-info">' + hit['md-work-title'][0] + '</div></td>';
             result += '<td class="toolscol"><ul><li><a href="#" class="marc-link">' + _("View MARC") + '</a></li>';
-            result += '<li><a href="#" class="open-link">' + _("Open") + '</a></li>';
+            result += '<li><a href="#" class="open-link">' + _("Import") + '</a></li>';
             if ( state.canSave ) result += '<li><a href="#" class="substitute-link" title=' + _("Replace the current record's contents") + '>' + _("Substitute") + '</li>';
             result += '</ul></td></tr>';
 
@@ -473,7 +473,7 @@ require( [ 'koha-backend', 'search', 'marc-record', 'preferences', 'text-marc', 
         function _addHandler( sel, event, handler ) {
             $( sel ).on( event, function (e) {
                 e.preventDefault();
-                handler( e, Preferences.User[pref] );
+                handler( e, Preferences.user[pref] );
                 Preferences.Save( [% USER_INFO.0.borrowernumber %] );
                 showPreference(pref);
             } );
@@ -482,7 +482,7 @@ require( [ 'koha-backend', 'search', 'marc-record', 'preferences', 'text-marc', 
         switch (pref) {
             case 'fieldWidgets':
                 _addHandler( '#set-field-widgets', 'click', function( e, oldValue ) {
-                    if ( Preferences.user.fieldWidgets ) {
+                    if ( oldValue ) {
                         Preferences.user.fieldWidgets = false;
                         $.each( editor.getAllMarks(), function( undef, mark ) {
                             if ( mark.widget ) mark.widget.clearToText();
