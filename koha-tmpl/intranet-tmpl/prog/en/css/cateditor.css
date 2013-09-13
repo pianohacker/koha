@@ -59,6 +59,22 @@ body {
     font-weight: bold;
 }
 
+#editor .modified-line-gutter {
+    width: 10px;
+}
+
+#editor .modified-line {
+    background: #F8F8F8;
+    border-left: 5px solid black;
+    margin-left: -10px;
+    padding-left: 5px;
+}
+
+#editor .CodeMirror-gutters {
+    background: transparent;
+    border-right: none;
+}
+
 #editor .subfield-widget {
     color: #538200;
     border: solid 2px #538200;

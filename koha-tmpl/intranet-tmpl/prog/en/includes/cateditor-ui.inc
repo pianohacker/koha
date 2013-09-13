@@ -229,7 +229,7 @@ require( [ 'koha-backend', 'search', 'marc-record', 'preferences', 'text-marc', 
     }
 
     function editorChange( editor, change ) {
-        if ( state.saving || !Preferences.user.fieldWidgets ) return;
+        if ( state.saving ) return;
 
         var updatedLines = {};
         do {
@@ -243,7 +243,8 @@ require( [ 'koha-backend', 'search', 'marc-record', 'preferences', 'text-marc', 
             for ( var line = startLine; line <= endLine + change.text.length - 1; line++ ) {
                 if ( updatedLines[line] ) continue;
 
-                Widget.UpdateLine( editor, line );
+                if ( Preferences.user.fieldWidgets ) Widget.UpdateLine( editor, line );
+                if ( change.origin != 'setValue' && change.origin != 'marcWidgetPrefill' ) editor.addLineClass( line, 'wrapper', 'modified-line' );
                 updatedLines[line] = true;
             }
         } while ( change = change.next )
@@ -338,7 +339,9 @@ require( [ 'koha-backend', 'search', 'marc-record', 'preferences', 'text-marc', 
             if ( mark.widget ) mark.widget.clearToText();
         } );
         var record = TextMARC.TextToRecord( editor.getValue() );
-        editor.setValue( editor.getValue() ); // Poke change handler
+        for ( var line = 0; line <= editor.lastLine(); line++ ) {
+            if ( Preferences.user.fieldWidgets ) Widget.UpdateLine( editor, line );
+        }
         if ( record.errors ) {
             state.saving = false;
             callback( { error: 'syntax', errors: record.errors } );
@@ -502,7 +505,9 @@ require( [ 'koha-backend', 'search', 'marc-record', 'preferences', 'text-marc', 
                         } );
                     } else {
                         Preferences.user.fieldWidgets = true;
-                        editor.setValue( editor.getValue() ); // Poke change handler
+                        for ( var line = 0; line <= editor.lastLine(); line++ ) {
+                            Widget.UpdateLine( editor, line );
+                        }
                     }
                 } );
                 break;
@@ -522,6 +527,9 @@ require( [ 'koha-backend', 'search', 'marc-record', 'preferences', 'text-marc', 
             function (elt) { $(elt).insertAfter('#toolbar') },
             {
                 extraKeys: editorKeys,
+                gutters: [
+                    'modified-line-gutter',
+                ],
                 lineWrapping: true,
                 mode: {
                     name: 'marc',

@@ -13,7 +13,7 @@ define( function() {
                 $node.val( this.getFixed( start, end ) );
 
                 $node.change( $.proxy( function() {
-                    this.setFixed( start, end, $node.val() );
+                    this.setFixed( start, end, $node.val(), '+input' );
                 }, this ) );
             },
 
@@ -21,11 +21,12 @@ define( function() {
                 return this.text.substring( start, end );
             },
 
-            setFixed: function( start, end, value ) {
-                this.text = this.text.substring( 0, start ) + this.padString( value.toString().substr( 0, end - start ), end - start ) + this.text.substring( end );
+            setFixed: function( start, end, value, source ) {
+                this.setText( this.text.substring( 0, start ) + this.padString( value.toString().substr( 0, end - start ), end - start ) + this.text.substring( end ), source );
             },
 
-            setText: function( text ) {
+            setText: function( text, source ) {
+                if ( source == '+input' ) this.mark.doc.cm.addLineClass( this.mark.find().from.line, 'wrapper', 'modified-line' );
                 this.text = text;
             },
 
@@ -82,7 +83,7 @@ define( function() {
         UpdateLine: function( editor, line ) {
             var info = Widget.GetLineInfo( editor, { line: line, ch: 0 } );
             var lineh = editor.getLineHandle( line );
-            if ( !lineh) return;
+            if ( !lineh ) return;
 
             if ( !info.tagNumber ) {
                 if ( lineh.markedSpans ) {
@@ -125,7 +126,7 @@ define( function() {
                 var widget = Object.create( fullBase );
 
                 if ( subfield.from == subfield.to ) {
-                    editor.replaceRange( widget.makeTemplate ? widget.makeTemplate() : '<empty>', { line: line, ch: subfield.from } );
+                    editor.replaceRange( widget.makeTemplate ? widget.makeTemplate() : '<empty>', { line: line, ch: subfield.from }, null, 'marcWidgetPrefill' );
                     return; // We'll do the actual work when the change event is triggered again
                 }
 
@@ -184,11 +185,12 @@ define( function() {
 
         RemoveErrors: function( editor ) {
             for ( var line = 0; line < editor.lineCount(); line++ ) {
+                    console.log( editor.getLineHandle( line ) );
                 $.each( editor.getLineHandle( line ).widgets || [], function( undef, lineWidget ) {
                     if ( lineWidget.isErrorMarker ) lineWidget.clear();
                 } );
             }
-        }
+        },
     };
 
     return Widget;
