@@ -47,8 +47,10 @@ body {
 
 .cm-subfieldcode {
     background-color: #F4F4F4;
-    color: #383838;
+    color: #187848;
     border-radius: 3px 8px 8px 3px;
+    border-right: 2px solid white;
+    margin-left: -2px;
     font-weight: bold;
 }
 
