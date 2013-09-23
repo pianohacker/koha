@@ -64,7 +64,7 @@ define( function() {
             if ( !tagNumber ) return {}; // No tag at all on this line
             tagNumber = tagNumber[1];
 
-            if ( tagNumber < '010' ) return { tagNumber: tagNumber }; // No current subfield
+            if ( tagNumber < '010' ) return { tagNumber: tagNumber, contents: contents }; // No current subfield
 
             var matcher = /[$|ǂ‡]([a-z0-9%]) /g;
             var match;
@@ -77,7 +77,7 @@ define( function() {
                 if ( match.index < pos.ch ) currentSubfield = match[1];
             }
 
-            return { tagNumber: tagNumber, subfields: subfields, currentSubfield: currentSubfield };
+            return { tagNumber: tagNumber, subfields: subfields, currentSubfield: currentSubfield, contents: contents };
         },
 
         UpdateLine: function( editor, line ) {

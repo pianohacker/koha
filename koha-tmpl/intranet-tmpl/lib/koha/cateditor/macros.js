@@ -1,51 +1,152 @@
 define( [ 'widget-utils' ], function( Widget ) {
-    var _commandGenerators = {
-        [ /^copy field data/i, function() {
+    var _commandGenerators = [
+        [ /^copy field data$/i, function() {
             return function( editor, state ) {
-                var info = Widget.GetLineInfo( editor );
-                if (!info.tagNumber)
+                var info = Widget.GetLineInfo( editor, editor.getCursor() );
+                if (!info.tagNumber) return false;
 
-                state.clipboard =
+                if (info.subfields) {
+                    state.clipboard = contents.substring(4);
+                } else {
+                    state.clipboard = contents.substring(8);
+                }
             };
         } ],
-        [ /^copy subfield data/i, function() {
+        [ /^copy subfield data$/i, function() {
+            return function( editor, state ) {
+                var info = Widget.GetLineInfo( editor, editor.getCursor() );
+                if (!info.tagNumber) return false;
+
+                var cur = editor.getCursor();
+
+                if (info.subfields) {
+                    for (var i = 0; i < info.subfields.length; i++) {
+                        var end = i == info.subfields.length - 1 ? info.contents.length : info.subfields[i+1].ch;
+                        if (cur.ch > end) continue;
+
+                        state.clipboard = info.contents.substring(info.subfields[i].ch + 3, end);
+                        return;
+                    }
+                }
+
+                return false;
+            }
         } ],
-        [ /^delete field/i, function() {
+        [ /^delete field$/i, function() {
+            return function( editor, state ) {
+                var cur = editor.getCursor();
+
+                editor.replaceRange( "", { line: cur.line, ch: 0 }, { line: cur.line + 1, ch: 0 }, 'marcAware' );
+            }
         } ],
-        [ /^goto field end/i, function() {
+        [ /^goto field end$/i, function() {
+            return function( editor, state ) {
+                editor.setCursor( { line: editor.lastLine() } );
+            }
         } ],
-        [ /^goto field/i, function() {
+        [ /^goto field (\w{3})$/i, function(field) {
+            var matcher = new RegExp('^' + field + ' ');
+            return function( editor, state ) {
+                for ( var line = 0, contents; (contents = editor.getLine(line)); line++ ) {
+                    if ( matcher.exec( contents ) ) {
+                        editor.setCursor( { line: line, ch: 0 } );
+                        return;
+                    }
+                }
+
+                return false;
+            }
         } ],
-        [ /^goto subfield/i, function() {
+        [ /^goto subfield end$/i, function() {
+            return function( editor, state ) {
+                var cur = editor.getCursor();
+
+                editor.setCursor( { line: cur.line } );
+            }
         } ],
-        [ /^insert (new )?field/i, function() {
+        [ /^goto subfield (\w)$/i, function() {
+            return function( editor, state ) {
+                var info = Widget.GetLineInfo( editor, editor.getCursor() );
+                if (!info.tagNumber || !info.subfields) return false;
+
+                var cur = editor.getCursor();
+
+                for (var i = 0; i < info.subfields.length; i++) {
+                    var end = i == info.subfields.length - 1 ? info.contents.length : info.subfields[i+1].ch;
+                    if (cur.ch < info.subfields[i].ch) continue;
+
+                    editor.setCursor( { line: cur.line, ch: end } );
+                    return;
+                }
+            }
         } ],
-        [ /^insert (new )?subfield/i, function() {
+        [ /^insert (new )?field (\w{3}) data=(.*)/i, function() {
+            return function( editor, state ) {
+            }
         } ],
-        [ /^paste/i, function() {
+        [ /^insert (new )?subfield (\w) data=(.*)/i, function() {
+            return function( editor, state ) {
+            }
         } ],
-        [ /^set indicator([12])=([ _0-9])/i, function() {
+        [ /^paste$/i, function() {
+            return function( editor, state ) {
+                var cur = editor.getCursor();
+
+                editor.replaceRange( state.clipboard, cur, null, 'marcAware' );
+            }
         } ],
-        [ /^set indicators=([ _0-9])([ _0-9])/i, function() {
+        [ /^set indicator([12])=([ _0-9])$/i, function() {
+            return function( editor, state ) {
+            }
         } ],
-    };
+        [ /^set indicators=([ _0-9])([ _0-9])$/i, function() {
+            return function( editor, state ) {
+            }
+        } ],
+    ];
 
     var Macros = {
         Compile: function( macro ) {
             var result = { commands: [], errors: [] };
 
+            $.each( macro.split(/\r\n|\n/), function( line, contents ) {
+                var command;
+
+                if ( contents.match(/^\s*$/) ) return;
+
+                $.each( _commandGenerators, function( undef, gen ) {
+                    var match;
+
+                    if ( !( match = gen[0].exec( contents ) ) ) return;
+
+                    command = gen[1].apply(null, match.slice(1));
+                    return false;
+                } );
+
+                if ( !command ) {
+                    result.errors.push( { line: line, error: 'unrecognized' } );
+                }
+
+                result.commands.push( { func: command, orig: contents, line: line } );
+            } );
+
             return result;
         },
         Run: function( editor, macro ) {
             var result = Macros.Compile(macro);
-            if ( result.errors ) return false;
-            var state = {};
+            if ( result.errors.length ) return { errors: result.errors };
+            var state = {
+                clipboard: '',
+            };
 
             editor.operation( function() {
                 $.each( result.commands, function( undef, command ) {
-                    command( editor, state );
+                    command.func( editor, state );
+                    console.debug( 'After', command.orig, 'state', state );
                 } );
             } );
         },
     };
+
+    return Macros;
 } );

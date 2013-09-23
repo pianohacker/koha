@@ -22,7 +22,7 @@ require.config( {
 [% END %]
 
 <script>
-require( [ 'koha-backend', 'search', 'marc-record', 'preferences', 'text-marc', 'widget-utils', 'xslt' ], function( KohaBackend, Search, MARC, Preferences, TextMARC, Widget, XSLT ) {
+require( [ 'koha-backend', 'search', 'macros', 'marc-record', 'preferences', 'text-marc', 'widget-utils', 'xslt' ], function( KohaBackend, Search, Macros, MARC, Preferences, TextMARC, Widget, XSLT ) {
     var xsltResultStylesheets = {
         [% FOREACH stylesheet IN xslt_result_stylesheets %]
         '[% stylesheet.syntax %]': XSLT.Get( '[% stylesheet.url %]' ),
