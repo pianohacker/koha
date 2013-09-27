@@ -80,12 +80,28 @@ define( [ 'widget-utils' ], function( Widget ) {
                 }
             }
         } ],
-        [ /^insert (new )?field (\w{3}) data=(.*)/i, function() {
+        [ /^insert (new )?field (\w{3}) data=(.*)/i, function(undef, field, data) {
+            var new_contents = field + ( field < '100' ? ' ' : ' _ _ ' ) + data.replace(/\\([0-9a-z])/g, '$$$1 ');
             return function( editor, state ) {
+                var line, contents;
+
+                for ( line = 0; (contents = editor.getLine(line)); line++ ) {
+                    if ( contents && contents[0] > field[0] ) break;
+                }
+
+                if ( line > editor.lastLine() ) {
+                    new_contents = '\n' + new_contents;
+                } else {
+                    new_contents = new_contents + '\n';
+                }
+
+                editor.replaceRange( new_contents, { line: line, ch: 0 }, null, 'marcAware' );
+                editor.setCursor( { line: line, ch: 0 } );
             }
         } ],
-        [ /^insert (new )?subfield (\w) data=(.*)/i, function() {
+        [ /^insert (new )?subfield (\w) data=(.*)/i, function(undef, subfield, data) {
             return function( editor, state ) {
+                editor.replaceRange( '$' + subfield + ' ' + data, { line: editor.getCursor().line }, null, 'marcAware' );
             }
         } ],
         [ /^paste$/i, function() {
