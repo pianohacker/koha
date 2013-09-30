@@ -1,4 +1,22 @@
 define( [ 'widget-utils' ], function( Widget ) {
+    function _setIndicators( editor, ind1, ind2 ) {
+        var info = Widget.GetLineInfo( editor, editor.getCursor() );
+        if (!info.tagNumber || !info.subfields) return false;
+
+        var cur = editor.getCursor();
+
+        var indicators = [ ind1 || info.contents.substring(4, 5) || '_', ind2 || info.contents.substring(6, 7) || '_' ];
+
+        editor.replaceRange(
+            info.tagNumber + ' ' + indicators.join(' ') + ' ' + info.contents.substring(8),
+            { line: cur.line, ch: 0 },
+            { line: cur.line },
+            'marcAware'
+        );
+
+        return true;
+    }
+
     var _commandGenerators = [
         [ /^copy field data$/i, function() {
             return function( editor, state ) {
@@ -111,12 +129,14 @@ define( [ 'widget-utils' ], function( Widget ) {
                 editor.replaceRange( state.clipboard, cur, null, 'marcAware' );
             }
         } ],
-        [ /^set indicator([12])=([ _0-9])$/i, function() {
+        [ /^set indicator([12])=([ _0-9])$/i, function( ind, value ) {
             return function( editor, state ) {
+                return ind == '1' ? _setIndicators( ind1, null ) : _setIndicator( null, ind2 );
             }
         } ],
-        [ /^set indicators=([ _0-9])([ _0-9])$/i, function() {
+        [ /^set indicators=([ _0-9])([ _0-9])$/i, function( ind1, ind2 ) {
             return function( editor, state ) {
+                return _setIndicators( ind1, ind2 );
             }
         } ],
     ];
