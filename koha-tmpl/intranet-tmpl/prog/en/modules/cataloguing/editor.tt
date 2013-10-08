@@ -37,6 +37,7 @@
             <ul class="dropdown-menu" id="save-dropdown">
             </ul>
         </div>
+        <button class="btn btn-small" id="open-macros" title="Run and edit macros"><i class="icon-play"></i> <span>Macros</span></button>
         <div class="btn-group">
             <button class="btn btn-small dropdown-toggle" data-toggle="dropdown"><i class="icon-cog"></i> Settings <span class="caret"></span></button>
             <ul class="dropdown-menu">
@@ -102,6 +103,20 @@
         <div id="searchresults">
             <table>
             </table>
+        </div>
+    </div>
+</div>
+
+</div>
+
+<div id="macro-ui" style="display: none">
+
+<h1>Macros</h1>
+<div class="yui-gf">
+    <div class="yui-u first"></div>
+    <div class="yui-u" id="macro-editor">
+        <div id="toolbar" class="btn-toolbar">
+            <button class="btn btn-small" id="run-macro" title="Run and edit macros"><i class="icon-play"></i> <span>Run macro</span></button>
         </div>
     </div>
 </div>

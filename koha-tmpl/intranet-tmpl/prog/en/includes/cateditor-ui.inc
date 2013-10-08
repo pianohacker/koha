@@ -543,6 +543,13 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-record', 'preferences', 'te
         editor.on( 'change', editorChange );
         editor.on( 'cursorActivity', editorCursorActivity );
 
+        var macroEditor = CodeMirror(
+            $('#macro-editor')[0],
+            {
+                mode: 'null',
+            }
+        );
+
         var resizeTimer = null;
         $( window ).resize( function() {
             if ( resizeTimer == null ) resizeTimer = setTimeout( function() {
@@ -616,6 +623,20 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-record', 'preferences', 'te
             } else {
                 saveRecord( backend + ':', editor, finishCb );
             }
+
+            return false;
+        } );
+
+        $('#open-macros').click( function() {
+            $('#macro-ui').lightbox_me();
+
+            return false;
+        } );
+
+        $('#run-macro').click( function() {
+            var result = Macros.Run( editor, macroEditor.getValue() );
+
+            if ( result.errors ) console.error( 'Failed to run macro:', result.errors );
 
             return false;
         } );

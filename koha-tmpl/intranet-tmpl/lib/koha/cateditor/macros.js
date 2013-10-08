@@ -169,18 +169,26 @@ define( [ 'widget-utils' ], function( Widget ) {
             return result;
         },
         Run: function( editor, macro ) {
-            var result = Macros.Compile(macro);
-            if ( result.errors.length ) return { errors: result.errors };
+            var compiled = Macros.Compile(macro);
+            if ( compiled.errors.length ) return { errors: compiled.errors };
             var state = {
                 clipboard: '',
             };
 
+            var result = { errors: [] };
+
             editor.operation( function() {
-                $.each( result.commands, function( undef, command ) {
-                    command.func( editor, state );
+                $.each( compiled.commands, function( undef, command ) {
+                    if ( command.func( editor, state ) === false ) {
+                        result.errors.push( { line: command.line, error: 'failed' } );
+                        return false;
+                    }
+
                     console.debug( 'After', command.orig, 'state', state );
                 } );
             } );
+
+            return result;
         },
     };
 
