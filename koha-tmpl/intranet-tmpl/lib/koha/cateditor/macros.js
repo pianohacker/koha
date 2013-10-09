@@ -82,7 +82,7 @@ define( [ 'widget-utils' ], function( Widget ) {
                 editor.setCursor( { line: cur.line } );
             }
         } ],
-        [ /^goto subfield (\w)$/i, function() {
+        [ /^goto subfield (\w)$/i, function( code ) {
             return function( editor, state ) {
                 var info = Widget.GetLineInfo( editor, editor.getCursor() );
                 if (!info.tagNumber || !info.subfields) return false;
@@ -90,12 +90,14 @@ define( [ 'widget-utils' ], function( Widget ) {
                 var cur = editor.getCursor();
 
                 for (var i = 0; i < info.subfields.length; i++) {
-                    var end = i == info.subfields.length - 1 ? info.contents.length : info.subfields[i+1].ch;
-                    if (cur.ch < info.subfields[i].ch) continue;
+                    if ( info.subfields[i].code != code ) continue;
 
+                    var end = i == info.subfields.length - 1 ? info.contents.length : info.subfields[i+1].ch;
                     editor.setCursor( { line: cur.line, ch: end } );
                     return;
                 }
+
+                return false;
             }
         } ],
         [ /^insert (new )?field (\w{3}) data=(.*)/i, function(undef, field, data) {

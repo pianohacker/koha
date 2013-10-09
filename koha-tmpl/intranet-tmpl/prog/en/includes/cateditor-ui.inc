@@ -636,7 +636,7 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-record', 'preferences', 'te
         $('#run-macro').click( function() {
             var result = Macros.Run( editor, macroEditor.getValue() );
 
-            if ( result.errors ) console.error( 'Failed to run macro:', result.errors );
+            if ( result.errors.length ) console.error( 'Failed to run macro:', result.errors );
 
             return false;
         } );
