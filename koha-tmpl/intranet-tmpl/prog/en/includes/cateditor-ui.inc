@@ -112,6 +112,11 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-record', 'preferences', 'te
     }
 
     // Editor helper functions
+    function activateTabPosition( editor, cur, idx ) {
+        editor.setCursor( cur );
+        Widget.ActivateAt( editor, cur, idx );
+    }
+
     function getTabPositions( editor, cur ) {
         var info = Widget.GetLineInfo( editor, cur || editor.getCursor() );
 
@@ -154,7 +159,7 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-record', 'preferences', 'te
 
             for ( var i = 0; i < positions.length; i++ ) {
                 if ( positions[i] > cur.ch ) {
-                    editor.setCursor( { line: cur.line, ch: positions[i] } );
+                    activateTabPosition( editor, { line: cur.line, ch: positions[i] } );
                     done = true;
                     return false;
                 }
@@ -171,7 +176,7 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-record', 'preferences', 'te
 
             for ( var i = positions.length - 1; i >= 0; i-- ) {
                 if ( positions[i] < cur.ch ) {
-                    editor.setCursor( { line: cur.line, ch: positions[i] } );
+                    activateTabPosition( editor, { line: cur.line, ch: positions[i] } );
                     done = true;
                     return false;
                 }
@@ -180,7 +185,12 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-record', 'preferences', 'te
             if ( cur.line == 0 ) return;
 
             var prevPositions = getTabPositions( editor, { line: cur.line - 1, ch: editor.getLine( cur.line - 1 ).length } );
-            editor.setCursor( { line: cur.line - 1, ch: prevPositions.length ? prevPositions[ prevPositions.length - 1 ] : 0 }  );
+
+            if ( prevPositions.length ) {
+                activateTabPosition( editor, { line: cur.line - 1, ch: prevPositions[ prevPositions.length - 1 ] }, -1 );
+            } else {
+                editor.setCursor( { line: cur.line - 1, ch: 0 } );
+            }
         },
     };
 

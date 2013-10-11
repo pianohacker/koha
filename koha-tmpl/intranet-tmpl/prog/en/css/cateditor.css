@@ -96,6 +96,10 @@ body {
     vertical-align: middle;
 }
 
+#editor .fixed-widget select:focus {
+    outline: 1px #83A230 solid;
+}
+
 #editor .hidden-widget {
     color: #999999;
     border: solid 2px #AAAAAA;

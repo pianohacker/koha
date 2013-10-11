@@ -55,6 +55,17 @@ define( function() {
             }
         },
 
+        ActivateAt: function( editor, cur, idx ) {
+            var marks = editor.findMarksAt( cur );
+            if ( !marks.length ) return false;
+
+            var $input = $(marks[0].widget.node).find('input, select').eq(idx || 0);
+            if ( !$input.length ) return false;
+
+            $input.focus();
+            return true;
+        },
+
         GetLineInfo: function( editor, pos ) {
             var contents = editor.getLine( pos.line );
             if ( contents == null ) return {};
@@ -151,6 +162,19 @@ define( function() {
                     widget.postCreate();
                     mark.changed();
                 }
+
+                var $lastInput = $(widget.node).find('input, select').eq(-1);
+                if ( $lastInput.length ) {
+                    $lastInput.bind( 'keypress', 'tab', function() {
+                        console.log( 'tabhack' );
+                        var cur = editor.getCursor();
+                        editor.setCursor( { line: cur.line } );
+                        // FIXME: ugly hack
+                        editor.options.extraKeys.Tab( editor );
+                        editor.focus();
+                        return false;
+                    } );
+                }
             } );
         },
 
@@ -185,7 +209,6 @@ define( function() {
 
         RemoveErrors: function( editor ) {
             for ( var line = 0; line < editor.lineCount(); line++ ) {
-                    console.log( editor.getLineHandle( line ) );
                 $.each( editor.getLineHandle( line ).widgets || [], function( undef, lineWidget ) {
                     if ( lineWidget.isErrorMarker ) lineWidget.clear();
                 } );
