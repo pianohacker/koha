@@ -166,7 +166,6 @@ define( function() {
                 var $lastInput = $(widget.node).find('input, select').eq(-1);
                 if ( $lastInput.length ) {
                     $lastInput.bind( 'keypress', 'tab', function() {
-                        console.log( 'tabhack' );
                         var cur = editor.getCursor();
                         editor.setCursor( { line: cur.line } );
                         // FIXME: ugly hack

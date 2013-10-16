@@ -81,23 +81,23 @@ body {
     color: #538200;
     border: solid 2px #538200;
     border-radius: 6px;
+    font-family: monospace;
+    line-height: 2.75;
     margin: 3px 0;
     padding: 4px;
 }
 
-#editor .fixed-widget {
-    font-family: monospace;
-    line-height: 2.75;
-}
-
-#editor .fixed-widget select {
+#editor .subfield-widget select {
     height: 1.5em;
-    width: 3em;
     vertical-align: middle;
 }
 
-#editor .fixed-widget select:focus {
+#editor .subfield-widget select:focus {
     outline: 1px #83A230 solid;
+}
+
+#editor .fixed-widget select {
+    width: 3em;
 }
 
 #editor .hidden-widget {

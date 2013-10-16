@@ -75,6 +75,39 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-record', 'preferences', 'te
         } );
     }
 
+    function makeAuthorisedValueWidgets( frameworkCode ) {
+        $.each( KohaBackend.GetAllTagsInfo( frameworkCode ), function( tag, tagInfo ) {
+            $.each( tagInfo.subfields, function( subfield, subfieldInfo ) {
+                if ( !subfieldInfo.authorised_value ) return;
+
+                var authorisedWidget = {
+                    init: function() {
+                        var $result = $( '<span class="subfield-widget"></span>' );
+
+                        return $result[0];
+                    },
+                    postCreate: function() {
+                        this.setText( subfieldInfo.defaultvalue );
+
+                        $( '<select></select>' ).appendTo( this.node );
+                        var $node = $( this.node ).find( 'select' );
+                        $.each( KohaBackend.GetAuthorisedValues( subfieldInfo.authorised_value ), function( undef, authval ) {
+                            console.log( authval );
+                            $node.append( '<option value="' + authval.value + '">' + authval.lib + '</option>' );
+                        } );
+                        $node.val( this.text );
+
+                        $node.change( $.proxy( function() {
+                            this.setText( $node.val() );
+                        }, this ) );
+                    }
+                };
+
+                editorWidgets[ tag + subfield ] = authorisedWidget;
+            } );
+        } );
+    }
+
     function bindGlobalKeys() {
         function bindKey( key, handler ) {
             $( document ).bind( 'keydown', key, handler );
@@ -258,6 +291,8 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-record', 'preferences', 'te
                 updatedLines[line] = true;
             }
         } while ( change = change.next )
+
+        Widget.ActivateAt( editor, editor.getCursor() );
     }
 
     // Record loading
@@ -681,6 +716,7 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-record', 'preferences', 'te
         // Start editor
         Preferences.Load( [% USER_INFO.0.borrowernumber %] );
         displayPreferences(editor);
+        makeAuthorisedValueWidgets( '' );
         Search.Init( z3950Targets, { onresults: function(data) { showSearchResults( editor, data ) }, onbytarget: showSearchTargets } );
 
         function finishCb() {

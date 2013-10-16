@@ -1,4 +1,5 @@
 define( [ '/cgi-bin/koha/svc/cataloguing/framework?frameworkcode=&amp;callback=define', 'marc-record' ], function( defaultFramework, MARC ) {
+    var _authorised_values = defaultFramework.authorised_values;
     var _frameworks = {};
     var _framework_mappings = {};
 
@@ -41,6 +42,10 @@ define( [ '/cgi-bin/koha/svc/cataloguing/framework?frameworkcode=&amp;callback=d
 
         GetAllTagsInfo: function( frameworkcode, tagnumber ) {
             return _framework_mappings[frameworkcode];
+        },
+
+        GetAuthorisedValues: function( category ) {
+            return _authorised_values[category];
         },
 
         GetTagInfo: function( frameworkcode, tagnumber ) {
