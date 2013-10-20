@@ -42,6 +42,17 @@
 <div id="login_error"><strong>Error: </strong>Invalid username or password</div>
 [% END %]
 
+[% IF ( shibbolethAuthentication ) %]
+[% IF ( invalidShibLogin ) %]
+    <!-- This is what is displayed if shib login has failed -->
+    <div id="login_error"><strong>Error: </strong>Shibboleth login failed</div>
+[% END %]
+
+<p>If you have a Shibboleth account,
+please <a href="[% shibbolethLoginUrl %]">click here to login</a>.</p>
+
+[% END %]
+
 <!-- login prompt time-->
 <form action="[% url %]" method="post" name="loginform" id="loginform">
     <input type="hidden" name="koha_login_context" value="intranet" />

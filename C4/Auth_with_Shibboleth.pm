@@ -22,6 +22,8 @@ use warnings;
 
 use C4::Debug;
 use C4::Context;
+use C4::Members qw( AddMember_Auto );
+use Carp;
 use CGI;
 
 use vars qw($VERSION @ISA @EXPORT @EXPORT_OK %EXPORT_TAGS $debug);
@@ -29,17 +31,16 @@ use vars qw($VERSION @ISA @EXPORT @EXPORT_OK %EXPORT_TAGS $debug);
 BEGIN {
     require Exporter;
     $VERSION = 3.03;                                                                    # set the version for version checking
-    $debug   = $ENV{DEBUG};
+    $debug   = $ENV{DEBUG} || 1;
     @ISA     = qw(Exporter);
     @EXPORT  = qw(logout_shib login_shib_url checkpw_shib get_login_shib);
 }
 my $context = C4::Context->new() or die 'C4::Context->new failed';
-my $protocol = "https://";
 
 # Logout from Shibboleth
 sub logout_shib {
     my ($query) = @_;
-    my $uri = $protocol . $ENV{'SERVER_NAME'};
+    my $uri = ($query->https() ? "https://" : "http://") . $ENV{'SERVER_NAME'};
     print $query->redirect( $uri . "/Shibboleth.sso/Logout?return=$uri" );
 }
 
@@ -47,8 +48,9 @@ sub logout_shib {
 sub login_shib_url {
 
     my ($query) = @_;
-    my $param = $protocol . $ENV{'SERVER_NAME'} . $query->script_name();
-    my $uri = $protocol . $ENV{'SERVER_NAME'} . "/Shibboleth.sso/Login?target=$param";
+    my $base = ($query->https() ? "https://" : "http://") . $ENV{'SERVER_NAME'};
+    my $param = $base . $query->script_name();
+    my $uri = $base . "/Shibboleth.sso/Login?target=$param";
     return $uri;
 }
 
@@ -61,11 +63,27 @@ sub get_login_shib {
     # Shibboleth attributes are mapped into http environmement variables,
     # so we're getting the login of the user this way
 
-    my $shibbolethLoginAttribute = C4::Context->preference('shibbolethLoginAttribute');
-    $debug and warn "shibbolethLoginAttribute value: $shibbolethLoginAttribute";
+    my $shib = C4::Context->config('shibboleth') or croak 'No <shibboleth> in koha-conf.xml';
+
+    my $shibbolethLoginAttribute = $shib->{'userid'};
+    $debug and warn "shibboleth->userid value: $shibbolethLoginAttribute";
     $debug and warn "$shibbolethLoginAttribute value: " . $ENV{$shibbolethLoginAttribute};
 
-    return $ENV{$shibbolethLoginAttribute};
+    return $ENV{$shibbolethLoginAttribute} || '';
+}
+
+sub _autocreate {
+    my ( $dbh, $shib, $userid ) = @_;
+
+    my %borrower = ( userid => $userid );
+
+    while ( my ( $key, $entry ) = each %{$shib->{'mapping'}} ) {
+        $borrower{$key} = ( $entry->{'is'} && $ENV{ $entry->{'is'} } ) || $entry->{'content'} || '';
+    }
+
+    %borrower = AddMember_Auto( %borrower );
+
+    return ( 1, $borrower{'cardnumber'}, $borrower{'userid'} );
 }
 
 # Checks for password correctness
@@ -76,6 +94,8 @@ sub checkpw_shib {
     my ( $dbh, $userid ) = @_;
     my $retnumber;
     $debug and warn "User Shibboleth-authenticated as: $userid";
+
+    my $shib = C4::Context->config('shibboleth') or croak 'No <shibboleth> in koha-conf.xml';
 
     # Does it match one of our users ?
     my $sth = $dbh->prepare("select cardnumber from borrowers where userid=?");
@@ -91,9 +111,13 @@ sub checkpw_shib {
         return ( 1, $retnumber, $userid );
     }
 
-    # If we reach this point, the user is not a valid koha user
-    $debug and warn "User $userid is not a valid Koha user";
-    return 0;
+    if ( $shib->{'autocreate'} ) {
+        return _autocreate( $dbh, $shib, $userid );
+    } else {
+        # If we reach this point, the user is not a valid koha user
+        $debug and warn "User $userid is not a valid Koha user";
+        return 0;
+    }
 }
 
 1;
