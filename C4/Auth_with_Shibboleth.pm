@@ -22,7 +22,6 @@ use warnings;
 
 use C4::Debug;
 use C4::Context;
-use C4::Utils qw( :all );
 use CGI;
 
 use vars qw($VERSION @ISA @EXPORT @EXPORT_OK %EXPORT_TAGS $debug);
