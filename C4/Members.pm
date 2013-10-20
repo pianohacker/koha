@@ -120,6 +120,7 @@ BEGIN {
     #Insert data
     push @EXPORT, qw(
         &AddMember
+        &AddMember_Auto
         &AddMember_Opac
         &add_member_orgs
         &MoveMemberToDeleted
@@ -2492,10 +2493,8 @@ sub GetBorrowersWithEmail {
     return @result;
 }
 
-sub AddMember_Opac {
+sub AddMember_Auto {
     my ( %borrower ) = @_;
-
-    $borrower{'categorycode'} = C4::Context->preference('PatronSelfRegistrationDefaultCategory');
 
     my $sr = new String::Random;
     $sr->{'A'} = [ 'A'..'Z', 'a'..'z' ];
@@ -2504,9 +2503,19 @@ sub AddMember_Opac {
 
     $borrower{'cardnumber'} = fixup_cardnumber();
 
-    my $borrowernumber = AddMember(%borrower);
+    $borrower{'borrowernumber'} = AddMember(%borrower);
 
-    return ( $borrowernumber, $password );
+    return %borrower;
+}
+
+sub AddMember_Opac {
+    my ( %borrower ) = @_;
+
+    $borrower{'categorycode'} = C4::Context->preference('PatronSelfRegistrationDefaultCategory');
+
+    %borrower = AddMember_Auto(%borrower);
+
+    return ( $borrower{'borrowernumber'}, $borrower{'password'} );
 }
 
 END { }    # module clean-up code here (global destructor)

@@ -52,7 +52,7 @@ BEGIN {
     %EXPORT_TAGS = ( EditPermissions => [qw(get_all_subpermissions get_user_subpermissions)] );
     $ldap        = C4::Context->config('useldapserver') || 0;
     $cas         = C4::Context->preference('casAuthentication');
-    $shib        = C4::Context->preference('shibbolethAuthentication');
+    $shib        = C4::Context->config('useshibboleth') || 0;
     $caslogout   = C4::Context->preference('casLogout');
     require C4::Auth_with_cas;             # no import
     require C4::Auth_with_Shibboleth;
@@ -698,7 +698,7 @@ sub checkauth {
         logout_cas($query);
         }
         # If we are in a shibboleth session (shibboleth is enabled, and a shibboleth username is set)
-        if ( $shib and $shib_login and $type eq 'opac') {
+        if ( $shib and $shib_login ) {
         # (Note: $type eq 'opac' condition should be removed when shibboleth authentication for intranet will be implemented)
             logout_shib($query);
         }
@@ -761,7 +761,7 @@ sub checkauth {
             my $password = $query->param('password');
 
             my ( $return, $cardnumber );
-            if ($shib && $shib_login && $type eq 'opac' && !$password) {
+            if ($shib && $shib_login && !$password) {
                 my $retuserid;
                 ( $return, $cardnumber, $retuserid ) = checkpw( $dbh, $userid, $password, $query );
                 $userid = $retuserid;
