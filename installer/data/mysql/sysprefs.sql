@@ -270,8 +270,6 @@ INSERT INTO systempreferences (variable,value,options,explanation,type) VALUES
 ('ShelfBrowserUsesCcode','1','0','Use the item collection code when finding items for the shelf browser.','YesNo'),
 ('ShelfBrowserUsesHomeBranch','1','1','Use the item home branch when finding items for the shelf browser.','YesNo'),
 ('ShelfBrowserUsesLocation','1','1','Use the item location when finding items for the shelf browser.','YesNo'),
-('shibbolethAuthentication','','','Enable or disable Shibboleth authentication','YesNo'),
-('shibbolethLoginAttribute','','','Which shibboleth user attribute should be used to match koha user login?',''),
 ('ShowPatronImageInWebBasedSelfCheck','0','','If ON, displays patron image when a patron uses web-based self-checkout','YesNo'),
 ('ShowReviewer','full','none|full|first|surname|firstandinitial|username','Choose how a commenter\'s identity is presented alongside comments in the OPAC','Choice'),
 ('ShowReviewerPhoto','1','','If ON, photo of reviewer will be shown beside comments in OPAC','YesNo'),
