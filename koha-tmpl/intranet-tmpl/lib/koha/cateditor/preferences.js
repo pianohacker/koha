@@ -9,6 +9,8 @@ define( function() {
             Preferences.user = $.extend( {
                 // Preference defaults
                 fieldWidgets: true,
+                font: 'monospace',
+                fontSize: '1em',
             }, saved_prefs );
         },
 
