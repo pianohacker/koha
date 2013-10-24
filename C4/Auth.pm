@@ -1012,7 +1012,7 @@ sub checkauth {
         login                => 1,
         INPUTS               => \@inputs,
         casAuthentication    => C4::Context->preference("casAuthentication"),
-        shibbolethAuthentication => C4::Context->preference("shibbolethAuthentication"),
+        shibbolethAuthentication => C4::Context->config("useshibboleth"),
         suggestion           => C4::Context->preference("suggestion"),
         virtualshelves       => C4::Context->preference("virtualshelves"),
         LibraryName          => "" . C4::Context->preference("LibraryName"),
