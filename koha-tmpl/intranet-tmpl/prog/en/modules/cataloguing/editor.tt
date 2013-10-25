@@ -40,17 +40,18 @@
         <button class="btn btn-small" id="open-macros" title="Run and edit macros"><i class="icon-play"></i> <span>Macros</span></button>
         <div class="btn-group">
             <button class="btn btn-small dropdown-toggle" data-toggle="dropdown"><i class="icon-cog"></i> Settings <span class="caret"></span></button>
-            <ul class="dropdown-menu">
+            <ul id="prefs-menu" class="dropdown-menu">
                 <li><a id="switch-editor" href="#">Switch to basic editor</a></li>
                 <li><a id="set-field-widgets" href="#"></a></li>
                 <li class="divider"></li>
-                <li><a class="set-fontSize" style="font-size: .85em" data-value=".85em" href="#">Small font</a></li>
-                <li><a class="set-fontSize" style="font-size: 1em" data-value="1em" href="#">Normal font</a></li>
-                <li><a class="set-fontSize" style="font-size: 1.18em" data-value="1.18em" href="#">Large font</a></li>
-                <li><a class="set-fontSize" style="font-size: 1.35em" data-value="1.35em" href="#">Huge font</a></li>
+                <li><a class="set-fontSize" style="font-size: .92em" href="#">Small text</a></li>
+                <li><a class="set-fontSize" style="font-size: 1em" href="#">Normal text</a></li>
+                <li><a class="set-fontSize" style="font-size: 1.08em" href="#">Large text</a></li>
+                <li><a class="set-fontSize" style="font-size: 1.18em" href="#">Huge text</a></li>
                 <li class="divider"></li>
-                <li><a class="set-font" href="#">Default font</a></li>
-                <li><a class="set-font" href="#">Courier New</a></li>
+                <li><a class="set-font" style="font-family: monospace" href="#">Default font</a></li>
+                <li><a class="set-font" style="font-family: 'Courier New'" href="#">Courier New</a></li>
+                <li><a class="set-font" style="font-family: peep" href="#">peep</a></li>
             </ul>
         </div>
     </div>

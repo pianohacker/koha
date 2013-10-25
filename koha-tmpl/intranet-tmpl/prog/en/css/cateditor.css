@@ -81,7 +81,7 @@ body {
     color: #538200;
     border: solid 2px #538200;
     border-radius: 6px;
-    font-family: monospace;
+    font-family: inherit;
     line-height: 2.75;
     margin: 3px 0;
     padding: 4px;

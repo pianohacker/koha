@@ -527,6 +527,12 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-record', 'preferences', 'te
             case 'fieldWidgets':
                 $( '#set-field-widgets' ).text( value ? _("Show fields verbatim") : _("Show helpers for fixed and coded fields") );
                 break;
+            case 'font':
+                $( '#editor .CodeMirror' ).css( { fontFamily: value } );
+                break;
+            case 'fontSize':
+                $( '#editor .CodeMirror' ).css( { fontSize: value } );
+                break;
         }
     }
 
@@ -554,6 +560,16 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-record', 'preferences', 'te
                             Widget.UpdateLine( editor, line );
                         }
                     }
+                } );
+                break;
+            case 'font':
+                _addHandler( '#prefs-menu .set-font', 'click', function( e, oldValue ) {
+                    Preferences.user.font = $( e.target ).css( 'font-family' );
+                } );
+                break;
+            case 'fontSize':
+                _addHandler( '#prefs-menu .set-fontSize', 'click', function( e, oldValue ) {
+                    Preferences.user.fontSize = $( e.target ).css( 'font-size' );
                 } );
                 break;
         }
