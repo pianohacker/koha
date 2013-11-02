@@ -43,7 +43,7 @@ $template->param(
     casAuthentication   => $casAuthentication,
 );
 
-my $shibbolethAuthentication = C4::Context->preference('shibbolethAuthentication');
+my $shibbolethAuthentication = C4::Context->config('useshibboleth');
 $template->param( shibbolethAuthentication => $shibbolethAuthentication);
 
 # display news
