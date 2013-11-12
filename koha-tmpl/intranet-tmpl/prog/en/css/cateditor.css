@@ -147,10 +147,15 @@ body {
     padding-left: 1em;
 }
 
-#q {
+#quicksearch input, #quicksearch a {
     font-size: 1.2em;
     padding: 3px 0;
     width: 96%; // I have no idea why this is necessary
+}
+
+#show-advanced-search {
+    display: block;
+    margin-top: .3em;
 }
 
 .icon-loading {

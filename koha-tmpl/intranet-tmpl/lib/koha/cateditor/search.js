@@ -14,6 +14,15 @@ define( [ 'marc-record', 'pz2' ], function( MARC, Pazpar2 ) {
                 initOpts[ 'pz:queryencoding[' + url + ']' ] = info.encoding;
                 initOpts[ 'pz:xslt[' + url + ']' ] = info.kohasyntax.toLowerCase() + '-work-groups.xsl';
                 initOpts[ 'pz:requestsyntax[' + url + ']' ] = info.syntax;
+
+                // Load in default CCL mappings
+                initOpts[ 'pz:cclmap:au['  + url + ']' ] = 'u=1004 s=al';
+                initOpts[ 'pz:cclmap:ti['  + url + ']' ] = 'u=4 s=al';
+                initOpts[ 'pz:cclmap:su['  + url + ']' ] = 'u=21 s=al';
+                initOpts[ 'pz:cclmap:isbn['  + url + ']' ] = 'u=7';
+                initOpts[ 'pz:cclmap:issn['  + url + ']' ] = 'u=8';
+                initOpts[ 'pz:cclmap:date['  + url + ']' ] = 'u=30 r=r';
+
                 if ( info.authentication ) initOpts[ 'pz:authentication[' + url + ']' ] = info.authentication;
             } );
 

@@ -122,23 +122,36 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-record', 'preferences', 'te
             event.preventDefault();
         } );
 
-        bindKey( 'ctrl+k', function(event) {
-            $( '#catalog-source' )[0].checked = true;
-            $( '#q' ).focus();
-
-            return false;
-        } );
-
         bindKey( 'alt+ctrl+k', function(event) {
-            $( '#reservoir-source' )[0].checked = true;
-            $( '#q' ).focus();
+            $( '#search-by-keywords' ).focus();
 
             return false;
         } );
 
-        bindKey( 'ctrl+shift+k', function(event) {
-            $( '#z3950-source' )[0].checked = true;
-            $( '#q' ).focus();
+        bindKey( 'alt+ctrl+a', function(event) {
+            $( '#search-by-author' ).focus();
+
+            return false;
+        } );
+
+        bindKey( 'alt+ctrl+i', function(event) {
+            $( '#search-by-isbn' ).focus();
+
+            return false;
+        } );
+
+        bindKey( 'alt+ctrl+t', function(event) {
+            $( '#search-by-title' ).focus();
+
+            return false;
+        } );
+
+        $('#quicksearch .search-box').bind( 'keypress', 'return', function() {
+            var q = this.value;
+            if (!q) return false;
+
+            showResultsBox();
+            Search.Start( z3950Targets, $(this).data('qualifier') + q, 20 );
 
             return false;
         } );
@@ -718,16 +731,6 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-record', 'preferences', 'te
 
         // Key bindings
         bindGlobalKeys();
-
-        $('#quicksearch').submit( function() {
-            var q = this.q.value;
-            if (!q) return false;
-
-            showResultsBox();
-            Search.Start( z3950Targets, q, 20 );
-
-            return false;
-        } );
 
         // Start editor
         Preferences.Load( [% USER_INFO.0.borrowernumber %] );

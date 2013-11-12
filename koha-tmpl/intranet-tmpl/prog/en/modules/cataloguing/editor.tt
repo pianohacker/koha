@@ -85,10 +85,15 @@
 <form id="quicksearch">
     <fieldset class="brief">
     <ol>
-        <li><input id="q" name="q" placeholder="Keywords" /></li>
-        <li><label title="Search local records (Ctrl-K)"><input id="catalog-source" name="source" value="catalog" type="radio" /> Catalog</label></li>
-        <li><label title="Search records in the reservoir (Ctrl-Alt-K)"><input id="reservoir-source" name="source" value="reservoir" type="radio" /> Reservoir</label></li>
-        <li><label title="Search external records using Z39.50 (Ctrl-Shift-K)"><input id="z3950-source" name="source" value="z3950" type="radio" /> Z39.50</label></li>
+        <li><label for="search-by-keywords">Keywords:</label></li>
+        <li><input class="search-box" data-qualifier="" id="search-by-keywords" placeholder="(Ctrl-Alt-K)" /></li>
+        <li><label for="search-by-author">Author:</label></li>
+        <li><input class="search-box" data-qualifier="au=" id="search-by-author" placeholder="(Ctrl-Alt-A)" /></li>
+        <li><label for="search-by-isbn">ISBN:</label></li>
+        <li><input class="search-box" data-qualifier="isbn=" id="search-by-isbn" placeholder="(Ctrl-Alt-I)" /></li>
+        <li><label for="search-by-title">Title:</label></li>
+        <li><input class="search-box" data-qualifier="ti=" id="search-by-title" placeholder="(Ctrl-Alt-T)" /></li>
+        <li><a href="#" id="show-advanced-search" title="Show advanced search (Ctrl-Alt-S)">Advanced &raquo;</a></li>
     </fieldset>
 </form>
 
