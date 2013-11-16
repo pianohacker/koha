@@ -305,13 +305,16 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-record', 'preferences', 'te
             }
 
             var startLine, endLine;
-            if ( change.text.length == 2 && from.line == to.line && from.ch == to.ch ) {
-                startLine = endLine = from.line + 1;
+            if ( change.text.length == 2 && from.line == to.line && from.ch == to.ch) {
+                if ( from.ch == 0 ) {
+                    startLine = endLine = from.line;
+                } else if ( from.ch == editor.getLine(from.line).length ){
+                    startLine = endLine = from.line + 1;
+                }
             } else {
                 startLine = (from.ch == editor.getLine(from.line).length && from.line < to.line) ? Math.min(editor.lastLine(), from.line + 1) : from.line;
                 endLine = ((to.ch == 0 && from.line < to.line) ? Math.max(to.line - 1, 0) : to.line) + change.text.length - 1;
             }
-            console.debug(change.text, from, to, startLine, endLine);
 
             for ( var line = startLine; line <= endLine; line++ ) {
                 if ( updatedLines[line] ) continue;
