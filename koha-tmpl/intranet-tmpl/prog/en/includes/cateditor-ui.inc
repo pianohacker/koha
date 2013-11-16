@@ -190,8 +190,15 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-record', 'preferences', 'te
             editor.setCursor( { line: cursor.line + 1, ch: 0 } );
         },
 
-        'Ctrl-D': function( editor ) {
-            // Delete line
+        'Shift-Enter': function( editor ) {
+            var cursor = editor.getCursor();
+            editor.replaceRange( '\n', { line: cursor.line, ch: 0 }, null, 'marcAware' );
+            editor.setCursor( { line: cursor.line, ch: 0 } );
+        },
+
+        'Ctrl-X': function( editor ) {
+            // Delete line (or cut)
+            if ( editor.somethingSelected() ) return true;
             var cur = editor.getCursor();
 
             editor.replaceRange( "", { line: cur.line, ch: 0 }, { line: cur.line + 1, ch: 0 }, 'marcAware' );
@@ -289,14 +296,24 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-record', 'preferences', 'te
 
         var updatedLines = {};
         do {
-            var startLine = change.from.line;
-            var endLine = change.to.line;
-            if ( endLine < startLine ) {
-                startLine = change.to.line;
-                endLine = change.start.line;
+            var from = change.from;
+            var to = change.to;
+            if ( to.line < from.line || to.ch < from.ch ) {
+                var temp = from;
+                from = to;
+                to = temp;
             }
 
-            for ( var line = startLine; line <= endLine + change.text.length - 1; line++ ) {
+            var startLine, endLine;
+            if ( change.text.length == 2 && from.line == to.line && from.ch == to.ch ) {
+                startLine = endLine = from.line + 1;
+            } else {
+                startLine = (from.ch == editor.getLine(from.line).length && from.line < to.line) ? Math.min(editor.lastLine(), from.line + 1) : from.line;
+                endLine = ((to.ch == 0 && from.line < to.line) ? Math.max(to.line - 1, 0) : to.line) + change.text.length - 1;
+            }
+            console.debug(change.text, from, to, startLine, endLine);
+
+            for ( var line = startLine; line <= endLine; line++ ) {
                 if ( updatedLines[line] ) continue;
 
                 if ( Preferences.user.fieldWidgets ) Widget.UpdateLine( editor, line );
