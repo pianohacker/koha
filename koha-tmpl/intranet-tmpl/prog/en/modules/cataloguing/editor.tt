@@ -86,13 +86,13 @@
     <fieldset class="brief">
     <ol>
         <li><label for="search-by-keywords">Keywords:</label></li>
-        <li><input class="search-box" data-qualifier="" id="search-by-keywords" placeholder="(Ctrl-Alt-K)" /></li>
+        <li><input class="search-box" data-qualifier="term=" id="search-by-keywords" placeholder="(Ctrl-Alt-K)" /></li>
         <li><label for="search-by-author">Author:</label></li>
-        <li><input class="search-box" data-qualifier="au=" id="search-by-author" placeholder="(Ctrl-Alt-A)" /></li>
+        <li><input class="search-box" data-qualifier="Author-name=" id="search-by-author" placeholder="(Ctrl-Alt-A)" /></li>
         <li><label for="search-by-isbn">ISBN:</label></li>
-        <li><input class="search-box" data-qualifier="isbn=" id="search-by-isbn" placeholder="(Ctrl-Alt-I)" /></li>
+        <li><input class="search-box" data-qualifier="Identifier-ISBN=" id="search-by-isbn" placeholder="(Ctrl-Alt-I)" /></li>
         <li><label for="search-by-title">Title:</label></li>
-        <li><input class="search-box" data-qualifier="ti=" id="search-by-title" placeholder="(Ctrl-Alt-T)" /></li>
+        <li><input class="search-box" data-qualifier="Title=" id="search-by-title" placeholder="(Ctrl-Alt-T)" /></li>
         <li><a href="#" id="show-advanced-search" title="Show advanced search (Ctrl-Alt-S)">Advanced &raquo;</a></li>
     </fieldset>
 </form>
@@ -100,6 +100,69 @@
 </div>
 
 </div>
+</div>
+
+<div id="advanced-search-ui" style="display: none">
+
+<h1>Advanced search</h1>
+
+<form id="advanced-search">
+    <div id="toolbar" class="btn-toolbar">
+        <button class="btn btn-small" type="submit"><i class="icon-search"></i> <span>Search</span></button>
+        <button class="btn btn-small" type="reset"><i class="icon-remove"></i> <span>Clear</span></button>
+    </div>
+    <ul id="advanced-search-fields">
+        <li>
+            <label for="advanced-search-by-author">Author:</label>
+            <input class="search-box" data-qualifier="Author-name=" id="advanced-search-by-author" />
+        </li>
+        <li>
+            <label for="advanced-search-by-control-number">Control number:</label>
+            <input class="search-box" data-qualifier="Local-number=" id="advanced-search-by-control-number" />
+        </li>
+        <li>
+            <label for="advanced-search-by-dewey">Dewey number:</label>
+            <input class="search-box" data-qualifier="Classification-Dewey=" id="advanced-search-by-dewey" />
+        </li>
+        <li>
+            <label for="advanced-search-by-isbn">ISBN:</label>
+            <input class="search-box" data-qualifier="Identifier-ISBN=" id="advanced-search-by-isbn" />
+        </li>
+        <li>
+            <label for="advanced-search-by-issn">ISSN:</label>
+            <input class="search-box" data-qualifier="Identifier-ISSN=" id="advanced-search-by-issn" />
+        </li>
+        <li>
+            <label for="advanced-search-by-lccn">LCCN:</label>
+            <input class="search-box" data-qualifier="LC-card-number=" id="advanced-search-by-lccn" />
+        </li>
+        <li>
+            <label for="advanced-search-by-lc-number">LC call number:</label>
+            <input class="search-box" data-qualifier="Classification-LC=" id="advanced-search-by-lc-number" />
+        </li>
+        <li>
+            <label for="advanced-search-by-publisher-number">Publisher number:</label>
+            <input class="search-box" data-qualifier="Identifier-publisher-for-music=" id="advanced-search-by-publisher-number" />
+        </li>
+        <li>
+            <label for="advanced-search-by-standard-number">Standard number:</label>
+            <input class="search-box" data-qualifier="Identifier-standard=" id="advanced-search-by-standard-number" />
+        </li>
+        <li>
+            <label for="advanced-search-by-subject">Subject:</label>
+            <input class="search-box" data-qualifier="Subject=" id="advanced-search-by-subject" />
+        </li>
+        <li>
+            <label for="advanced-search-by-publication-date">Publication date:</label>
+            <input class="search-box" data-qualifier="Date=" id="advanced-search-by-publication-date" />
+        </li>
+        <li>
+            <label for="advanced-search-by-title">Title:</label>
+            <input class="search-box" data-qualifier="Title=" id="advanced-search-by-title" />
+        </li>
+    </ul>
+</form>
+
 </div>
 
 <div id="search-results-ui" style="display: none">
