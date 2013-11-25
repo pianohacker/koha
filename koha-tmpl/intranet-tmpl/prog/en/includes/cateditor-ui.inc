@@ -1,5 +1,6 @@
 <script src="/intranet-tmpl/lib/codemirror/codemirror.js"></script>
 <script src="/intranet-tmpl/lib/codemirror/lib/runmode.js"></script>
+<script src="/intranet-tmpl/lib/filesaver.js"></script>
 <script src="/intranet-tmpl/lib/koha/cateditor/marc-mode.js"></script>
 <script src="/intranet-tmpl/lib/require.js"></script>
 <script src="/intranet-tmpl/lib/jquery/plugins/jquery.lightbox_me.js"></script>
@@ -366,6 +367,14 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-record', 'preferences', 'te
                 } else {
                     KohaBackend.CreateRecord( record, finishCb );
                 }
+            }
+        },
+        'iso2709': {
+            saveLabel: _("to ISO2709 (.mrc) file"),
+            save: function( id, record, done ) {
+                saveAs( new Blob( [record.toISO2709()], { 'type': 'application/octet-stream;charset=utf-8' } ), 'record.mrc' );
+
+                done( {} );
             }
         },
         'search': {

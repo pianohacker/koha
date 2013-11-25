@@ -138,7 +138,42 @@ define( function() {
                 });
                 record._fieldlist.push( new MARC.Field(tagnum, ind1, ind2, subfields) );
             });
-        }
+        },
+
+        toISO2709: function() {
+            var FT = '\x1e', RT = '\x1d', DE = '\x1f';
+            var directory = '',
+                from = 0,
+                chunks = ['', ''];
+
+            $.each( this._fieldlist, function( undef, element ) {
+                var chunk = '';
+                var tag = element[0];
+                if (tag < '010') {
+                    chunk = element[1];
+                } else {
+                    chunk = element[1];
+                    for (var i=2; i < element.length; i=i+2) {
+                        chunk = chunk + DE + element[i] + element[i+1];
+                    }
+                }
+                chunk += FT;
+                chunks.push(chunk);
+                directory += intpadded(tag,3) + intpadded(chunk.length,4) + intpadded(from,5);
+                from += chunk.length;
+            });
+
+            chunks.push(RT);
+            directory += FT;
+            var offset = 24 + 12 * record.fields.length + 1;
+            var length = offset + from + 1;
+            var leader = record.field('000');
+            leader = intpadded(length,5) + leader.substr(5,7) + intpadded(offset,5) +
+                leader.substr(17);
+            chunks[0] = leader;
+            chunks[1] = directory;
+            stream.write(chunks.join(''));
+        },
     } );
 
     MARC.Field = function(tagnumber, indicator1, indicator2, subfields) {
