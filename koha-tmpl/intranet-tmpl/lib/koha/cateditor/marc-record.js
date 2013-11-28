@@ -16,11 +16,34 @@ define( function() {
         return str.replace( /[<&"]/, function (c) { return _escape_map[c] } );
     }
 
+    function _intpadded(i, digits) {
+        i = i + '';
+        while (i.length < digits) {
+            i = '0' + i;
+        }
+        return i;
+    }
+
     MARC.Record = function (fieldlist) {
         this._fieldlist = fieldlist || [];
     }
 
     $.extend( MARC.Record.prototype, {
+        leader: function(val) {
+            var field = this.field('000');
+
+            if (val) {
+                if (field) {
+                    field.subfield( '@', val );
+                } else {
+                    field = new MARC.Field( '000', '', '', [ [ '@', val ] ] );
+                    this.addFieldGrouped(field);
+                }
+            } else {
+                return ( field && field.subfield('@') ) || '     nam a22     7a 4500';
+            }
+        },
+
         /**
          * If a tagnumber is given, returns all fields with that tagnumber.
          * Otherwise, returns all fields.
@@ -118,8 +141,7 @@ define( function() {
             var record = this;
             record.xmlSource = xmldoc;
             this._fieldlist.length = 0;
-            var leader = $('leader', xmldoc).text();
-            this._fieldlist.push( new MARC.Field('000', '', '', [ [ '@', leader ] ]) );
+            this.leader( $('leader', xmldoc).text() );
             $('controlfield', xmldoc).each( function(i) {
                 val = $(this).text();
                 tagnum = $(this).attr('tag');
@@ -148,31 +170,33 @@ define( function() {
 
             $.each( this._fieldlist, function( undef, element ) {
                 var chunk = '';
-                var tag = element[0];
-                if (tag < '010') {
-                    chunk = element[1];
+                var tag = element.tagnumber();
+                if (tag == '000') {
+                    return;
+                } else if (tag < '010') {
+                    chunk = element.subfields()[0][1];
                 } else {
-                    chunk = element[1];
-                    for (var i=2; i < element.length; i=i+2) {
-                        chunk = chunk + DE + element[i] + element[i+1];
-                    }
+                    chunk = element.indicators().join('');
+                    $.each( element.subfields(), function( undef, subfield ) {
+                        chunk += DE + subfield[0] + subfield[1];
+                    } );
                 }
                 chunk += FT;
                 chunks.push(chunk);
-                directory += intpadded(tag,3) + intpadded(chunk.length,4) + intpadded(from,5);
+                directory += _intpadded(tag,3) + _intpadded(chunk.length,4) + _intpadded(from,5);
                 from += chunk.length;
             });
 
             chunks.push(RT);
             directory += FT;
-            var offset = 24 + 12 * record.fields.length + 1;
+            var offset = 24 + 12 * this._fieldlist.length + 1;
             var length = offset + from + 1;
-            var leader = record.field('000');
-            leader = intpadded(length,5) + leader.substr(5,7) + intpadded(offset,5) +
+            var leader = this.leader();
+            leader = _intpadded(length,5) + leader.substr(5,7) + _intpadded(offset,5) +
                 leader.substr(17);
             chunks[0] = leader;
             chunks[1] = directory;
-            stream.write(chunks.join(''));
+            return chunks.join('');
         },
     } );
 
