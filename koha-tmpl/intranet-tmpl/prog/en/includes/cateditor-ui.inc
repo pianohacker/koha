@@ -453,6 +453,8 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-record', 'preferences', 'te
 
             if (data.newId) {
                 setSource(data.newId);
+            } else {
+                setSource(recid);
             }
 
             if (callback) callback( data );

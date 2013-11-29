@@ -1,6 +1,9 @@
 /**
  * Adapted and cleaned up from biblios.net, which is purportedly under the GPL.
  * Source: http://git.librarypolice.com/?p=biblios.git;a=blob_plain;f=plugins/marc21editor/marcrecord.js;hb=master
+ *
+ * ISO2709 import/export is cribbed from marcjs, which is under the MIT license.
+ * Source: https://github.com/fredericd/marcjs/blob/master/lib/marcjs.js
  */
 
 define( function() {
@@ -189,7 +192,7 @@ define( function() {
 
             chunks.push(RT);
             directory += FT;
-            var offset = 24 + 12 * this._fieldlist.length + 1;
+            var offset = 24 + 12 * (this._fieldlist.length - 1) + 1;
             var length = offset + from + 1;
             var leader = this.leader();
             leader = _intpadded(length,5) + leader.substr(5,7) + _intpadded(offset,5) +
@@ -198,6 +201,35 @@ define( function() {
             chunks[1] = directory;
             return chunks.join('');
         },
+
+        loadISO2709: function(data) {
+            this._fieldlist.length = 0;
+            this.leader(data.substr(0, 24));
+            var directory_len = parseInt(data.substring(12, 17), 0) - 25,
+                number_of_tag = directory_len / 12;
+            for (var i = 0; i < number_of_tag; i++) {
+                var off = 24 + i * 12,
+                    tag = data.substring(off, off+3),
+                    len = parseInt(data.substring(off+3, off+7), 0) - 1,
+                    pos = parseInt(data.substring(off+7, off+12), 0) + 25 + directory_len,
+                    value = data.substring(pos, pos+len);
+                if ( parseInt(tag) < 10 ) {
+                    this.addField( new MARC.Field( tag, '', '', [ [ '@', value ] ] ) );
+                } else {
+                    if ( value.indexOf('\x1F') ) { // There are some letters
+                        var ind1 = value.substr(0, 1), ind2 = value.substr(1, 1);
+                        var subfields = [];
+
+                        $.each( value.substr(3).split('\x1f'), function( undef, v ) {
+                            if (v.length < 2) return;
+                            subfields.push([v.substr(0, 1), v.substr(1)]);
+                        } );
+
+                        this.addField( new MARC.Field( tag, ind1, ind2, subfields ) );
+                    }
+                }
+            }
+        }
     } );
 
     MARC.Field = function(tagnumber, indicator1, indicator2, subfields) {
