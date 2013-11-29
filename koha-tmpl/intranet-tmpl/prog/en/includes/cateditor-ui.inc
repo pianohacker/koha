@@ -377,6 +377,14 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-record', 'preferences', 'te
                 done( {} );
             }
         },
+        'marcxml': {
+            saveLabel: _("to MARCXML (.xml) file"),
+            save: function( id, record, done ) {
+                saveAs( new Blob( [record.toXML()], { 'type': 'application/octet-stream;charset=utf-8' } ), 'record.xml' );
+
+                done( {} );
+            }
+        },
         'search': {
             recordLabel: _("search result"),
             get: function( id, callback ) {
@@ -728,6 +736,38 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-record', 'preferences', 'te
             } else {
                 saveRecord( backend + ':', editor, finishCb );
             }
+
+            return false;
+        } );
+
+        $('#import-records').click( function() {
+            console.debug( $('#import-records-input').length );
+            $('#import-records-input')
+                .off('change')
+                .change( function() {
+                    if ( !this.files || !this.files.length ) return;
+
+                    var file = this.files[0];
+                    var reader = new FileReader();
+
+                    reader.onload = function() {
+                        var record = new MARC.Record();
+
+                        if ( /\.mrc$/.test( file.name ) ) {
+                            record.loadISO2709( reader.result );
+                        } else if ( /\.xml$/.test( file.name ) ) {
+                            record.loadMARCXML( reader.result );
+                        } else {
+                            humanMsg.displayAlert( _("Unknown record type, cannot import"), { className: 'humanError' } );
+                            return;
+                        }
+
+                        displayRecord( editor, record );
+                    };
+
+                    reader.readAsText( file );
+                } )
+                .click();
 
             return false;
         } );

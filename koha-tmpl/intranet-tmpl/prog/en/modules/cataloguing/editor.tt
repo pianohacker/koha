@@ -28,6 +28,7 @@
 <div id="yui-main"><div class="yui-b">
 
 <div id="editor">
+    <input id="import-records-input" type="file" style="display: none">
     <div id="toolbar" class="btn-toolbar">
         <div class="btn-group">
             <button class="btn btn-small" id="save-record" title="Save current record (Ctrl-S)"><i class="icon-hdd"></i> <span>Save</span></button>
@@ -37,7 +38,8 @@
             <ul class="dropdown-menu" id="save-dropdown">
             </ul>
         </div>
-        <button class="btn btn-small" id="open-macros" title="Run and edit macros"><i class="icon-play"></i> <span>Macros</span></button>
+        <button class="btn btn-small" id="import-records" title="Import an ISO2709 or MARCXML record"><i class="icon-upload"></i> <span>Import record...</span></button>
+        <button class="btn btn-small" id="open-macros" title="Run and edit macros"><i class="icon-play"></i> <span>Macros...</span></button>
         <div class="btn-group">
             <button class="btn btn-small dropdown-toggle" data-toggle="dropdown"><i class="icon-cog"></i> Settings <span class="caret"></span></button>
             <ul id="prefs-menu" class="dropdown-menu">

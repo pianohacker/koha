@@ -16,12 +16,20 @@ define( [ 'marc-record', 'pz2' ], function( MARC, Pazpar2 ) {
                 initOpts[ 'pz:requestsyntax[' + url + ']' ] = info.syntax;
 
                 // Load in default CCL mappings
-                initOpts[ 'pz:cclmap:au['  + url + ']' ] = 'u=1004 s=al';
-                initOpts[ 'pz:cclmap:ti['  + url + ']' ] = 'u=4 s=al';
-                initOpts[ 'pz:cclmap:su['  + url + ']' ] = 'u=21 s=al';
-                initOpts[ 'pz:cclmap:isbn['  + url + ']' ] = 'u=7';
-                initOpts[ 'pz:cclmap:issn['  + url + ']' ] = 'u=8';
-                initOpts[ 'pz:cclmap:date['  + url + ']' ] = 'u=30 r=r';
+                // Pazpar2 seems to have a bug where wildcard cclmaps are ignored.
+                // What an incredible surprise.
+                initOpts[ 'pz:cclmap:Author-name[' + url + ']' ] = 'u=1004 s=al';
+                initOpts[ 'pz:cclmap:Classification-Dewey[' + url + ']' ] = 'u=13';
+                initOpts[ 'pz:cclmap:Classification-LC[' + url + ']' ] = 'u=16';
+                initOpts[ 'pz:cclmap:Date[' + url + ']' ] = 'u=30 r=r';
+                initOpts[ 'pz:cclmap:Identifier-ISBN[' + url + ']' ] = 'u=7';
+                initOpts[ 'pz:cclmap:Identifier-ISSN[' + url + ']' ] = 'u=8';
+                initOpts[ 'pz:cclmap:Identifier-publisher-for-music[' + url + ']' ] = 'u=51';
+                initOpts[ 'pz:cclmap:Identifier-standard[' + url + ']' ] = 'u=1007';
+                initOpts[ 'pz:cclmap:LC-card-number[' + url + ']' ] = 'u=9';
+                initOpts[ 'pz:cclmap:Local-number[' + url + ']' ] = 'u=12';
+                initOpts[ 'pz:cclmap:Subject[' + url + ']' ] = 'u=21 s=al';
+                initOpts[ 'pz:cclmap:Title[' + url + ']' ] = 'u=4 s=al';
 
                 if ( info.authentication ) initOpts[ 'pz:authentication[' + url + ']' ] = info.authentication;
             } );
