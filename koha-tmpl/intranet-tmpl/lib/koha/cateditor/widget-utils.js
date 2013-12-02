@@ -176,43 +176,6 @@ define( function() {
                 }
             } );
         },
-
-        AddError: function( editor, line, error ) {
-            var found = false;
-            var options = {};
-
-            if ( line == null ) {
-                line = 0;
-                options.above = true;
-            }
-
-            $.each( editor.getLineHandle(line).widgets || [], function( undef, widget ) {
-                if ( !widget.isErrorMarker ) return;
-
-                found = true;
-
-                $( widget.node ).append( '; ' + error );
-                widget.changed();
-
-                return false;
-            } );
-
-            if ( found ) return;
-
-            var node = $( '<div class="structure-error"><i class="icon-remove"></i> ' + error + '</div>' )[0];
-            var widget = editor.addLineWidget( line, node, options );
-
-            widget.node = node;
-            widget.isErrorMarker = true;
-        },
-
-        RemoveErrors: function( editor ) {
-            for ( var line = 0; line < editor.lineCount(); line++ ) {
-                $.each( editor.getLineHandle( line ).widgets || [], function( undef, lineWidget ) {
-                    if ( lineWidget.isErrorMarker ) lineWidget.clear();
-                } );
-            }
-        },
     };
 
     return Widget;

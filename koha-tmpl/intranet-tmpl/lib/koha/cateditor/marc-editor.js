@@ -192,4 +192,43 @@ define( [ 'marc-record', 'koha-backend', 'text-marc', 'widget-utils' ], function
         this.cm.on( 'change', editorChange );
         this.cm.on( 'cursorActivity', editorCursorActivity );
     }
+
+    MARCEditor.prototype.addError = function( line, error ) {
+        var found = false;
+        var options = {};
+
+        if ( line == null ) {
+            line = 0;
+            options.above = true;
+        }
+
+        $.each( this.cm.getLineHandle(line).widgets || [], function( undef, widget ) {
+            if ( !widget.isErrorMarker ) return;
+
+            found = true;
+
+            $( widget.node ).append( '; ' + error );
+            widget.changed();
+
+            return false;
+        } );
+
+        if ( found ) return;
+
+        var node = $( '<div class="structure-error"><i class="icon-remove"></i> ' + error + '</div>' )[0];
+        var widget = this.cm.addLineWidget( line, node, options );
+
+        widget.node = node;
+        widget.isErrorMarker = true;
+    },
+
+    MARCEditor.prototype.removeErrors: function() {
+        for ( var line = 0; line < this.cm.lineCount(); line++ ) {
+            $.each( this.cm.getLineHandle( line ).widgets || [], function( undef, lineWidget ) {
+                if ( lineWidget.isErrorMarker ) lineWidget.clear();
+            } );
+        }
+    },
+
+    return MARCEditor;
 } );

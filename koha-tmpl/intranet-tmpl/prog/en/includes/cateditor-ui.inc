@@ -239,7 +239,7 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
 
         if ( !backends[ parts[0] ] || !backends[ parts[0] ].save ) return false;
 
-        Widget.RemoveErrors( editor );
+        editor.removeErrors();
 
         $.each( editor.getAllMarks(), function( undef, mark ) {
             if ( mark.widget ) mark.widget.clearToText();
@@ -491,26 +491,26 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
                 $.each( result.errors || [], function( undef, error ) {
                     switch ( error.type ) {
                         case 'noTag':
-                            Widget.AddError( editor, error.line, _("Invalid tag number") );
+                            editor.addError( error.line, _("Invalid tag number") );
                             break;
                         case 'noIndicators':
-                            Widget.AddError( editor, error.line, _("Invalid indicators") );
+                            editor.addError( error.line, _("Invalid indicators") );
                             break;
                         case 'missingTag':
-                            Widget.AddError( editor, null, _("Missing mandatory tag: ") + error.tag );
+                            editor.addError( null, _("Missing mandatory tag: ") + error.tag );
                             break;
                         case 'missingSubfield':
                             if ( error.subfield == '@' ) {
-                                Widget.AddError( editor, error.line, _("Missing control field contents") );
+                                editor.addError( error.line, _("Missing control field contents") );
                             } else {
-                                Widget.AddError( editor, error.line, _("Missing mandatory subfield: $") + error.subfield );
+                                editor.addError( error.line, _("Missing mandatory subfield: $") + error.subfield );
                             }
                             break;
                         case 'unrepeatableTag':
-                            Widget.AddError( editor, error.line, _("Tag ") + error.tag + _(" cannot be repeated") );
+                            editor.addError( error.line, _("Tag ") + error.tag + _(" cannot be repeated") );
                             break;
                         case 'unrepeatableSubfield':
-                            Widget.AddError( editor, error.line, _("Subfield $") + error.subfield + _(" cannot be repeated") );
+                            editor.addError( error.line, _("Subfield $") + error.subfield + _(" cannot be repeated") );
                             break;
                     }
                 } );
