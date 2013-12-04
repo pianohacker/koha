@@ -213,6 +213,7 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
     }
 
     function setSource(parts) {
+        console.trace();
         state.backend = parts[0];
         state.recordID = parts[1];
         state.canSave = backends[ state.backend ].save != null;
@@ -258,7 +259,7 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
             if (data.newId) {
                 setSource(data.newId);
             } else {
-                setSource(parts);
+                setSource( [ state.backend, state.recordID ] );
             }
 
             if (callback) callback( data );
