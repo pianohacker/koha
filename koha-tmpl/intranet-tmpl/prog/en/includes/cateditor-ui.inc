@@ -52,8 +52,7 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
     var state = {
         backend: '',
         saveBackend: 'catalog',
-        recordID: undefined,
-        saving: false
+        recordID: undefined
     };
 
     var editor;
@@ -75,7 +74,6 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
                         $( '<select></select>' ).appendTo( this.node );
                         var $node = $( this.node ).find( 'select' );
                         $.each( KohaBackend.GetAuthorisedValues( subfieldInfo.authorised_value ), function( undef, authval ) {
-                            console.log( authval );
                             $node.append( '<option value="' + authval.value + '">' + authval.lib + '</option>' );
                         } );
                         $node.val( this.text );
@@ -226,28 +224,15 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
         $( '#save-record span' ).text( _("Save ") + backends[ state.saveBackend ].saveLabel );
     }
 
-    function displayRecord( editor, record ) {
-        editor.setValue( TextMARC.RecordToText(record) );
-    }
-
     function saveRecord( recid, editor, callback ) {
-        if (state.saving) return;
-        state.saving = true;
-
         var parts = recid.split(':');
         if ( parts.length != 2 ) return false;
 
         if ( !backends[ parts[0] ] || !backends[ parts[0] ].save ) return false;
 
         editor.removeErrors();
+        var record = editor.getRecord();
 
-        $.each( editor.getAllMarks(), function( undef, mark ) {
-            if ( mark.widget ) mark.widget.clearToText();
-        } );
-        var record = TextMARC.TextToRecord( editor.getValue() );
-        for ( var line = 0; line <= editor.lastLine(); line++ ) {
-            if ( Preferences.user.fieldWidgets ) Widget.UpdateLine( editor, line );
-        }
         if ( record.errors ) {
             state.saving = false;
             callback( { error: 'syntax', errors: record.errors } );
@@ -267,13 +252,13 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
             if (data.newRecord) {
                 var record = new MARC.Record();
                 record.loadMARCXML(data.newRecord);
-                displayRecord( editor, record );
+                editor.displayRecord( record );
             }
 
             if (data.newId) {
                 setSource(data.newId);
             } else {
-                setSource(recid);
+                setSource(parts);
             }
 
             if (callback) callback( data );
@@ -287,7 +272,7 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
         if ( !backends[ parts[0] ] || !backends[ parts[0] ].get ) return false;
 
         backends[ parts[0] ].get( parts[1], function( record ) {
-            displayRecord( editor, record );
+            editor.displayRecord( record );
 
             if (callback) callback(record);
         } );
@@ -412,17 +397,7 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
         switch (pref) {
             case 'fieldWidgets':
                 _addHandler( '#set-field-widgets', 'click', function( e, oldValue ) {
-                    if ( oldValue ) {
-                        Preferences.user.fieldWidgets = false;
-                        $.each( editor.getAllMarks(), function( undef, mark ) {
-                            if ( mark.widget ) mark.widget.clearToText();
-                        } );
-                    } else {
-                        Preferences.user.fieldWidgets = true;
-                        for ( var line = 0; line <= editor.lastLine(); line++ ) {
-                            Widget.UpdateLine( editor, line );
-                        }
-                    }
+                    editor.setUseWidgets( Preference.user.fieldWidgets = !Preference.user.fieldWidgets );
                 } );
                 break;
             case 'font':
@@ -534,7 +509,6 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
         } );
 
         $('#import-records').click( function() {
-            console.debug( $('#import-records-input').length );
             $('#import-records-input')
                 .off('change')
                 .change( function() {
@@ -555,7 +529,7 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
                             return;
                         }
 
-                        displayRecord( editor, record );
+                       editor.displayRecord( record );
                     };
 
                     reader.readAsText( file );
@@ -572,7 +546,7 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
         } );
 
         $('#run-macro').click( function() {
-            var result = Macros.Run( editor, macroEditor.getValue() );
+            var result = Macros.Run( editor.cm, macroEditor.getValue() );
 
             if ( result.errors.length ) console.error( 'Failed to run macro:', result.errors );
 

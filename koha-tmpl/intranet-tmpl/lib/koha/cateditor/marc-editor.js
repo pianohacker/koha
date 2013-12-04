@@ -1,11 +1,11 @@
-define( [ 'marc-record', 'koha-backend', 'text-marc', 'widget-utils' ], function( MARC, KohaBackend, TextMARC, Widget ) {
-    function editorCursorActivity( editor ) {
-        if ( state.saving ) return;
+define( [ 'marc-record', 'koha-backend', 'preferences', 'text-marc', 'widget-utils' ], function( MARC, KohaBackend, Preferences, TextMARC, Widget ) {
+    function editorCursorActivity( cm ) {
+        if ( this.textMode ) return;
 
         $('#status-tag-info').empty();
         $('#status-subfield-info').empty();
 
-        var info = Widget.GetLineInfo( editor, editor.getCursor() );
+        var info = Widget.GetLineInfo( cm, cm.getCursor() );
 
         if ( !info.tagNumber ) return; // No tag at all on this line
 
@@ -30,21 +30,21 @@ define( [ 'marc-record', 'koha-backend', 'text-marc', 'widget-utils' ], function
         }
     }
 
-    function editorBeforeChange( editor, change ) {
-        if ( state.saving || change.origin == 'marcAware' ) return;
+    function editorBeforeChange( cm, change ) {
+        if ( this.textMode || change.origin == 'marcAware' ) return;
 
         // FIXME: Should only cancel changes if this is a control field/subfield widget
         if ( change.from.line !== change.to.line || Math.abs( change.from.ch - change.to.ch ) > 1 || change.text.length != 1 || change.text[0].length != 0 ) return; // Not single-char change
 
-        if ( change.from.ch == change.to.ch - 1 && editor.findMarksAt( { line: change.from.line, ch: change.from.ch + 1 } ).length ) {
+        if ( change.from.ch == change.to.ch - 1 && cm.findMarksAt( { line: change.from.line, ch: change.from.ch + 1 } ).length ) {
             change.cancel();
-        } else if ( change.from.ch == change.to.ch && editor.findMarksAt(change.from).length && !change.text[0].match(/^[$|ǂ‡]$/) ) {
+        } else if ( change.from.ch == change.to.ch && cm.findMarksAt(change.from).length && !change.text[0].match(/^[$|ǂ‡]$/) ) {
             change.cancel();
         }
     }
 
-    function editorChange( editor, change ) {
-        if ( state.saving ) return;
+    function editorChange( cm, change ) {
+        if ( this.textMode ) return;
 
         var updatedLines = {};
         do {
@@ -60,34 +60,34 @@ define( [ 'marc-record', 'koha-backend', 'text-marc', 'widget-utils' ], function
             if ( change.text.length == 2 && from.line == to.line && from.ch == to.ch) {
                 if ( from.ch == 0 ) {
                     startLine = endLine = from.line;
-                } else if ( from.ch == editor.getLine(from.line).length ){
+                } else if ( from.ch == cm.getLine(from.line).length ){
                     startLine = endLine = from.line + 1;
                 }
             } else {
-                startLine = (from.ch == editor.getLine(from.line).length && from.line < to.line) ? Math.min(editor.lastLine(), from.line + 1) : from.line;
+                startLine = (from.ch == cm.getLine(from.line).length && from.line < to.line) ? Math.min(cm.lastLine(), from.line + 1) : from.line;
                 endLine = ((to.ch == 0 && from.line < to.line) ? Math.max(to.line - 1, 0) : to.line) + change.text.length - 1;
             }
 
             for ( var line = startLine; line <= endLine; line++ ) {
                 if ( updatedLines[line] ) continue;
 
-                if ( Preferences.user.fieldWidgets ) Widget.UpdateLine( editor, line );
-                if ( change.origin != 'setValue' && change.origin != 'marcWidgetPrefill' ) editor.addLineClass( line, 'wrapper', 'modified-line' );
+                if ( Preferences.user.fieldWidgets ) Widget.UpdateLine( cm, line );
+                if ( change.origin != 'setValue' && change.origin != 'marcWidgetPrefill' ) cm.addLineClass( line, 'wrapper', 'modified-line' );
                 updatedLines[line] = true;
             }
         } while ( change = change.next )
 
-        Widget.ActivateAt( editor, editor.getCursor() );
+        Widget.ActivateAt( cm, cm.getCursor() );
     }
 
     // Editor helper functions
-    function activateTabPosition( editor, cur, idx ) {
-        editor.setCursor( cur );
-        Widget.ActivateAt( editor, cur, idx );
+    function activateTabPosition( cm, cur, idx ) {
+        cm.setCursor( cur );
+        Widget.ActivateAt( cm, cur, idx );
     }
 
-    function getTabPositions( editor, cur ) {
-        var info = Widget.GetLineInfo( editor, cur || editor.getCursor() );
+    function getTabPositions( cm, cur ) {
+        var info = Widget.GetLineInfo( cm, cur || cm.getCursor() );
 
         if ( info.tagNumber ) {
             if ( info.subfields ) {
@@ -106,53 +106,53 @@ define( [ 'marc-record', 'koha-backend', 'text-marc', 'widget-utils' ], function
         }
     }
 
-    var editorKeys = {
-        Enter: function( editor ) {
-            var cursor = editor.getCursor();
-            editor.replaceRange( '\n', { line: cursor.line }, null, 'marcAware' );
-            editor.setCursor( { line: cursor.line + 1, ch: 0 } );
+    var _editorKeys = {
+        Enter: function( cm ) {
+            var cursor = cm.getCursor();
+            cm.replaceRange( '\n', { line: cursor.line }, null, 'marcAware' );
+            cm.setCursor( { line: cursor.line + 1, ch: 0 } );
         },
 
-        'Shift-Enter': function( editor ) {
-            var cursor = editor.getCursor();
-            editor.replaceRange( '\n', { line: cursor.line, ch: 0 }, null, 'marcAware' );
-            editor.setCursor( { line: cursor.line, ch: 0 } );
+        'Shift-Enter': function( cm ) {
+            var cursor = cm.getCursor();
+            cm.replaceRange( '\n', { line: cursor.line, ch: 0 }, null, 'marcAware' );
+            cm.setCursor( { line: cursor.line, ch: 0 } );
         },
 
-        'Ctrl-X': function( editor ) {
+        'Ctrl-X': function( cm ) {
             // Delete line (or cut)
-            if ( editor.somethingSelected() ) return true;
-            var cur = editor.getCursor();
+            if ( cm.somethingSelected() ) return true;
+            var cur = cm.getCursor();
 
-            editor.replaceRange( "", { line: cur.line, ch: 0 }, { line: cur.line + 1, ch: 0 }, 'marcAware' );
+            cm.replaceRange( "", { line: cur.line, ch: 0 }, { line: cur.line + 1, ch: 0 }, 'marcAware' );
         },
 
-        Tab: function( editor ) {
+        Tab: function( cm ) {
             // Move through parts of tag/fixed fields
-            var positions = getTabPositions( editor );
-            var cur = editor.getCursor();
+            var positions = getTabPositions( cm );
+            var cur = cm.getCursor();
             var done = false;
 
             for ( var i = 0; i < positions.length; i++ ) {
                 if ( positions[i] > cur.ch ) {
-                    activateTabPosition( editor, { line: cur.line, ch: positions[i] } );
+                    activateTabPosition( cm, { line: cur.line, ch: positions[i] } );
                     done = true;
                     return false;
                 }
             }
 
-            editor.setCursor( { line: cur.line + 1, ch: 0 } );
+            cm.setCursor( { line: cur.line + 1, ch: 0 } );
         },
 
-        'Shift-Tab': function( editor ) {
+        'Shift-Tab': function( cm ) {
             // Move backwards through parts of tag/fixed fields
-            var positions = getTabPositions( editor );
-            var cur = editor.getCursor();
+            var positions = getTabPositions( cm );
+            var cur = cm.getCursor();
             var done = false;
 
             for ( var i = positions.length - 1; i >= 0; i-- ) {
                 if ( positions[i] < cur.ch ) {
-                    activateTabPosition( editor, { line: cur.line, ch: positions[i] } );
+                    activateTabPosition( cm, { line: cur.line, ch: positions[i] } );
                     done = true;
                     return false;
                 }
@@ -160,12 +160,12 @@ define( [ 'marc-record', 'koha-backend', 'text-marc', 'widget-utils' ], function
 
             if ( cur.line == 0 ) return;
 
-            var prevPositions = getTabPositions( editor, { line: cur.line - 1, ch: editor.getLine( cur.line - 1 ).length } );
+            var prevPositions = getTabPositions( cm, { line: cur.line - 1, ch: cm.getLine( cur.line - 1 ).length } );
 
             if ( prevPositions.length ) {
-                activateTabPosition( editor, { line: cur.line - 1, ch: prevPositions[ prevPositions.length - 1 ] }, -1 );
+                activateTabPosition( cm, { line: cur.line - 1, ch: prevPositions[ prevPositions.length - 1 ] }, -1 );
             } else {
-                editor.setCursor( { line: cur.line - 1, ch: 0 } );
+                cm.setCursor( { line: cur.line - 1, ch: 0 } );
             }
         },
     };
@@ -192,6 +192,38 @@ define( [ 'marc-record', 'koha-backend', 'text-marc', 'widget-utils' ], function
         this.cm.on( 'change', editorChange );
         this.cm.on( 'cursorActivity', editorCursorActivity );
     }
+
+    MARCEditor.prototype.setUseWidgets = function( val ) {
+        if ( val ) {
+            for ( var line = 0; line <= this.cm.lastLine(); line++ ) {
+                Widget.UpdateLine( this.cm, line );
+            }
+        } else {
+            $.each( this.cm.getAllMarks(), function( undef, mark ) {
+                if ( mark.widget ) mark.widget.clearToText();
+            } );
+        }
+    };
+
+    MARCEditor.prototype.displayRecord = function( record ) {
+        this.cm.setValue( TextMARC.RecordToText(record) );
+    };
+
+    MARCEditor.prototype.getRecord = function() {
+        this.textMode = true;
+
+        $.each( this.cm.getAllMarks(), function( undef, mark ) {
+            if ( mark.widget ) mark.widget.clearToText();
+        } );
+        var record = TextMARC.TextToRecord( this.cm.getValue() );
+        for ( var line = 0; line <= this.cm.lastLine(); line++ ) {
+            if ( Preferences.user.fieldWidgets ) Widget.UpdateLine( this.cm, line );
+        }
+
+        this.textMode = false;
+
+        return record;
+    };
 
     MARCEditor.prototype.addError = function( line, error ) {
         var found = false;
@@ -220,15 +252,15 @@ define( [ 'marc-record', 'koha-backend', 'text-marc', 'widget-utils' ], function
 
         widget.node = node;
         widget.isErrorMarker = true;
-    },
+    };
 
-    MARCEditor.prototype.removeErrors: function() {
+    MARCEditor.prototype.removeErrors = function() {
         for ( var line = 0; line < this.cm.lineCount(); line++ ) {
             $.each( this.cm.getLineHandle( line ).widgets || [], function( undef, lineWidget ) {
                 if ( lineWidget.isErrorMarker ) lineWidget.clear();
             } );
         }
-    },
+    };
 
     return MARCEditor;
 } );
