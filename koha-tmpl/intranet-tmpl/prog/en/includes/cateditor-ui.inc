@@ -378,9 +378,11 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
                 break;
             case 'font':
                 $( '#editor .CodeMirror' ).css( { fontFamily: value } );
+                editor.refresh();
                 break;
             case 'fontSize':
                 $( '#editor .CodeMirror' ).css( { fontSize: value } );
+                editor.refresh();
                 break;
         }
     }

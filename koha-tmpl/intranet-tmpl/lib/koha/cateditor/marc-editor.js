@@ -205,6 +205,10 @@ define( [ 'marc-record', 'koha-backend', 'preferences', 'text-marc', 'widget-uti
         }
     };
 
+    MARCEditor.prototype.refresh = function() {
+        this.cm.refresh();
+    };
+
     MARCEditor.prototype.displayRecord = function( record ) {
         this.cm.setValue( TextMARC.RecordToText(record) );
     };
