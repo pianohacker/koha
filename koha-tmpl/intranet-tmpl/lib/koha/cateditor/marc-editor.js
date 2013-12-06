@@ -205,6 +205,10 @@ define( [ 'marc-record', 'koha-backend', 'preferences', 'text-marc', 'widget-uti
         }
     };
 
+    MARCEditor.prototype.focus = function() {
+        this.cm.focus();
+    };
+
     MARCEditor.prototype.refresh = function() {
         this.cm.refresh();
     };

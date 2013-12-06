@@ -213,7 +213,6 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
     }
 
     function setSource(parts) {
-        console.trace();
         state.backend = parts[0];
         state.recordID = parts[1];
         state.canSave = backends[ state.backend ].save != null;
@@ -274,6 +273,7 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
 
         backends[ parts[0] ].get( parts[1], function( record ) {
             editor.displayRecord( record );
+            editor.focus();
 
             if (callback) callback(record);
         } );
@@ -581,6 +581,7 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
 
         function finishCb() {
             $("#loading").hide();
+            editor.focus();
         }
 
         if ( "[% auth_forwarded_hash %]" ) {
