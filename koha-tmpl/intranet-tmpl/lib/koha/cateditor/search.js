@@ -18,6 +18,7 @@ define( [ 'marc-record', 'pz2' ], function( MARC, Pazpar2 ) {
                 // Load in default CCL mappings
                 // Pazpar2 seems to have a bug where wildcard cclmaps are ignored.
                 // What an incredible surprise.
+                initOpts[ 'pz:cclmap:term[' + url + ']' ] = 'u=1016 t=l,r s=al';
                 initOpts[ 'pz:cclmap:Author-name[' + url + ']' ] = 'u=1004 s=al';
                 initOpts[ 'pz:cclmap:Classification-Dewey[' + url + ']' ] = 'u=13';
                 initOpts[ 'pz:cclmap:Classification-LC[' + url + ']' ] = 'u=16';
