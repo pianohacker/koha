@@ -291,6 +291,26 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
     }
 
     // Search functions
+    function showAdvancedSearch() {
+        $('#advanced-search-ui').lightbox_me();
+    }
+
+    function startAdvancedSearch() {
+        var search = '';
+
+        $('#advanced-search-ui input').each( function() {
+            if (!this.value) return;
+            if (search) search += ' and ';
+            search += $(this).data('qualifier') + this.value;
+        } );
+
+        if (!search) return;
+
+        $('#advanced-search-ui').trigger('close');
+        showResultsBox();
+        Search.Start( z3950Targets, search, 20 );
+    }
+
     function showResultsBox(data) {
         $('#searchresults table').empty();
         $('#search-targetsinfo').empty().append('<li>' + _("Loading...") + '</li>');
@@ -568,6 +588,18 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
             } else {
                 humanMsg.displayAlert( _("Cannot open this record in the basic editor"), { className: 'humanError' } );
             }
+        } );
+
+        $( '#show-advanced-search' ).click( function() {
+            showAdvancedSearch();
+
+            return false;
+        } );
+
+        $('#advanced-search').submit( function() {
+            startAdvancedSearch();
+
+            return false;
         } );
 
         // Key bindings
