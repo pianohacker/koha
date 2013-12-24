@@ -125,12 +125,21 @@ define( [ 'marc-record', 'koha-backend', 'preferences', 'text-marc', 'widget-uti
         'Ctrl-X': function( cm ) {
             // Delete subfield (or cut)
             if ( cm.somethingSelected() ) return true;
-            var cur = cm.getCursor();
 
-            cm.replaceRange( "", { line: cur.line, ch: 0 }, { line: cur.line + 1, ch: 0 }, 'marcAware' );
+            var cur = cm.getCursor();
+            var info = cm.marceditor.getLineInfo( cur );
+            if ( !info || !info.subfields ) return true;
+
+            for (var i = 0; i < info.subfields.length; i++) {
+                var end = i == info.subfields.length - 1 ? info.contents.length : info.subfields[i+1].ch;
+                if (cur.ch > end) continue;
+
+                cm.replaceRange( "", { line: cur.line, ch: info.subfields[i].ch }, { line: cur.line, ch: end }, 'marcAware' );
+                return;
+            }
         },
 
-        'Ctrl-Shift-X': function( cm ) {
+        'Shift-Ctrl-X': function( cm ) {
             // Delete line
             var cur = cm.getCursor();
 
