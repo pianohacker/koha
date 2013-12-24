@@ -1,13 +1,14 @@
 define( [ 'marc-record', 'koha-backend', 'preferences', 'text-marc', 'widget-utils' ], function( MARC, KohaBackend, Preferences, TextMARC, Widget ) {
     function editorCursorActivity( cm ) {
-        if ( this.textMode ) return;
+        var editor = cm.marceditor;
+        if ( editor.textMode ) return;
 
         $('#status-tag-info').empty();
         $('#status-subfield-info').empty();
 
-        var info = Widget.GetLineInfo( cm, cm.getCursor() );
+        var info = editor.getLineInfo( cm.getCursor() );
 
-        if ( !info.tagNumber ) return; // No tag at all on this line
+        if ( !info ) return; // No tag at all on this line
 
         var taginfo = KohaBackend.GetTagInfo( '', info.tagNumber );
         $('#status-tag-info').html( '<strong>' + info.tagNumber + ':</strong> ' );
@@ -31,7 +32,8 @@ define( [ 'marc-record', 'koha-backend', 'preferences', 'text-marc', 'widget-uti
     }
 
     function editorBeforeChange( cm, change ) {
-        if ( this.textMode || change.origin == 'marcAware' ) return;
+        var editor = cm.marceditor;
+        if ( editor.textMode || change.origin == 'marcAware' ) return;
 
         // FIXME: Should only cancel changes if this is a control field/subfield widget
         if ( change.from.line !== change.to.line || Math.abs( change.from.ch - change.to.ch ) > 1 || change.text.length != 1 || change.text[0].length != 0 ) return; // Not single-char change
@@ -44,7 +46,8 @@ define( [ 'marc-record', 'koha-backend', 'preferences', 'text-marc', 'widget-uti
     }
 
     function editorChange( cm, change ) {
-        if ( this.textMode ) return;
+        var editor = cm.marceditor;
+        if ( editor.textMode ) return;
 
         var updatedLines = {};
         do {
@@ -71,7 +74,7 @@ define( [ 'marc-record', 'koha-backend', 'preferences', 'text-marc', 'widget-uti
             for ( var line = startLine; line <= endLine; line++ ) {
                 if ( updatedLines[line] ) continue;
 
-                if ( Preferences.user.fieldWidgets ) Widget.UpdateLine( cm, line );
+                if ( Preferences.user.fieldWidgets ) Widget.UpdateLine( cm.marceditor, line );
                 if ( change.origin != 'setValue' && change.origin != 'marcWidgetPrefill' ) cm.addLineClass( line, 'wrapper', 'modified-line' );
                 updatedLines[line] = true;
             }
@@ -86,10 +89,10 @@ define( [ 'marc-record', 'koha-backend', 'preferences', 'text-marc', 'widget-uti
         Widget.ActivateAt( cm, cur, idx );
     }
 
-    function getTabPositions( cm, cur ) {
-        var info = Widget.GetLineInfo( cm, cur || cm.getCursor() );
+    function getTabPositions( editor, cur ) {
+        var info = editor.getLineInfo( cur || editor.cm.getCursor() );
 
-        if ( info.tagNumber ) {
+        if ( info ) {
             if ( info.subfields ) {
                 var positions = [ 0, 4, 6 ];
 
@@ -120,8 +123,15 @@ define( [ 'marc-record', 'koha-backend', 'preferences', 'text-marc', 'widget-uti
         },
 
         'Ctrl-X': function( cm ) {
-            // Delete line (or cut)
+            // Delete subfield (or cut)
             if ( cm.somethingSelected() ) return true;
+            var cur = cm.getCursor();
+
+            cm.replaceRange( "", { line: cur.line, ch: 0 }, { line: cur.line + 1, ch: 0 }, 'marcAware' );
+        },
+
+        'Ctrl-Shift-X': function( cm ) {
+            // Delete line
             var cur = cm.getCursor();
 
             cm.replaceRange( "", { line: cur.line, ch: 0 }, { line: cur.line + 1, ch: 0 }, 'marcAware' );
@@ -129,14 +139,12 @@ define( [ 'marc-record', 'koha-backend', 'preferences', 'text-marc', 'widget-uti
 
         Tab: function( cm ) {
             // Move through parts of tag/fixed fields
-            var positions = getTabPositions( cm );
+            var positions = getTabPositions( cm.marceditor );
             var cur = cm.getCursor();
-            var done = false;
 
             for ( var i = 0; i < positions.length; i++ ) {
                 if ( positions[i] > cur.ch ) {
                     activateTabPosition( cm, { line: cur.line, ch: positions[i] } );
-                    done = true;
                     return false;
                 }
             }
@@ -146,14 +154,12 @@ define( [ 'marc-record', 'koha-backend', 'preferences', 'text-marc', 'widget-uti
 
         'Shift-Tab': function( cm ) {
             // Move backwards through parts of tag/fixed fields
-            var positions = getTabPositions( cm );
+            var positions = getTabPositions( cm.marceditor );
             var cur = cm.getCursor();
-            var done = false;
 
             for ( var i = positions.length - 1; i >= 0; i-- ) {
                 if ( positions[i] < cur.ch ) {
                     activateTabPosition( cm, { line: cur.line, ch: positions[i] } );
-                    done = true;
                     return false;
                 }
             }
@@ -196,7 +202,7 @@ define( [ 'marc-record', 'koha-backend', 'preferences', 'text-marc', 'widget-uti
     MARCEditor.prototype.setUseWidgets = function( val ) {
         if ( val ) {
             for ( var line = 0; line <= this.cm.lastLine(); line++ ) {
-                Widget.UpdateLine( this.cm, line );
+                Widget.UpdateLine( this, line );
             }
         } else {
             $.each( this.cm.getAllMarks(), function( undef, mark ) {
@@ -225,12 +231,37 @@ define( [ 'marc-record', 'koha-backend', 'preferences', 'text-marc', 'widget-uti
         } );
         var record = TextMARC.TextToRecord( this.cm.getValue() );
         for ( var line = 0; line <= this.cm.lastLine(); line++ ) {
-            if ( Preferences.user.fieldWidgets ) Widget.UpdateLine( this.cm, line );
+            if ( Preferences.user.fieldWidgets ) Widget.UpdateLine( this, line );
         }
 
         this.textMode = false;
 
         return record;
+    };
+
+    MARCEditor.prototype.getLineInfo = function( pos ) {
+        var contents = this.cm.getLine( pos.line );
+        if ( contents == null ) return {};
+
+        var tagNumber = contents.match( /^([A-Za-z0-9]{3}) / );
+
+        if ( !tagNumber ) return null; // No tag at all on this line
+        tagNumber = tagNumber[1];
+
+        if ( tagNumber < '010' ) return { tagNumber: tagNumber, contents: contents }; // No current subfield
+
+        var matcher = /[$|ǂ‡]([a-z0-9%]) /g;
+        var match;
+
+        var subfields = [];
+        var currentSubfield;
+
+        while ( ( match = matcher.exec(contents) ) ) {
+            subfields.push( { code: match[1], ch: match.index } );
+            if ( match.index < pos.ch ) currentSubfield = match[1];
+        }
+
+        return { tagNumber: tagNumber, subfields: subfields, currentSubfield: currentSubfield, contents: contents };
     };
 
     MARCEditor.prototype.addError = function( line, error ) {

@@ -38,7 +38,7 @@ define( [ 'marc-record', 'pz2' ], function( MARC, Pazpar2 ) {
             _pz = new Pazpar2( $.extend( {
                 initopts: initOpts,
                 onshow: Search._onshow,
-                errorhandler: function ( error ) { callback( { error: error } ) },
+                errorhandler: options.onerror,
             }, options ) );
         },
         Start: function( targets, q, limit ) {

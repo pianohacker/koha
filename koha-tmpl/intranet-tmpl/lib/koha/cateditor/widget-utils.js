@@ -66,37 +66,12 @@ define( function() {
             return true;
         },
 
-        GetLineInfo: function( editor, pos ) {
-            var contents = editor.getLine( pos.line );
-            if ( contents == null ) return {};
-
-            var tagNumber = contents.match( /^([A-Za-z0-9]{3}) / );
-
-            if ( !tagNumber ) return {}; // No tag at all on this line
-            tagNumber = tagNumber[1];
-
-            if ( tagNumber < '010' ) return { tagNumber: tagNumber, contents: contents }; // No current subfield
-
-            var matcher = /[$|ǂ‡]([a-z0-9%]) /g;
-            var match;
-
-            var subfields = [];
-            var currentSubfield;
-
-            while ( ( match = matcher.exec(contents) ) ) {
-                subfields.push( { code: match[1], ch: match.index } );
-                if ( match.index < pos.ch ) currentSubfield = match[1];
-            }
-
-            return { tagNumber: tagNumber, subfields: subfields, currentSubfield: currentSubfield, contents: contents };
-        },
-
         UpdateLine: function( editor, line ) {
-            var info = Widget.GetLineInfo( editor, { line: line, ch: 0 } );
-            var lineh = editor.getLineHandle( line );
+            var info = editor.getLineInfo( { line: line, ch: 0 } );
+            var lineh = editor.cm.getLineHandle( line );
             if ( !lineh ) return;
 
-            if ( !info.tagNumber ) {
+            if ( !info ) {
                 if ( lineh.markedSpans ) {
                     $.each( lineh.markedSpans, function ( undef, span ) {
                         var mark = span.marker;
@@ -110,7 +85,7 @@ define( function() {
 
             var subfields = [];
 
-            var end = editor.getLine( line ).length;
+            var end = editor.cm.getLine( line ).length;
             if ( info.tagNumber < '010' ) {
                 if ( end >= 4 ) subfields.push( { code: '@', from: 4, to: end } );
             } else {
@@ -122,7 +97,7 @@ define( function() {
 
             $.each( subfields, function ( undef, subfield ) {
                 var id = info.tagNumber + subfield.code;
-                var marks = editor.findMarksAt( { line: line, ch: subfield.from } );
+                var marks = editor.cm.findMarksAt( { line: line, ch: subfield.from } );
 
                 if ( marks.length ) {
                     if ( marks[0].id == id ) {
@@ -137,16 +112,16 @@ define( function() {
                 var widget = Object.create( fullBase );
 
                 if ( subfield.from == subfield.to ) {
-                    editor.replaceRange( widget.makeTemplate ? widget.makeTemplate() : '<empty>', { line: line, ch: subfield.from }, null, 'marcWidgetPrefill' );
+                    editor.cm.replaceRange( widget.makeTemplate ? widget.makeTemplate() : '<empty>', { line: line, ch: subfield.from }, null, 'marcWidgetPrefill' );
                     return; // We'll do the actual work when the change event is triggered again
                 }
 
-                var text = editor.getRange( { line: line, ch: subfield.from }, { line: line, ch: subfield.to } );
+                var text = editor.cm.getRange( { line: line, ch: subfield.from }, { line: line, ch: subfield.to } );
 
                 widget.text = text;
                 var node = widget.init();
 
-                var mark = editor.markText( { line: line, ch: subfield.from }, { line: line, ch: subfield.to }, {
+                var mark = editor.cm.markText( { line: line, ch: subfield.from }, { line: line, ch: subfield.to }, {
                     inclusiveLeft: false,
                     inclusiveRight: false,
                     replacedWith: node,
@@ -166,10 +141,10 @@ define( function() {
                 var $lastInput = $(widget.node).find('input, select').eq(-1);
                 if ( $lastInput.length ) {
                     $lastInput.bind( 'keypress', 'tab', function() {
-                        var cur = editor.getCursor();
-                        editor.setCursor( { line: cur.line } );
+                        var cur = editor.cm.getCursor();
+                        editor.cm.setCursor( { line: cur.line } );
                         // FIXME: ugly hack
-                        editor.options.extraKeys.Tab( editor );
+                        editor.cm.options.extraKeys.Tab( editor.cm );
                         editor.focus();
                         return false;
                     } );

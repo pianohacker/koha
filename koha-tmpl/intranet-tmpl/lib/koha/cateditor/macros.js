@@ -1,7 +1,7 @@
 define( [ 'widget-utils' ], function( Widget ) {
     function _setIndicators( editor, ind1, ind2 ) {
         var info = Widget.GetLineInfo( editor, editor.getCursor() );
-        if (!info.tagNumber || !info.subfields) return false;
+        if (!info || !info.subfields) return false;
 
         var cur = editor.getCursor();
 
@@ -21,7 +21,7 @@ define( [ 'widget-utils' ], function( Widget ) {
         [ /^copy field data$/i, function() {
             return function( editor, state ) {
                 var info = Widget.GetLineInfo( editor, editor.getCursor() );
-                if (!info.tagNumber) return false;
+                if (!info) return false;
 
                 if (info.subfields) {
                     state.clipboard = contents.substring(4);
@@ -33,7 +33,7 @@ define( [ 'widget-utils' ], function( Widget ) {
         [ /^copy subfield data$/i, function() {
             return function( editor, state ) {
                 var info = Widget.GetLineInfo( editor, editor.getCursor() );
-                if (!info.tagNumber) return false;
+                if (!info) return false;
 
                 var cur = editor.getCursor();
 
@@ -85,7 +85,7 @@ define( [ 'widget-utils' ], function( Widget ) {
         [ /^goto subfield (\w)$/i, function( code ) {
             return function( editor, state ) {
                 var info = Widget.GetLineInfo( editor, editor.getCursor() );
-                if (!info.tagNumber || !info.subfields) return false;
+                if (!info || !info.subfields) return false;
 
                 var cur = editor.getCursor();
 

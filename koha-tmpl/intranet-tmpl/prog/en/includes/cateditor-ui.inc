@@ -388,6 +388,10 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
         } );
     }
 
+    function handleSearchError(error) {
+        humanMsg.displayMsg( _("<h3>Internal search error</h3>") + '<p>' + error + '</p>' + _("<p>Please <b>refresh</b> the page and try again."), { className: 'humanError' } );
+    }
+
     // Preference functions
     function showPreference( pref ) {
         var value = Preferences.user[pref];
@@ -609,7 +613,7 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
         Preferences.Load( [% USER_INFO.0.borrowernumber %] );
         displayPreferences(editor);
         makeAuthorisedValueWidgets( '' );
-        Search.Init( z3950Targets, { onresults: function(data) { showSearchResults( editor, data ) }, onbytarget: showSearchTargets } );
+        Search.Init( z3950Targets, { onresults: function(data) { showSearchResults( editor, data ) }, onbytarget: showSearchTargets, onerror: handleSearchError } );
 
         function finishCb() {
             $("#loading").hide();
