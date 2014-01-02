@@ -181,6 +181,10 @@
     <div class="yui-u">
         <div id="searchresults">
             <table>
+                <thead>
+                    <tr></tr>
+                </thead>
+                <tbody></tbody>
             </table>
         </div>
     </div>

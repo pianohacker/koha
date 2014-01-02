@@ -49,6 +49,19 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
         [% END %]
     };
 
+    // The columns that should show up in a search, in order, and keyed by the corresponding <metadata> tag in the XSL and Pazpar2 config
+    var z3950Labels = [
+		[ "md-work-title", "Title" ],
+		[ "md-series-title", "Series-title" ],
+		[ "md-work-author", "Author" ],
+		[ "md-lccn", "LCCN" ],
+		[ "md-isbn", "ISBN" ],
+		[ "md-issn", "ISSN" ],
+		[ "md-medium", "Medium" ],
+		[ "md-edition", "Edition" ],
+		[ "md-description", "Description" ],
+    ];
+
     var state = {
         backend: '',
         saveBackend: 'catalog',
@@ -312,7 +325,8 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
     }
 
     function showResultsBox(data) {
-        $('#searchresults table').empty();
+        $('#searchresults thead tr').empty();
+        $('#searchresults tbody').empty();
         $('#search-targetsinfo').empty().append('<li>' + _("Loading...") + '</li>');
         $('#search-results-ui').lightbox_me();
     }
@@ -328,12 +342,49 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
     }
 
     function showSearchResults( editor, data ) {
-        $('#searchresults table').empty();
+        $('#searchresults thead tr').empty();
+        $('#searchresults tbody').empty();
+
+        var seenColumns = {};
+
+        $.each( data.hits, function( undef, hit ) {
+            for ( key in hit ) {
+                if ( /^md-/.test(key) ) seenColumns[key] = true;
+            }
+
+            $.each( hit.location, function( undef, location ) {
+                for ( key in location ) {
+                    if ( /^md-/.test(key) ) seenColumns[key] = true;
+                }
+            } );
+        } );
+
+        $('#searchresults thead tr').append('<th>' + _("Source") + '</th>');
+
+        $.each( z3950Labels, function( undef, label ) {
+            if ( seenColumns[ label[0] ] ) {
+                $('#searchresults thead tr').append( '<th>' + label[1] + '</th>' );
+            }
+        } );
+
+        $('#searchresults thead tr').append('<th>' + _("Tools") + '</th>');
 
         $.each( data.hits, function( undef, hit ) {
             var result = '<tr>';
             result += '<td class="sourcecol">' + hit.location[0]['@name'] + '</td>';
-            result += '<td><div class="results-info">' + hit['md-work-title'][0] + '</div></td>';
+
+            $.each( z3950Labels, function( undef, label ) {
+                if ( !seenColumns[ label[0] ] ) return;
+
+                if ( hit[ label[0] ] ) {
+                    result += '<td class="infocol">' + hit[ label[0] ].join('<br/>') + '</td>';
+                } else if ( hit.location[0][ label[0] ] ) {
+                    result += '<td class="infocol">' + hit.location[0][ label[0] ].join('<br/>') + '</td>';
+                } else {
+                    result += '<td class="infocol">&nbsp;</td>';
+                }
+            } );
+
             result += '<td class="toolscol"><ul><li><a href="#" class="marc-link">' + _("View MARC") + '</a></li>';
             result += '<li><a href="#" class="open-link">' + _("Import") + '</a></li>';
             if ( state.canSave ) result += '<li><a href="#" class="substitute-link" title=' + _("Replace the current record's contents") + '>' + _("Substitute") + '</li>';
@@ -341,10 +392,9 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
 
             var $tr = $( result );
             $tr.find( '.marc-link' ).click( function() {
-                $tr.find( '.results-info' ).addClass( 'results-marc' ).empty();
-
                 Search.GetDetailedRecord( hit.recid, function( record ) {
-                    CodeMirror.runMode( TextMARC.RecordToText( record ), 'marc', $tr.find( '.results-info' )[0] );
+                    var $columns = $tr.find( '.infocol' );
+                    CodeMirror.runMode( TextMARC.RecordToText( record ), 'marc', $( '<td class="infocol results-marc" colspan="' + $columns.length + '"></td>' ).replaceAll( $columns.slice(1).remove().end()[0] )[0] );
                 } );
 
                 return false;
@@ -361,9 +411,9 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
 
                 return false;
             } );
-            $('#searchresults table').append( $tr );
+            $('#searchresults tbody').append( $tr );
 
-            showDetailedResult( hit, $tr, !!data.activeclients );
+            //showDetailedResult( hit, $tr, !!data.activeclients );
         } );
 
         var $loadingOverlay = $('#search-loading-overlay');
