@@ -11,6 +11,7 @@ define( function() {
                 fieldWidgets: true,
                 font: 'monospace',
                 fontSize: '1em',
+                macros: {},
             }, saved_prefs );
         },
 
