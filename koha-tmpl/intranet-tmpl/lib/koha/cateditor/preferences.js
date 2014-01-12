@@ -3,7 +3,7 @@ define( function() {
         Load: function( borrowernumber ) {
             var saved_prefs;
             try {
-                saved_prefs = JSON.parse( $.cookie( 'cateditor_preferences_' + borrowernumber ) );
+                saved_prefs = JSON.parse( localStorage[ 'cateditor_preferences_' + borrowernumber ] );
             } catch (e) {}
 
             Preferences.user = $.extend( {
@@ -16,9 +16,9 @@ define( function() {
         },
 
         Save: function( borrowernumber ) {
-            if ( !Preferences.user ) Preferences.Load(borrowenumber);
+            if ( !Preferences.user ) Preferences.Load(borrowernumber);
 
-            $.cookie( 'cateditor_preferences_' + borrowernumber, JSON.stringify(Preferences.user), { expires: 3650, path: '/' } );
+            localStorage[ 'cateditor_preferences_' + borrowernumber ] = JSON.stringify(Preferences.user);
         },
     };
 
