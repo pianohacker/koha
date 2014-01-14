@@ -387,7 +387,7 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
 
             result += '<td class="toolscol"><ul><li><a href="#" class="marc-link">' + _("View MARC") + '</a></li>';
             result += '<li><a href="#" class="open-link">' + _("Import") + '</a></li>';
-            if ( state.canSave ) result += '<li><a href="#" class="substitute-link" title=' + _("Replace the current record's contents") + '>' + _("Substitute") + '</li>';
+            if ( state.canSave ) result += '<li><a href="#" class="substitute-link" title="' + _("Replace the current record's contents") + '">' + _("Substitute") + '</a></li>';
             result += '</ul></td></tr>';
 
             var $tr = $( result );
@@ -457,6 +457,20 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
             case 'fontSize':
                 $( '#editor .CodeMirror' ).css( { fontSize: value } );
                 editor.refresh();
+                break;
+            case 'macros':
+                $( '#macro-list' ).empty();
+                macros.sort( function( a, b ) {
+                    return a.localeCompare(b);
+                } );
+                $.each( value, function( undef, macro ) {
+                    var $li = $( '<li><a href="#">' + macro.name + '</a>' );
+                    $li.click( function() {
+                        loadMacro(id);
+                        return false;
+                    } );
+                    $('#macro-list').append($li);
+                } );
                 break;
         }
     }

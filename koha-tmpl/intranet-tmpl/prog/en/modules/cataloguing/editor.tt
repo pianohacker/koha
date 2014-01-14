@@ -196,7 +196,7 @@
 
 <h1>Macros</h1>
 <div class="yui-gf">
-    <div class="yui-u first"></div>
+    <div class="yui-u first"><ul id="macro-list"></ul></div>
     <div class="yui-u" id="macro-editor">
         <div id="toolbar" class="btn-toolbar">
             <button class="btn btn-small" id="run-macro" title="Run and edit macros"><i class="icon-play"></i> <span>Run macro</span></button>
