@@ -1,0 +1,594 @@
+[% USE 'JavaScript' %]
+[% USE 'KohaDates' %]
+[% INCLUDE 'doc-head-open.inc' %]
+<title>Koha &rsaquo; Tools &rsaquo; [% branchname %] Calendar</title>
+[% INCLUDE 'doc-head-close.inc' %]
+[% INCLUDE 'calendar.inc' %]
+<link rel="stylesheet" type="text/css" href="[% themelang %]/css/datatables.css" />
+[% INCLUDE 'datatables.inc' %]
+<script language="JavaScript" type="text/javascript">
+//<![CDATA[
+    [% IF (dateformat == 'metric') %]dt_add_type_uk_date();[% END %]
+    var weekdays = new Array(_("Sundays"),_("Mondays"),_("Tuesdays"),_("Wednesdays"),_("Thursdays"),_("Fridays"),_("Saturdays"));
+
+    var single_events = {
+        [% FOREACH event IN single_events %]
+        '[% event.event_date %]': {
+            title: '[% event.title | js %]',
+            description: '[% event.description | js %]',
+            closed: [% event.closed %],
+            eventType: 'single',
+            open_hour: '[% event.open_hour %]',
+            open_minute: '[% event.open_minute %]',
+            close_hour: '[% event.close_hour %]',
+            close_minute: '[% event.close_minute %]'
+        },
+        [% END %]
+    };
+
+    var weekly_events = {
+        [% FOREACH event IN weekly_events %]
+        [% event.weekday %]: {
+            title: '[% event.title | js %]',
+            description: '[% event.description | js %]',
+            closed: [% event.closed %],
+            eventType: 'weekly',
+            weekday: [% event.weekday %],
+            open_hour: '[% event.open_hour %]',
+            open_minute: '[% event.open_minute %]',
+            close_hour: '[% event.close_hour %]',
+            close_minute: '[% event.close_minute %]'
+        },
+        [% END %]
+    };
+
+    var yearly_events = {
+        [% FOREACH event IN yearly_events %]
+        '[% event.month %]-[% event.day %]': {
+            title: '[% event.title | js %]',
+            description: '[% event.description | js %]',
+            closed: [% event.closed %],
+            eventType: 'yearly',
+            month: [% event.month %],
+            day: [% event.day %],
+            open_hour: '[% event.open_hour %]',
+            open_minute: '[% event.open_minute %]',
+            close_hour: '[% event.close_hour %]',
+            close_minute: '[% event.close_minute %]'
+        },
+        [% END %]
+    };
+
+    function eventOperation(formObject, opType) {
+        var op = document.getElementsByName('op');
+        op[0].value = opType;
+        formObject.submit();
+    }
+
+    function zeroPad(value) {
+        return value >= 10 ? value : ('0' + value);
+    }
+
+    // This function shows the "Show Event" panel //
+    function showEvent(dayName, day, month, year, weekDay, event) {
+        $("#newEvent").slideUp("fast");
+        $("#showEvent").slideDown("fast");
+        $('#showDaynameOutput').html(dayName);
+        $('#showDayname').val(dayName);
+        $('#showBranchNameOutput').html($("#branch :selected").text());
+        $('#showBranchName').val($("#branch").val());
+        $('#showDayOutput').html(day);
+        $('#showDay').val(day);
+        $('#showMonthOutput').html(month);
+        $('#showMonth').val(month);
+        $('#showYearOutput').html(year);
+        $('#showYear').val(year);
+        $('#showDescription').val(event.description);
+        $('#showWeekday:first').val(weekDay);
+        $('#showTitle').val(event.title);
+        $('#showEventType').val(event.eventType);
+
+        if (event.closed) {
+            $('#showHoursTypeClosed')[0].checked = true;
+        } else if (event.close_hour == 24) {
+            $('#showHoursTypeOpen')[0].checked = true;
+        } else {
+            $('#showHoursTypeOpenSet')[0].checked = true;
+            $('#showHoursTypeOpenSet').change();
+            $('#showOpenTime').val(event.open_hour + ':' + zeroPad(event.open_minute));
+            $('#showCloseTime').val(event.close_hour + ':' + zeroPad(event.close_minute));
+        }
+
+        $("#operationDelLabel").html(_("Delete this event."));
+        if(event.eventType == 'weekly') {
+            $("#holtype").attr("class","key repeatableweekly").html(_("Event repeating weekly"));
+        } else if(event.eventType == 'yearly') {
+            $("#holtype").attr("class","key repeatableyearly").html(_("Event repeating yearly"));
+        } else {
+            $("#holtype").attr("class","key event").html(_("Single event"));
+        }
+    }
+
+    // This function shows the "Add Event" panel //
+    function newEvent (dayName, day, month, year, weekDay) {
+        $("#showEvent").slideUp("fast");
+        $("#newEvent").slideDown("fast");
+        $("#newDaynameOutput").html(dayName);
+        $("#newDayname").val(dayName);
+        $("#newBranchNameOutput").html($('#branch :selected').text());
+        $("#newBranchName").val($('#branch').val());
+        $("#newDayOutput").html(day);
+        $("#newDay").val(day);
+        $("#newMonthOutput").html(month);
+        $("#newMonth").val(month);
+        $("#newYearOutput").html(year);
+        $("#newYear").val(year);
+        $("#newWeekday:first").val(weekDay);
+    }
+
+    function hidePanel(aPanelName) {
+        $("#"+aPanelName).slideUp("fast");
+    }
+
+    function changeBranch () {
+        var branch = $("#branch option:selected").val();
+        location.href='/cgi-bin/koha/tools/calendar.pl?branch=' + branch + '&calendardate=' + "[% calendardate %]";
+    }
+
+    /* This function gives css clases to each kind of day */
+    function dateStatusHandler(date) {
+        date = new Date(date);
+        var day = date.getDate();
+        var month = date.getMonth() + 1;
+        var year = date.getFullYear();
+        var weekDay = date.getDay();
+        var dayMonth = month + '-' + day;
+        var dateString = year + '-' + zeroPad(month) + '-' + zeroPad(day);
+
+        if ( single_events[dateString] != null) {
+            return [true, "event", "Single event: "+single_events[dateString].title];
+        } else if ( yearly_events[dayMonth] != null ) {
+            return [true, "repeatableyearly", "Yearly event: "+yearly_events[dayMonth].title];
+        } else if ( weekly_events[weekDay] != null ){
+            return [true, "repeatableweekly", "Weekly event: "+weekly_events[weekDay].title];
+        } else {
+            return [true, "normalday", "Normal day"];
+        }
+    }
+
+    /* This function is in charge of showing the correct panel considering the kind of event */
+    function dateChanged(calendar) {
+        calendar = new Date(calendar);
+        var day = calendar.getDate();
+        var month = calendar.getMonth() + 1;
+        var year = calendar.getFullYear();
+        var weekDay = calendar.getDay();
+        var dayName = weekdays[weekDay];
+        var dayMonth = month + '-' + day;
+        var dateString = year + '-' + zeroPad(month) + '-' + zeroPad(day);
+        if ( single_events[dateString] != null ) {
+            showEvent( dayName, day, month, year, weekDay, single_events[dateString] );
+        } else if ( yearly_events[dayMonth] != null ) {
+            showEvent( dayName, day, month, year, weekDay, yearly_events[dayMonth] );
+        } else if ( weekly_events[weekDay] != null ) {
+            showEvent( dayName, day, month, year, weekDay, weekly_events[weekDay] );
+        } else {
+            newEvent( dayName, day, month, year, weekDay );
+        }
+    };
+
+    $(document).ready(function() {
+
+        $(".hint").hide();
+        $("#branch").change(function(){
+            changeBranch();
+        });
+        $("#weekly-events,#single-events").dataTable($.extend(true, {}, dataTablesDefaults, {
+            "sDom": 't',
+            "bPaginate": false
+        }));
+        $("#yearly-events").dataTable($.extend(true, {}, dataTablesDefaults, {
+            "sDom": 't',
+            "aoColumns": [
+                { "sType": "title-string" },null,null,null
+            ],
+            "bPaginate": false
+        }));
+        $("a.helptext").click(function(){
+            $(this).parent().find(".hint").toggle(); return false;
+        });
+        $("#dateofrange").datepicker();
+        $("#datecancelrange").datepicker();
+        $("#dateofrange").each(function () { this.value = "" });
+        $("#datecancelrange").each(function () { this.value = "" });
+        $("#jcalendar-container").datepicker({
+          beforeShowDay: function(thedate) {
+            var day = thedate.getDate();
+            var month = thedate.getMonth() + 1;
+            var year = thedate.getFullYear();
+            var dateString = year + '/' + month + '/' + day;
+            return dateStatusHandler(dateString);
+            },
+            onSelect: function(dateText, inst) {
+                dateChanged($(this).datepicker("getDate"));
+            },
+            defaultDate: new Date("[% keydate %]")
+        });
+        $(".hourssel input").change(function() {
+            $(".hoursentry", this.form).toggle(this.value == 'openSet');
+        }).each( function() { this.checked = false } );
+    });
+//]]>
+</script>
+<style type="text/css"> .key { padding : 3px; white-space:nowrap; line-height:230%; }
+.ui-datepicker { font-size : 150%; }
+.ui-datepicker th, .ui-datepicker .ui-datepicker-title select { font-size : 80%; }
+.ui-datepicker td a { padding : .5em; }
+.ui-datepicker .ui-datepicker-buttonpane button.ui-datepicker-current { font-size : 80%; }
+.key { padding : 3px; white-space:nowrap; line-height:230%; }
+.normalday { background-color :  #EDEDED; color :  Black; border : 1px solid #BCBCBC; }
+.exception { background-color :  #b3d4ff; color :  Black; border : 1px solid #BCBCBC; }
+.event {  background-color :  #ffaeae; color :  Black;  border : 1px solid #BCBCBC; }
+.repeatableweekly {  background-color :  #FFFF99; color :  Black;  border : 1px solid #BCBCBC; }
+.repeatableyearly {  background-color :  #FFCC66; color :  Black;  border : 1px solid #BCBCBC; }
+td.exception a.ui-state-default { background:  #b3d4ff none; color :  Black; border : 1px solid #BCBCBC; }
+td.event a.ui-state-default {  background:  #ffaeae none; color :  Black;  border : 1px solid #BCBCBC; }
+td.repeatableweekly a.ui-state-default {  background:  #FFFF99 none; color :  Black;  border : 1px solid #BCBCBC; }
+td.repeatableyearly a.ui-state-default {  background:  #FFCC66 none; color :  Black;  border : 1px solid #BCBCBC; }
+.information { z-index : 1; background-color :  #DCD2F1; width : 300px; display : none; border : 1px solid #000000; color :  #000000; font-size :  8pt; font-weight :  bold; background-color :  #FFD700; cursor :  pointer; padding : 2px; }
+.panel { z-index : 1; display : none; border : 3px solid #CCC; padding : 3px; margin-top: .3em;  background-color: #FEFEFE; } fieldset.brief { border : 0; margin-top: 0; }
+#showEvent { margin : .5em 0; } h1 select { width: 20em; } div.yui-b fieldset.brief ol { font-size:100%; } div.yui-b fieldset.brief li, div.yui-b fieldset.brief li.radio  { padding:0.2em 0; } .help { margin:.3em 0;border:1px solid #EEE;padding:.3em .7em; font-size : 90%; } #single-events, #weekly-events, #yearly-events { font-size : 90%; margin-bottom : 1em;} .calendar td, .calendar th, .calendar .button, .calendar tbody .day { padding : .7em; font-size: 110%; } .calendar { width: auto; border : 0; }
+li.hourssel {
+    margin-top: .5em;
+}
+li.hourssel label {
+    padding-left: .2em;
+    padding-right: .5em;
+}
+li.hoursentry {
+    margin-bottom: .5em;
+}
+li.hoursentry input {
+    padding-left: .2em;
+    padding-right: .5em;
+}
+</style>
+</head>
+<body id="tools_events" class="tools">
+[% INCLUDE 'header.inc' %]
+[% INCLUDE 'cat-search.inc' %]
+
+<div id="breadcrumbs"><a href="/cgi-bin/koha/mainpage.pl">Home</a> &rsaquo; <a href="/cgi-bin/koha/tools/tools-home.pl">Tools</a> &rsaquo; [% branchname %] Calendar</div>
+
+<div id="doc3" class="yui-t1">
+
+   <div id="bd">
+    <div id="yui-main">
+    <div class="yui-b">
+    <h2>[% branchname %] Calendar</h2>
+    <div class="yui-g">
+    <div class="yui-u first">
+        <label for="branch">Calendar for:</label>
+            <select id="branch" name="branch">
+                [% FOREACH branchloo IN branchloop %]
+                    [% IF ( branchloo.selected ) %]
+                        <option value="[% branchloo.value %]" selected="selected">[% branchloo.branchname %]</option>
+                    [% ELSE %]
+                        <option value="[% branchloo.value %]">[% branchloo.branchname %]</option>
+                    [% END %]
+                [% END %]
+            </select>
+
+    <!-- ******************************** FLAT PANELS ******************************************* -->
+    <!-- *****           Makes all the flat panel to deal with events                     ***** -->
+    <!-- **************************************************************************************** -->
+
+    <!-- ********************** Panel for showing already loaded events *********************** -->
+    <div class="panel" id="showEvent">
+         <form action="/cgi-bin/koha/tools/calendar.pl" method="post">
+             <input type="hidden" id="showEventType" name="eventType" value="" />
+            <fieldset class="brief">
+            <h3>Edit this event</h3>
+            <span id="holtype"></span>
+            <ol>
+            <li>
+                <strong>Library:</strong> <span id="showBranchNameOutput"></span>
+                <input type="hidden" id="showBranchName" name="branchName" />
+            </li>
+            <li>
+                <strong>From Date:</strong>
+                <span id="showDaynameOutput"></span>,
+
+                                [% IF ( dateformat == "us" ) %]<span id="showMonthOutput"></span>/<span id="showDayOutput"></span>/<span id="showYearOutput"></span>[% ELSIF ( dateformat == "metric" ) %]<span id="showDayOutput"></span>/<span id="showMonthOutput"></span>/<span id="showYearOutput"></span>[% ELSE %]<span id="showYearOutput"></span>/<span id="showMonthOutput"></span>/<span id="showDayOutput"></span>[% END %]
+
+                <input type="hidden" id="showWeekday" name="weekday" />
+                <input type="hidden" id="showDay" name="day" />
+                <input type="hidden" id="showMonth" name="month" />
+                <input type="hidden" id="showYear" name="year" />
+            </li>
+            <li class="dateinsert">
+                <b>To Date : </b>
+                <input type="text" id="datecancelrange" name="dateofrange" size="20" value="[% dateofrange %]" class="datepicker"/>
+            </li>
+            <li class="radio hourssel">
+                <input type="radio" name="hoursType" id="showHoursTypeOpen" value="open" /><label for="showHoursTypeOpen">Open (will delete repeating events)</label>
+                <input type="radio" name="hoursType" id="showHoursTypeClosed" value="closed" /><label for="showHoursTypeClosed">Closed</label>
+            </li>
+            <li class="radio hoursentry" style="display:none">
+                <label for="showOpenTime">Open at:</label>
+                <input type="time" name="openTime" id="showOpenTime" size="3" maxlength="5" value="0:00" pattern="(0?[0-9]|1[0-9]|2[0-3]):([0-5][0-9])" />
+                <label for="showCloseTime">Closed at:</label>
+                <input type="time" name="closeTime" id="showCloseTime" size="3" maxlength="5" value="23:59" pattern="(0?[0-9]|1[0-9]|2[0-3]):([0-5][0-9])" />
+            </li>
+            <li><label for="showTitle">Title: </label><input type="text" name="title" id="showTitle" size="35" /></li>
+            <!-- showTitle is necessary for exception radio button to work properly -->
+                <label for="showDescription">Description:</label>
+                <textarea rows="2" cols="40" id="showDescription" name="description"></textarea>
+            </li>
+            <li class="radio"><input type="radio" name="op" id="showOperationDel" value="delete" /> <label for="showOperationDel" id="showOperationDelLabel">Delete this event</label>
+                <a href="#" class="helptext">[?]</a>
+                <div class="hint">This will delete this event rule.
+            <li class="radio"><input type="radio" name="op" id="showOperationDelRange" value="deleterange" /> <label for="showOperationDelRange" id="showOperationDelLabelRange">Delete the single events on a range</label>.
+                <a href="#" class="helptext">[?]</a>
+                <div class="hint">This will delete the single events only. The repeatable events will not be deleted.</div>
+            </li>
+            <li class="radio"><input type="radio" name="op" id="showOperationDelRangeRepeat" value="deleterangerepeat" /> <label for="showOperationDelRangeRepeat" id="showOperationDelLabelRangeRepeat">Delete the repeated events on a range</label>.
+                <a href="#" class="helptext">[?]</a>
+                <div class="hint">This will delete the yearly repeated events only.</div>
+            </li>
+            <li class="radio"><input type="radio" name="op" id="showOperationEdit" value="save" checked="checked" /> <label for="showOperationEdit">Edit this event</label>
+                <a href="#" class="helptext">[?]</a>
+                <div class="hint">This will save changes to the event's title and description. If the information for a repeatable event is modified, it affects all of the dates on which the event is repeated.</div></li>
+            </ol>
+            <fieldset class="action">
+                <input type="submit" name="submit" value="Save" />
+                <a href="#" class="cancel" name="cancel2" onclick=" hidePanel('showEvent');">Cancel</a>
+            </fieldset>
+            </fieldset>
+        </form>
+    </div>
+
+    <!-- ***************************** Panel to deal with new events **********************  -->
+    <div class="panel" id="newEvent">
+         <form action="/cgi-bin/koha/tools/calendar.pl" method="post">
+            <input type="hidden" name="branchCodes" id="branchCodes" value="[% branchcodes %]" />
+            <input type="hidden" name="op" value="save" />
+            <fieldset class="brief">
+            <h3>Add new event</h3>
+
+        <ol>
+            <li>
+                <strong>Library:</strong>
+                <span id="newBranchNameOutput"></span>
+                <input type="hidden" id="newBranchName" name="branchName" />
+            </li>
+            <li>
+                <strong>From date:</strong>
+                <span id="newDaynameOutput"></span>,
+
+                         [% IF ( dateformat == "us" ) %]<span id="newMonthOutput"></span>/<span id="newDayOutput"></span>/<span id="newYearOutput"></span>[% ELSIF ( dateformat == "metric" ) %]<span id="newDayOutput"></span>/<span id="newMonthOutput"></span>/<span id="newYearOutput"></span>[% ELSE %]<span id="newYearOutput"></span>/<span id="newMonthOutput"></span>/<span id="newDayOutput"></span>[% END %]
+
+                <input type="hidden" id="newWeekday" name="weekday" />
+                <input type="hidden" id="newDay" name="day" />
+                <input type="hidden" id="newMonth" name="month" />
+                <input type="hidden" id="newYear" name="year" />
+            </li>
+            <li class="dateinsert">
+                <b>To date : </b>
+                <input type="text" id="dateofrange" name="dateofrange" size="20" value="[% dateofrange %]" class="datepicker" />
+            </li>
+            <li class="radio hourssel">
+                <input type="radio" name="hoursType" id="newHoursTypeOpen" value="open" /><label for="newHoursTypeOpen">Open (will not work for repeating events)</label>
+                <input type="radio" name="hoursType" id="newHoursTypeClosed" value="closed" /><label for="newHoursTypeClosed">Closed</label>
+            </li>
+            <li class="radio hoursentry" style="display:none">
+                <label for="newOpenTime">Open at:</label>
+                <input type="time" name="openTime" id="newOpenTime" size="3" maxlength="5" value="0:00" pattern="(0?[0-9]|1[0-9]|2[0-3]):([0-5][0-9])" />
+                <label for="newCloseTime">Closed at:</label>
+                <input type="time" name="closeTime" id="newCloseTime" size="3" maxlength="5" value="23:59" pattern="(0?[0-9]|1[0-9]|2[0-3]):([0-5][0-9])" />
+            </li>
+            <li><label for="title">Title: </label><input type="text" name="title" id="title" size="35" /></li>
+            <li><label for="newDescription">Description:</label>
+                <textarea rows="2" cols="40" id="newDescription" name="description"></textarea>
+            </li>
+            <li class="radio"><input type="radio" name="eventType" id="newOperationOnce" value="single" checked="checked" />
+                            <label for="newOperationOnce">Event only on this day</label>.
+                            <a href="#" class="helptext">[?]</a>
+                            <div class="hint">Make a single event. For example, selecting August 1st, 2012 will not affect August 1st in other years.</div>
+                            </li>
+            <li class="radio"><input type="radio" name="eventType" id="newOperationDay" value="weekly" />
+                            <label for="newOperationDay">Event repeated weekly</label>.
+                            <a href="#" class="helptext">[?]</a>
+                            <div class="hint">Make this weekday an event, every week. For example, if your library is closed on Saturdays, use this option to make every Saturday a event.</div>
+                            </li>
+            <li class="radio"><input type="radio" name="eventType" id="newOperationYear" value="yearly" />
+                            <label for="newOperationYear">Event repeated yearly</label>.
+                            <a href="#" class="helptext">[?]</a>
+                            <div class="hint">Make this day of the year an event, every year. For example, selecting August 1st will set the hours for August 1st every year.</div>
+                            </li>
+            <li class="radio"><input type="radio" name="eventType" id="newOperationField" value="singlerange" />
+                            <label for="newOperationField">Events on a range</label>.
+                            <a href="#" class="helptext">[?]</a>
+                            <div class="hint">Make events for a range of days. For example, selecting August 1st, 2012 and August 10st, 2012 will make all days between 1st and 10st event, but will not affect August 1-10 in other years.</div>
+                            </li>
+            <li class="radio"><input type="radio" name="eventType" id="newOperationFieldyear" value="yearlyrange" />
+                            <label for="newOperationFieldyear">Events repeated yearly on a range</label>.
+                            <a href="#" class="helptext">[?]</a>
+                            <div class="hint">Make a single event on a range repeated yearly. For example, selecting August 1st, 2012  and August 10st, 2012 will make all days between 1st and 10st event, and will affect August 1-10 in other years.</div>
+                            </li>
+                <li class="radio">
+                <input type="checkbox" name="allBranches" id="allBranches" />
+                <label for="allBranches">Copy to all libraries</label>.
+                <a href="#" class="helptext">[?]</a>
+                <div class="hint">If checked, this event will be copied to all libraries. If the event already exists for a library, no change is made.</div>
+                </li></ol>
+                <fieldset class="action">
+                    <input type="submit" name="submit" value="Save" />
+                    <a href="#" class="cancel" name="cancel2" onclick=" hidePanel('newEvent');">Cancel</a>
+                </fieldset>
+                </fieldset>
+         </form>
+    </div>
+
+    <!-- *************************************************************************************** -->
+    <!-- ******                          END OF FLAT PANELS                               ****** -->
+    <!-- *************************************************************************************** -->
+
+<!-- ************************************************************************************** -->
+<!-- ******                              MAIN SCREEN CODE                            ****** -->
+<!-- ************************************************************************************** -->
+<h3>Calendar information</h3>
+<div id="jcalendar-container"></div>
+
+<div style="margin-top: 2em;">
+<form action="/cgi-bin/koha/tools/calendar.pl" method="post">
+    <input type="hidden" name="op" value="copyall" />
+    <input type="hidden" name="from_branchcode" value="[% branch %]" />
+  <label for="branchcode">Copy events to:</label>
+  <select id="branchcode" name="branchcode" required>
+    <option value=""></option>
+    [% FOREACH branchloo IN branchloop %]
+    <option value="[% branchloo.value %]">[% branchloo.branchname %]</option>
+    [% END %]
+  </select>
+    <input type="submit" value="Copy" />
+</form>
+</div>
+
+</div>
+<div class="yui-u">
+<div class="help">
+<h4>Hints</h4>
+    <ul>
+        <li>Search in the calendar the day you want to set as event.</li>
+        <li>Click the date to add or edit a event.</li>
+        <li>Enter a title and description for the event.</li>
+        <li>Specify how the event should repeat.</li>
+        <li>Click Save to finish.</li>
+    </ul>
+<h4>Key</h4>
+    <p>
+        <span class="key normalday">Working day</span>
+        <span class="key event">Unique event</span>
+        <span class="key repeatableweekly">Event repeating weekly</span>
+        <span class="key repeatableyearly">Event repeating yearly</span>
+    </p>
+</div>
+<div id="event-list">
+[% IF ( weekly_events ) %]
+<h3>Weekly - Repeatable Events</h3>
+<table id="weekly-events">
+<thead>
+<tr>
+  <th class="repeatableweekly">Day of week</th>
+  <th class="repeatableweekly">Title</th>
+  <th class="repeatableweekly">Description</th>
+  <th class="repeatableweekly">Hours</th>
+</tr>
+</thead>
+<tbody>
+  [% FOREACH event IN weekly_events %]
+  <tr>
+  <td>
+<script type="text/javascript">
+  document.write(weekdays[ [% event.weekday %]]);
+</script>
+  </td>
+  <td>[% event.title %]</td>
+  <td>[% event.description %]</td>
+  <td>
+    [% IF event.closed %]
+    Closed
+    [% ELSIF event.close_hour == 24 %]
+    Open
+    [% ELSE %]
+    [% event.open_hour %]:[% event.open_minute > 10 ? event.open_minute : ( '0' _ event.open_minute) %] -
+    [% event.close_hour %]:[% event.close_minute > 10 ? event.close_minute : ( '0' _ event.close_minute) %]
+    [% END %]
+  </td>
+  </tr>
+  [% END %]
+</tbody>
+</table>
+[% END %]
+
+[% IF ( yearly_events ) %]
+<h3>Yearly - Repeatable Events</h3>
+<table id="yearly-events">
+<thead>
+<tr>
+  [% IF ( dateformat == "metric" ) %]
+  <th class="repeatableyearly">Day/Month</th>
+  [% ELSE %]
+  <th class="repeatableyearly">Month/Day</th>
+  [% END %]
+  <th class="repeatableyearly">Title</th>
+  <th class="repeatableyearly">Description</th>
+  <th class="repeatableyearly">Hours</th>
+</tr>
+</thead>
+<tbody>
+  [% FOREACH event IN yearly_events %]
+  <tr>
+  <td><span title="[% event.month_day_display %]">[% event.month_day_sort %]</span></td>
+  <td>[% event.title %]</td>
+  <td>[% event.description %]</td>
+  <td>
+    [% IF event.closed %]
+    Closed
+    [% ELSIF event.close_hour == 24 %]
+    Open
+    [% ELSE %]
+    [% event.open_hour %]:[% event.open_minute > 10 ? event.open_minute : ( '0' _ event.open_minute) %] -
+    [% event.close_hour %]:[% event.close_minute > 10 ? event.close_minute : ( '0' _ event.close_minute) %]
+    [% END %]
+  </td>
+  </tr>
+  [% END %]
+</tbody>
+</table>
+[% END %]
+
+[% IF ( single_events ) %]
+<h3>Single Events</h3>
+<table id="single-events">
+<thead>
+<tr>
+  <th class="event">Date</th>
+  <th class="event">Title</th>
+  <th class="event">Description</th>
+  <th class="event">Hours</th>
+</tr>
+</thead>
+<tbody>
+    [% FOREACH event IN single_events %]
+<tr>
+  <td><a href="/cgi-bin/koha/tools/calendar.pl?branch=[% branch %]&amp;calendardate=[% event.event_date | $KohaDates %]"><span title="[% event.event_date %]">[% event.event_date | $KohaDates %]</span></a></td>
+  <td>[% event.title %]</td>
+  <td>[% event.description %]</td>
+  <td>
+    [% IF event.closed %]
+    Closed
+    [% ELSIF event.close_hour == 24 %]
+    Open
+    [% ELSE %]
+    [% event.open_hour %]:[% event.open_minute > 10 ? event.open_minute : ( '0' _ event.open_minute) %] -
+    [% event.close_hour %]:[% event.close_minute > 10 ? event.close_minute : ( '0' _ event.close_minute) %]
+    [% END %]
+  </td>
+</tr>
+  [% END %]
+</tbody>
+</table>
+[% END %]
+</div>
+</div>
+</div>
+</div>
+</div>
+
+<div class="yui-b noprint">
+[% INCLUDE 'tools-menu.inc' %]
+</div>
+</div>
+[% INCLUDE 'intranet-bottom.inc' %]

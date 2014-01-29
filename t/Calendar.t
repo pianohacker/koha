@@ -4,17 +4,13 @@ use strict;
 use warnings;
 use DateTime;
 use DateTime::Duration;
-use Test::More tests => 35;
+use Test::More tests => 34;
 use Test::MockModule;
 use DBD::Mock;
 use Koha::DateUtils;
 
 BEGIN {
     use_ok('Koha::Calendar');
-
-    # This was the only test C4 had
-    # Remove when no longer used
-    use_ok('C4::Calendar');
 }
 
 my $module_context = new Test::MockModule('C4::Context');

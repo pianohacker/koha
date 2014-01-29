@@ -60,7 +60,7 @@ sub _init {
 # 3.16, bug 8089 will be fixed and we can switch the caching over
 # to Koha::Cache.
 our ( $exception_holidays, $single_holidays );
-sub exception_holidays {
+sub _exception_holidays {
     my ( $self ) = @_;
     my $dbh = C4::Context->dbh;
     my $branch = $self->{branchcode};
@@ -88,7 +88,7 @@ sub exception_holidays {
     return $exception_holidays;
 }
 
-sub single_holidays {
+sub _single_holidays {
     my ( $self ) = @_;
     my $dbh = C4::Context->dbh;
     my $branch = $self->{branchcode};
@@ -213,7 +213,7 @@ sub is_holiday {
 
     $localdt->truncate( to => 'day' );
 
-    if ( $self->exception_holidays->contains($localdt) ) {
+    if ( $self->_exception_holidays->contains($localdt) ) {
         # exceptions are not holidays
         return 0;
     }
@@ -233,7 +233,7 @@ sub is_holiday {
         return 1;
     }
 
-    if ( $self->single_holidays->contains($localdt) ) {
+    if ( $self->_single_holidays->contains($localdt) ) {
         return 1;
     }
 
@@ -336,18 +336,6 @@ sub set_daysmode {
 sub clear_weekly_closed_days {
     my $self = shift;
     $self->{weekly_closed_days} = [ 0, 0, 0, 0, 0, 0, 0 ];    # Sunday only
-    return;
-}
-
-sub add_holiday {
-    my $self = shift;
-    my $new_dt = shift;
-    my @dt = $self->single_holidays->as_list;
-    push @dt, $new_dt;
-    $self->{single_holidays} =
-      DateTime::Set->from_datetimes( dates => \@dt );
-    $single_holidays = $self->{single_holidays};
-
     return;
 }
 
@@ -467,12 +455,6 @@ For testing only allows the calling script to change days mode
 In test mode changes the testing set of closed days to a new set with
 no closed days. TODO passing an array of closed days to this would
 allow testing of more configurations
-
-=head2 add_holiday
-
-Passed a datetime object this will add it to the calendar's list of
-closed days. This is for testing so that we can alter the Calenfar object's
-list of specified dates
 
 =head1 DIAGNOSTICS
 
