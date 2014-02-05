@@ -69,6 +69,7 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
     };
 
     var editor;
+    var macroEditor;
 
     function makeAuthorisedValueWidgets( frameworkCode ) {
         $.each( KohaBackend.GetAllTagsInfo( frameworkCode ), function( tag, tagInfo ) {
@@ -110,44 +111,46 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
             $( '#editor textarea' ).bind( 'keydown', key, handler );
         }
 
-        bindKey( 'ctrl+s', function(event) {
+        shortcut.add( 'ctrl+s', function(event) {
             $( '#save-record' ).click();
 
             event.preventDefault();
         } );
 
-        bindKey( 'alt+ctrl+k', function(event) {
+        shortcut.add( 'alt+ctrl+k', function(event) {
             $( '#search-by-keywords' ).focus();
 
             return false;
         } );
 
-        bindKey( 'alt+ctrl+a', function(event) {
+        shortcut.add( 'alt+ctrl+a', function(event) {
             $( '#search-by-author' ).focus();
 
             return false;
         } );
 
-        bindKey( 'alt+ctrl+i', function(event) {
+        shortcut.add( 'alt+ctrl+i', function(event) {
             $( '#search-by-isbn' ).focus();
 
             return false;
         } );
 
-        bindKey( 'alt+ctrl+t', function(event) {
+        shortcut.add( 'alt+ctrl+t', function(event) {
             $( '#search-by-title' ).focus();
 
             return false;
         } );
 
-        $('#quicksearch .search-box').bind( 'keypress', 'return', function() {
-            var q = this.value;
-            if (!q) return false;
+        $('#quicksearch .search-box').each( function() {
+            shortcut.add( 'enter', $.proxy( function() {
+                var q = this.value;
+                if (!q) return false;
 
-            showResultsBox();
-            Search.Start( z3950Targets, $(this).data('qualifier') + q, 20 );
+                showResultsBox();
+                Search.Start( z3950Targets, $(this).data('qualifier') + q, 20 );
 
-            return false;
+                return false;
+            }, this), { target: this, type: 'keypress' } );
         } );
     }
 
@@ -388,6 +391,7 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
             result += '<td class="toolscol"><ul><li><a href="#" class="marc-link">' + _("View MARC") + '</a></li>';
             result += '<li><a href="#" class="open-link">' + _("Import") + '</a></li>';
             if ( state.canSave ) result += '<li><a href="#" class="substitute-link" title="' + _("Replace the current record's contents") + '">' + _("Substitute") + '</a></li>';
+            // REMOVE: (vim syntax highlighting bug) "</a></a>"
             result += '</ul></td></tr>';
 
             var $tr = $( result );
@@ -459,18 +463,7 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
                 editor.refresh();
                 break;
             case 'macros':
-                $( '#macro-list' ).empty();
-                macros.sort( function( a, b ) {
-                    return a.localeCompare(b);
-                } );
-                $.each( value, function( undef, macro ) {
-                    var $li = $( '<li><a href="#">' + macro.name + '</a>' );
-                    $li.click( function() {
-                        loadMacro(id);
-                        return false;
-                    } );
-                    $('#macro-list').append($li);
-                } );
+                showSavedMacros();
                 break;
         }
     }
@@ -511,11 +504,62 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
         } );
     }
 
+    //> Macro functions
+    function loadMacro( name ) {
+        $( '#macro-list li' ).removeClass( 'active' );
+        macroEditor.activeMacro = name;
+
+        if ( !name ) return;
+
+        $( '#macro-list li[data-name="' + name + '"]' ).addClass( 'active' );
+        var macro = Preferences.user.macros[name];
+        macroEditor.setValue( macro.contents );
+        macroEditor.setHistory( macro.history );
+    }
+
+    function showSavedMacros( macros ) {
+        var scrollTop = $('#macro-list').scrollTop();
+        $( '#macro-list' ).empty();
+        var macro_list = $.map( Preferences.user.macros, function( macro, name ) {
+            return $.extend( { name: name }, macro );
+        } );
+        macro_list.sort( function( a, b ) {
+            return a.name.localeCompare(b.name);
+        } );
+        $.each( macro_list, function( undef, macro ) {
+            var $li = $( '<li data-name="' + macro.name + '"><a href="#">' + macro.name + '</a><ol class="macro-info"></ol></li>' );
+            $li.click( function() {
+                loadMacro(macro.name);
+                return false;
+            } );
+            if ( macro.name == macroEditor.activeMacro ) $li.addClass( 'active' );
+            var modified = macro.modified && new Date(macro.modified);
+            $li.find( '.macro-info' ).append(
+                '<li><span class="label">' + _("Last changed:") + '</span>' +
+                ( modified ? modified.toLocaleFormat() : _("never") ) + '</li>'
+            );
+            $('#macro-list').append($li);
+        } );
+        $('#macro-list').scrollTop(scrollTop);
+    }
+
+    function saveMacro() {
+        var name = macroEditor.activeMacro;
+
+        if ( !name || macroEditor.savedGeneration == macroEditor.changeGeneration() ) return;
+
+        macroEditor.savedGeneration = macroEditor.changeGeneration();
+        Preferences.user.macros[name] = { contents: macroEditor.getValue(), modified: (new Date()).valueOf(), history: macroEditor.getHistory() };
+        Preferences.Save( [% USER_INFO.0.borrowernumber %] );
+        $('#macro-save-message').text(_("Saved"));
+        showSavedMacros();
+    }
+
     $(document).ready( function() {
         // Editor setup
         editor = new MARCEditor( function (elt) { $(elt).insertAfter('#toolbar') } );
 
-        var macroEditor = CodeMirror(
+        macroEditor = CodeMirror(
             $('#macro-editor')[0],
             {
                 mode: 'null',
@@ -642,6 +686,28 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
             if ( result.errors.length ) console.error( 'Failed to run macro:', result.errors );
 
             return false;
+        } );
+
+        $('#new-macro').click( function() {
+            var name = macroEditor.activeMacro || (macroEditor.activeMacro = prompt("Please enter the name of the new macro."));
+
+            if ( macroEditor.activeMacro ) macroEditor.setValue( '' );
+            loadMacro();
+
+            return false;
+        } );
+
+        var saveTimeout;
+        macroEditor.on( 'change', function( cm, change ) {
+            $('#macro-save-message').empty();
+            if ( change.origin == 'setValue' ) return;
+
+            if ( saveTimeout ) clearTimeout( saveTimeout );
+            saveTimeout = setTimeout( function() {
+                saveMacro();
+
+                saveTimeout = null;
+            }, 500 );
         } );
 
         $( '#switch-editor' ).click( function() {

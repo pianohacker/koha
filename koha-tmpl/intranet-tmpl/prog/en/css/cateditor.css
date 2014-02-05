@@ -268,3 +268,59 @@ body {
     height: 400px;
     width: 100%;
 }
+
+#macro-save-message {
+    color: #666;
+    font-size: 13px;
+    float: right;
+    line-height: 26px;
+}
+
+#macro-list > li {
+    border: 2px solid #F0F0F0;
+    border-radius: 6px;
+    display: block;
+    font-size: 115%;
+}
+
+#macro-list > li + li {
+    margin-top: -2px;
+}
+
+#macro-list .active {
+    background: #EDF4F6;
+    border-color: none;
+}
+
+#macro-list a {
+    display: block;
+    padding: 6px;
+}
+
+#macro-list a:focus {
+    outline: none;
+}
+
+.macro-info {
+    background-color: #F4F4F4;
+    display: none;
+    margin: 0;
+    padding: 10px;
+    text-align: right;
+}
+
+.macro-info li {
+    color: #666;
+    font-size: 75%;
+    list-style-type: none;
+}
+
+.macro-info .label {
+    clear: left;
+    font-weight: bold;
+    float: left;
+}
+
+#macro-list .active .macro-info {
+    display: block;
+}

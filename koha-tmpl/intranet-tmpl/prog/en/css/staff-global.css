@@ -395,7 +395,7 @@ dd {
 	font-weight : normal;
 }
 
-div#toolbar {
+.btn-toolbar {
        background-color : #EDF4F6;
 	margin-bottom : .7em;
      padding: 5px 5px 5px 5px;
@@ -403,8 +403,8 @@ div#toolbar {
     border: 1px solid #E6F0F2;
 }
 
-div#toolbar .yui-menu-button button,
-div#toolbar .yui-button-button button {
+.btn-toolbar .yui-menu-button button,
+.btn-toolbar .yui-button-button button {
 	line-height : 1.7em;
 }
 
@@ -2427,8 +2427,8 @@ video {
     background-position:-48px -166px;
 }
 
-#toolbar .btn,
-#toolbar .dropdown-menu {
+.btn-toolbar .btn,
+.btn-toolbar .dropdown-menu {
     font-size: 13px;
 }
 a.btn:link,
