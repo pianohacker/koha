@@ -514,7 +514,7 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
         $( '#macro-list li[data-name="' + name + '"]' ).addClass( 'active' );
         var macro = Preferences.user.macros[name];
         macroEditor.setValue( macro.contents );
-        macroEditor.setHistory( macro.history );
+        if ( macro.history ) macroEditor.setHistory( macro.history );
     }
 
     function showSavedMacros( macros ) {
@@ -540,6 +540,18 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
             );
             $('#macro-list').append($li);
         } );
+        var $new_li = $( '<li class="new-macro"><a href="#">' + _("New macro...") + '</a></li>' );
+        $new_li.click( function() {
+            // TODO: make this a bit less retro
+            var name = prompt(_("Please enter the name for the new macro:"));
+            if (!name) return;
+
+            if ( !Preferences.user.macros[name] ) Preferences.user.macros[name] = { contents: "" }
+            Preferences.Save( [% USER_INFO.0.borrowernumber %] );
+            showSavedMacros();
+            loadMacro( name );
+        } );
+        $('#macro-list').append($new_li);
         $('#macro-list').scrollTop(scrollTop);
     }
 
