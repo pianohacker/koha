@@ -517,6 +517,11 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
         if ( macro.history ) macroEditor.setHistory( macro.history );
     }
 
+    function storeMacro( name, macro ) {
+        Preferences.user.macros[name] = macro;
+        Preferences.Save( [% USER_INFO.0.borrowernumber %] );
+    }
+
     function showSavedMacros( macros ) {
         var scrollTop = $('#macro-list').scrollTop();
         $( '#macro-list' ).empty();
@@ -546,8 +551,7 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
             var name = prompt(_("Please enter the name for the new macro:"));
             if (!name) return;
 
-            if ( !Preferences.user.macros[name] ) Preferences.user.macros[name] = { contents: "" }
-            Preferences.Save( [% USER_INFO.0.borrowernumber %] );
+            if ( !Preferences.user.macros[name] ) storeMacro( name, { contents: "" } );
             showSavedMacros();
             loadMacro( name );
         } );
@@ -561,8 +565,7 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
         if ( !name || macroEditor.savedGeneration == macroEditor.changeGeneration() ) return;
 
         macroEditor.savedGeneration = macroEditor.changeGeneration();
-        Preferences.user.macros[name] = { contents: macroEditor.getValue(), modified: (new Date()).valueOf(), history: macroEditor.getHistory() };
-        Preferences.Save( [% USER_INFO.0.borrowernumber %] );
+        storeMacro( Preferences.user.macros[name], { contents: macroEditor.getValue(), modified: (new Date()).valueOf(), history: macroEditor.getHistory() } );
         $('#macro-save-message').text(_("Saved"));
         showSavedMacros();
     }
