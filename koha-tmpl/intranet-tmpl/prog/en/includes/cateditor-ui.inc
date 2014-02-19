@@ -273,7 +273,7 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
 
             if (data.newId) {
                 setSource(data.newId);
-            } else {
+                } else {
                 setSource( [ state.backend, state.recordID ] );
             }
 
@@ -424,12 +424,15 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
 
         if ( data.activeclients ) {
             if ( !$loadingOverlay.length ) {
-                $loadingOverlay = $( '<div id="search-loading-overlay">' + _("Loading...") + '</div>' );
+                $loadingOverlay = $( '<div id="search-loading-overlay">' + _("Loading...") + '<div class="progress progress-striped active"><div class="bar" style="width: 0"></div></div></div>' );
                 $loadingOverlay.css( { position: 'absolute', zIndex: 9001, top: 0, right: 0, bottom: 0, left: 0 } );
                 $loadingOverlay.appendTo( '#searchresults' );
             }
+            console.log( data.activeclients, Search.includedTargets.length, 100 * (1 - data.activeclients / Search.includedTargets.length) + '%' );
+            $loadingOverlay.find('.bar').css( { width: 100 * ( 1 - data.activeclients / Search.includedTargets.length ) + '%' } );
             $loadingOverlay.show();
         } else {
+            $loadingOverlay.find('.bar').css( { width: '100%' } );
             $loadingOverlay.fadeOut();
         }
     }

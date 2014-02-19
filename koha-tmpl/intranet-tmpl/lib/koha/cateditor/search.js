@@ -42,14 +42,14 @@ define( [ 'marc-record', 'pz2' ], function( MARC, Pazpar2 ) {
             }, options ) );
         },
         Start: function( targets, q, limit ) {
-            var includedTargets = [];
+            Search.includedTargets = [];
             recordcache = {};
 
             $.each( targets, function ( url, info ) {
-                if ( !info.disabled ) includedTargets.push( url );
+                if ( !info.disabled ) Search.includedTargets.push( url );
             } );
 
-            _pz.search( q, limit, 'relevance:0', 'pz:id=' + includedTargets.join( '|' ) );
+            _pz.search( q, limit, 'relevance:0', 'pz:id=' + Search.includedTargets.join( '|' ) );
         },
         Fetch: function( offset ) {
             _pz.show( offset );
