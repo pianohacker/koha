@@ -1,4 +1,6 @@
 define( [ 'marc-record', 'koha-backend', 'preferences', 'text-marc', 'widget-utils' ], function( MARC, KohaBackend, Preferences, TextMARC, Widget ) {
+    var NOTIFY_TIMEOUT = 100;
+
     function editorCursorActivity( cm ) {
         var editor = cm.marceditor;
         if ( editor.textMode ) return;
@@ -81,6 +83,7 @@ define( [ 'marc-record', 'koha-backend', 'preferences', 'text-marc', 'widget-uti
         } while ( change = change.next )
 
         Widget.ActivateAt( cm, cm.getCursor() );
+        cm.marceditor.startNotify();
     }
 
     // Editor helper functions
@@ -206,6 +209,8 @@ define( [ 'marc-record', 'koha-backend', 'preferences', 'text-marc', 'widget-uti
         this.cm.on( 'beforeChange', editorBeforeChange );
         this.cm.on( 'change', editorChange );
         this.cm.on( 'cursorActivity', editorCursorActivity );
+
+        this.subscribers = [];
     }
 
     MARCEditor.prototype.setUseWidgets = function( val ) {
@@ -308,6 +313,23 @@ define( [ 'marc-record', 'koha-backend', 'preferences', 'text-marc', 'widget-uti
                 if ( lineWidget.isErrorMarker ) lineWidget.clear();
             } );
         }
+    };
+
+    MARCEditor.prototype.startNotify = function() {
+        if ( this.notifyTimeout ) clearTimeout( this.notifyTimeout );
+        this.notifyTimeout = setTimeout( $.proxy( function() {
+            this.notifyAll();
+
+            this.notifyTimeout = null;
+        }, this ), NOTIFY_TIMEOUT );
+    };
+
+    MARCEditor.prototype.notifyAll = function() {
+        $.each( this.subscribers, $.proxy( function( undef, subscriber ) {
+        }, this ) );
+    };
+
+    MARCEditor.prototype.subscribe = function() {
     };
 
     return MARCEditor;

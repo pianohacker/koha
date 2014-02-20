@@ -428,7 +428,6 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
                 $loadingOverlay.css( { position: 'absolute', zIndex: 9001, top: 0, right: 0, bottom: 0, left: 0 } );
                 $loadingOverlay.appendTo( '#searchresults' );
             }
-            console.log( data.activeclients, Search.includedTargets.length, 100 * (1 - data.activeclients / Search.includedTargets.length) + '%' );
             $loadingOverlay.find('.bar').css( { width: 100 * ( 1 - data.activeclients / Search.includedTargets.length ) + '%' } );
             $loadingOverlay.show();
         } else {
