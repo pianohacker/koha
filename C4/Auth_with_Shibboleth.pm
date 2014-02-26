@@ -23,6 +23,7 @@ use warnings;
 use C4::Debug;
 use C4::Context;
 use C4::Members qw( AddMember_Auto );
+use C4::Members::Messaging;
 use Carp;
 use CGI;
 
@@ -82,6 +83,7 @@ sub _autocreate {
     }
 
     %borrower = AddMember_Auto( %borrower );
+    C4::Members::Messaging::SetMessagingPreferencesFromDefaults( { borrowernumber => $borrower{'borrowernumber'}, categorycode => $borrower{'categorycode'} } );
 
     return ( 1, $borrower{'cardnumber'}, $borrower{'userid'} );
 }
