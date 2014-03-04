@@ -1,4 +1,4 @@
-define( [ '/cgi-bin/koha/svc/cataloguing/framework?frameworkcode=&amp;callback=define', 'marc-record' ], function( defaultFramework, MARC ) {
+define( [ '/cgi-bin/koha/svc/cataloguing/framework?frameworkcode=&callback=define', 'marc-record' ], function( defaultFramework, MARC ) {
     var _authorised_values = defaultFramework.authorised_values;
     var _frameworks = {};
     var _framework_mappings = {};
