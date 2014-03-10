@@ -442,7 +442,7 @@ OPAC:
               choices:
                   yes: Search
                   no: "Don't search"
-            - external targets from the OPAC.
+            - external targets from the OPAC. (Check with your system administrator first to ensure that Pazpar2 is enabled and running.)
 
     Policy:
         -
