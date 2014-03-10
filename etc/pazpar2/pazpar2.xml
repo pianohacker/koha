@@ -7,29 +7,26 @@
     <settings src="__PAZPAR2_CONF_DIR__/generic-settings.xml"/>
 
     <relevance>
-      <icu_chain id="relevance" locale="el">
-	<normalize rule="[:Control:] Any-Remove"/>
+      <icu_chain id="relevance" locale="en">
+	<transform rule="[:Control:] Any-Remove"/>
 	<tokenize rule="l"/>
-	<normalize rule="[[:WhiteSpace:][:Punctuation:]] Remove"/>
+	<transform rule="[[:WhiteSpace:][:Punctuation:]] Remove"/>
 	<casemap rule="l"/>
-	<index/>
       </icu_chain>
     </relevance>
 
     <sort>
-      <icu_chain id="sort" locale="el">
-	<normalize rule="[[:Control:][:WhiteSpace:][:Punctuation:]] Remove"/>
+      <icu_chain id="sort" locale="en">
+	<transform rule="[[:Control:][:WhiteSpace:][:Punctuation:]] Remove"/>
 	<casemap rule="l"/>
-	<sortkey/>
       </icu_chain>
     </sort>
     
     <mergekey>
-      <icu_chain id="mergekey" locale="el">
+      <icu_chain id="mergekey" locale="en">
 	<tokenize rule="l"/>
-	<normalize rule="[[:Control:][:WhiteSpace:][:Punctuation:]] Remove"/>
+	<transform rule="[[:Control:][:WhiteSpace:][:Punctuation:]] Remove"/>
 	<casemap rule="l"/>
-	<index/>
       </icu_chain>
     </mergekey>
     
