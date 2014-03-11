@@ -21,7 +21,7 @@ var humanMsg = {
 		if (msgOpacity != undefined) humanMsg.msgOpacity = parseFloat(msgOpacity);
 
 		// Inject the message structure
-		jQuery(appendTo).append('<div id="'+humanMsg.msgID+'" class="humanMsg"><div class="round"></div><div id="'+humanMsg.msgID+'-contents"></div><div class="round"></div></div> <div id="'+humanMsg.logID+'"><p class="launcher">'+logName+'</p><ul></ul></div>')
+		jQuery(appendTo).append('<div id="'+humanMsg.msgID+'" class="humanMsg"><div id="'+humanMsg.msgID+'-contents"></div></div> <div id="'+humanMsg.logID+'"><p class="launcher">'+logName+'</p><ul></ul></div>');
 
 		jQuery('#'+humanMsg.logID+' p').click(
 			function() { jQuery(this).siblings('ul').slideToggle() }
@@ -29,28 +29,29 @@ var humanMsg = {
 	},
 
 	displayAlert: function(msg, options) {
-		humanMsg.displayMsg(msg, options, true);
+		humanMsg.displayMsg('<p>' + msg + '</p>', $.extend({log: false}, options), true);
 	},
 
-	displayMsg: function(msg, options, is_alert) {
+	displayMsg: function(msg, options) {
 		if (msg == '')
 			return;
 
-		if (options != undefined) {
-			delay = 'delay' in options ? parseInt(options.delay) * 1000 : 1000
-			life = 'life' in options ? parseInt(options.life) * 1000 : Infinity
-		} else {
-			delay = 1000
-			life = Infinity
-		}
+        options = $.extend({
+            delay: 1000,
+            life: Infinity,
+            log: true,
+            className: '',
+        }, options);
 
+		clearTimeout(humanMsg.t1);
 		clearTimeout(humanMsg.t2);
 
 		// Inject message
-		jQuery('#'+humanMsg.msgID+'-contents').html(is_alert ? ('<p>' + msg + '</p>') : msg)
+		jQuery('#'+humanMsg.msgID+'-contents').html(msg);
 
 		// Show message
-		jQuery('#'+humanMsg.msgID).show().animate({ opacity: humanMsg.msgOpacity}, 200, function() {
+		jQuery('#'+humanMsg.msgID).attr('class', 'humanMsg ' + options.className).show().animate({ opacity: humanMsg.msgOpacity}, 200, function() {
+            if ( !options.log ) return true;
 			jQuery('#'+humanMsg.logID)
 				.show().children('ul').prepend('<li>'+msg+'</li>')	// Prepend message to log
 				.children('li:first').slideDown(200)				// Slide it down
@@ -64,9 +65,9 @@ var humanMsg = {
 		})
 
 		// Watch for mouse & keyboard in `delay`
-		humanMsg.t1 = setTimeout("humanMsg.bindEvents()", delay)
+		humanMsg.t1 = setTimeout("humanMsg.bindEvents()", options.delay)
 		// Remove message after `life`
-		humanMsg.t2 = setTimeout("humanMsg.removeMsg()", life)
+		humanMsg.t2 = setTimeout("humanMsg.removeMsg()", options.life)
 	},
 
 	bindEvents: function() {
