@@ -29,8 +29,20 @@ var humanMsg = {
 	},
 
 	displayAlert: function(msg, options) {
-		humanMsg.displayMsg('<p>' + msg + '</p>', $.extend({log: false}, options), true);
+		humanMsg.displayMsg('<p>' + msg + '</p>', options);
 	},
+
+    logMsg: function(msg) {
+        jQuery('#'+humanMsg.logID)
+            .show().children('ul').prepend('<li>'+msg+'</li>')	// Prepend message to log
+            .children('li:first').slideDown(200)				// Slide it down
+
+        if ( jQuery('#'+humanMsg.logID+' ul').css('display') == 'none') {
+            jQuery('#'+humanMsg.logID+' p').animate({ bottom: 40 }, 200, 'linear', function() {
+                jQuery(this).animate({ bottom: 0 }, 300, 'swing', function() { jQuery(this).css({ bottom: 0 }) })
+            })
+        }
+    },
 
 	displayMsg: function(msg, options) {
 		if (msg == '')
@@ -51,17 +63,7 @@ var humanMsg = {
 
 		// Show message
 		jQuery('#'+humanMsg.msgID).attr('class', 'humanMsg ' + options.className).show().animate({ opacity: humanMsg.msgOpacity}, 200, function() {
-            if ( !options.log ) return true;
-			jQuery('#'+humanMsg.logID)
-				.show().children('ul').prepend('<li>'+msg+'</li>')	// Prepend message to log
-				.children('li:first').slideDown(200)				// Slide it down
-
-			if ( jQuery('#'+humanMsg.logID+' ul').css('display') == 'none') {
-				jQuery('#'+humanMsg.logID+' p').animate({ bottom: 40 }, 200, 'linear', function() {
-					jQuery(this).animate({ bottom: 0 }, 300, 'swing', function() { jQuery(this).css({ bottom: 0 }) })
-				})
-			}
-
+            humanMsg.logMsg(msg, options);
 		})
 
 		// Watch for mouse & keyboard in `delay`
