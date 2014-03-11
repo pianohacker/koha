@@ -51,15 +51,15 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
 
     // The columns that should show up in a search, in order, and keyed by the corresponding <metadata> tag in the XSL and Pazpar2 config
     var z3950Labels = [
-		[ "md-work-title", "Title" ],
-		[ "md-series-title", "Series-title" ],
-		[ "md-work-author", "Author" ],
-		[ "md-lccn", "LCCN" ],
-		[ "md-isbn", "ISBN" ],
-		[ "md-issn", "ISSN" ],
-		[ "md-medium", "Medium" ],
-		[ "md-edition", "Edition" ],
-		[ "md-description", "Description" ],
+		[ "md-work-title", _("Title") ],
+		[ "md-series-title", _("Series Title") ],
+		[ "md-work-author", _("Author") ],
+		[ "md-lccn", _("LCCN") ],
+		[ "md-isbn", _("ISBN") ],
+		[ "md-issn", _("ISSN") ],
+		[ "md-medium", _("Medium") ],
+		[ "md-edition", _("Edition") ],
+		[ "md-description", _("Description") ],
     ];
 
     var state = {
@@ -382,7 +382,6 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
             result += '<td class="toolscol"><ul><li><a href="#" class="marc-link">' + _("View MARC") + '</a></li>';
             result += '<li><a href="#" class="open-link">' + _("Import") + '</a></li>';
             if ( state.canSave ) result += '<li><a href="#" class="substitute-link" title="' + _("Replace the current record's contents") + '">' + _("Substitute") + '</a></li>';
-            // REMOVE: (vim syntax highlighting bug) "</a></a>"
             result += '</ul></td></tr>';
 
             var $tr = $( result );
