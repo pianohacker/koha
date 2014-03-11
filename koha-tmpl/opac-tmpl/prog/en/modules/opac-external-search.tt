@@ -89,7 +89,7 @@ function search( offset, reset_search ) {
 
         $( '#results tbody' ).empty();
 
-        $( '#pazpar2-status' ).html( '<strong>' + _("Found __RESULTS__ results in __TARGETS__ external targets.").replace('__RESULTS__', data.total).replace('__TARGETS__', $( '#targets-facet input:checked' ).length );
+        $( '#pazpar2-status' ).html( '<strong>' + _("Found __RESULTS__ results in __TARGETS__ external targets.").replace('__RESULTS__', data.total).replace('__TARGETS__', $( '#targets-facet input:checked' ).length ) );
 
         for ( var i = 0; data.hits[i]; i++ ) {
             var hit = data.hits[i];
