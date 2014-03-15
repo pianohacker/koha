@@ -91,11 +91,14 @@
 </div>
 </div>
 
-<div id="advanced-search-ui" style="display: none">
+<div id="advanced-search-ui" class="modal hide fade" tabindex="-1" role="dialog" aria-labelledby="advanced-search-title" aria-hidden="true">
 
-<h1>Advanced search</h1>
+<div class="modal-header">
+    <button type="button" class="closebtn" data-dismiss="modal" aria-hidden="true">×</button>
+    <h3 id="advanced-search-title">Advanced search</h3>
+</div>
 
-<form id="advanced-search">
+<form id="advanced-search" class="modal-body">
     <div id="toolbar" class="btn-toolbar">
         <button class="btn btn-small" type="submit"><i class="icon-search"></i> <span>Search</span></button>
         <button class="btn btn-small" type="reset"><i class="icon-remove"></i> <span>Clear</span></button>
@@ -154,18 +157,22 @@
 
 </div>
 
-<div id="search-results-ui" style="display: none">
+<div id="search-results-ui" class="modal hide fade" tabindex="-1" role="dialog" aria-labelledby="search-results-title" aria-hidden="true">
 
-<h1>Results</h1>
-<div class="yui-gf">
-    <div class="yui-u first">
+<div class="modal-header">
+    <button type="button" class="closebtn" data-dismiss="modal" aria-hidden="true">×</button>
+    <h3 id="search-results-title">Results</h3>
+</div>
+
+<div class="modal-body row-fluid">
+    <div class="span3">
         <div id="search-facets">
             <ul>
                 <li>Targets:<ul id="search-targetsinfo"></ul></li>
             </ul>
         </div>
     </div>
-    <div class="yui-u">
+    <div class="span9">
         <div id="searchresults">
             <table>
                 <thead>
@@ -180,12 +187,16 @@
 
 </div>
 
-<div id="macro-ui" style="display: none">
+<div id="macro-ui" class="modal hide fade" tabindex="-1" role="dialog" aria-labelledby="macro-title" aria-hidden="true">
 
-<h1>Macros</h1>
-<div class="yui-gf">
-    <div class="yui-u first"><ul id="macro-list"></ul></div>
-    <div class="yui-u" id="macro-editor">
+<div class="modal-header">
+    <button type="button" class="closebtn" data-dismiss="modal" aria-hidden="true">×</button>
+    <h3 id="macro-title">Macros</h3>
+</div>
+
+<div class="modal-body row-fluid">
+    <div class="span3"><ul id="macro-list"></ul></div>
+    <div class="span9" id="macro-editor">
         <div id="macro-toolbar" class="btn-toolbar">
             <button class="btn btn-small" id="run-macro"itle="Run and edit macros"><i class="icon-play"></i> Run macro</button>
             <button class="btn btn-small" id="delete-macro" title="Delete macro"><i class="icon-remove"></i> Delete macro</button>

@@ -3,7 +3,6 @@
 <script src="/intranet-tmpl/lib/filesaver.js"></script>
 <script src="/intranet-tmpl/lib/koha/cateditor/marc-mode.js"></script>
 <script src="/intranet-tmpl/lib/require.js"></script>
-<script src="/intranet-tmpl/lib/jquery/plugins/jquery.lightbox_me.js"></script>
 <script>
 require.config( {
     baseUrl: '/intranet-tmpl/lib/koha/cateditor/',
@@ -299,7 +298,7 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
 
     // Search functions
     function showAdvancedSearch() {
-        $('#advanced-search-ui').lightbox_me();
+        $('#advanced-search-ui').modal('show');
     }
 
     function startAdvancedSearch() {
@@ -313,7 +312,7 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
 
         if (!search) return;
 
-        $('#advanced-search-ui').trigger('close');
+        $('#advanced-search-ui').modal('hide');
         showResultsBox();
         Search.Start( z3950Targets, search, 20 );
     }
@@ -322,7 +321,7 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
         $('#searchresults thead tr').empty();
         $('#searchresults tbody').empty();
         $('#search-targetsinfo').empty().append('<li>' + _("Loading...") + '</li>');
-        $('#search-results-ui').lightbox_me();
+        $('#search-results-ui').modal('show');
     }
 
     function showDetailedResult( hit, $tr, fetchOnly ) {
@@ -394,13 +393,13 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
                 return false;
             } );
             $tr.find( '.open-link' ).click( function() {
-                $( '#search-results-ui' ).trigger( 'close' );
+                $( '#search-results-ui' ).modal('hide');
                 openRecord( hit.id, editor );
 
                 return false;
             } );
             $tr.find( '.substitute-link' ).click( function() {
-                $( '#search-results-ui' ).trigger( 'close' );
+                $( '#search-results-ui' ).modal('hide');
                 loadRecord( hit.id, editor );
 
                 return false;
@@ -700,7 +699,7 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
         } );
 
         $('#open-macros').click( function() {
-            $('#macro-ui').lightbox_me();
+            $('#macro-ui').modal('show');
 
             return false;
         } );
@@ -778,6 +777,15 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
 
         // Key bindings
         bindGlobalKeys();
+
+        // Setup modals
+        $("#advanced-search-ui, #search-results-ui, #macro-ui").each( function() {
+            $(this).modal({ show: false }).css({
+                marginLeft: function() {
+                    return -($(this).width() / 2);
+                }
+            });
+        } );
 
         // Start editor
         Preferences.Load( [% USER_INFO.0.borrowernumber %] );
