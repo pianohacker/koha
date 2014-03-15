@@ -117,25 +117,25 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
         } );
 
         shortcut.add( 'alt+ctrl+k', function(event) {
-            $( '#search-by-keywords' ).focus();
+            if ( Search.IsAvailable() ) $( '#search-by-keywords' ).focus();
 
             return false;
         } );
 
         shortcut.add( 'alt+ctrl+a', function(event) {
-            $( '#search-by-author' ).focus();
+            if ( Search.IsAvailable() ) $( '#search-by-author' ).focus();
 
             return false;
         } );
 
         shortcut.add( 'alt+ctrl+i', function(event) {
-            $( '#search-by-isbn' ).focus();
+            if ( Search.IsAvailable() ) $( '#search-by-isbn' ).focus();
 
             return false;
         } );
 
         shortcut.add( 'alt+ctrl+t', function(event) {
-            $( '#search-by-title' ).focus();
+            if ( Search.IsAvailable() ) $( '#search-by-title' ).focus();
 
             return false;
         } );
@@ -145,8 +145,9 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
                 var q = this.value;
                 if (!q) return false;
 
-                showResultsBox();
-                Search.Start( z3950Targets, $(this).data('qualifier') + q, 20 );
+                if ( Search.Start( z3950Targets, $(this).data('qualifier') + q, 20 ) ) {
+                    showResultsBox();
+                }
 
                 return false;
             }, this), { target: this, type: 'keypress' } );
@@ -313,8 +314,10 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
         if (!search) return;
 
         $('#advanced-search-ui').modal('hide');
-        showResultsBox();
-        Search.Start( z3950Targets, search, 20 );
+
+        if ( Search.Start( z3950Targets, search, 20 ) ) {
+            showResultsBox();
+        }
     }
 
     function showResultsBox(data) {
@@ -444,6 +447,10 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
         } else {
             humanMsg.displayMsg( _("<h3>Internal search error</h3>") + '<p>' + error + '</p>' + _("<p>Please <b>refresh</b> the page and try again."), { className: 'humanError' } );
         }
+    }
+
+    function handleSearchInitError(error) {
+        $('#quicksearch-overlay').fadeIn().find('p').text(error);
     }
 
     // Preference functions
@@ -787,11 +794,25 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
             });
         } );
 
+        var $quicksearch = $('#quicksearch fieldset');
+        $('<div id="quicksearch-overlay"><h3>' + _("Search unavailable") + '</h3> <p></p></div>').css({
+            position: 'absolute',
+            top: $quicksearch.offset().top,
+            left: $quicksearch.offset().left,
+            height: $quicksearch.outerHeight(),
+            width: $quicksearch.outerWidth(),
+        }).appendTo(document.body).hide();
+
         // Start editor
         Preferences.Load( [% USER_INFO.0.borrowernumber %] );
         displayPreferences(editor);
         makeAuthorisedValueWidgets( '' );
-        Search.Init( z3950Targets, { onresults: function(data) { showSearchResults( editor, data ) }, onbytarget: showSearchTargets, onerror: handleSearchError } );
+        Search.Init( z3950Targets, {
+            onresults: function(data) { showSearchResults( editor, data ) },
+            onbytarget: showSearchTargets,
+            onerror: handleSearchError,
+            oniniterror: handleSearchInitError,
+        } );
 
         function finishCb() {
             $("#loading").hide();

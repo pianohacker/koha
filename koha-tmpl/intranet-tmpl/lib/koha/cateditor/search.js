@@ -8,8 +8,6 @@ define( [ 'marc-record', 'pz2' ], function( MARC, Pazpar2 ) {
         Init: function( targets, options ) {
             var initOpts = {};
 
-            _onresults = options.onresults;
-
             $.each( targets, function ( url, info ) {
                 initOpts[ 'pz:name[' + url + ']' ] = info.name;
                 initOpts[ 'pz:queryencoding[' + url + ']' ] = info.encoding;
@@ -39,7 +37,7 @@ define( [ 'marc-record', 'pz2' ], function( MARC, Pazpar2 ) {
             _options =  $.extend( {
                 initopts: initOpts,
                 onshow: Search._onshow,
-                errorhandler: options.onerror,
+                errorhandler: Search._onerror,
             }, options );
 
             _pz = new Pazpar2( _options );
@@ -57,6 +55,7 @@ define( [ 'marc-record', 'pz2' ], function( MARC, Pazpar2 ) {
             } );
 
             _pz.search( q, limit, 'relevance:0', 'pz:id=' + Search.includedTargets.join( '|' ) );
+            return true;
         },
         Fetch: function( offset ) {
             _pz.show( offset );
@@ -74,13 +73,23 @@ define( [ 'marc-record', 'pz2' ], function( MARC, Pazpar2 ) {
                 callback(record);
             } } );
         },
+        IsAvailable: function() {
+            return _pz.initStatusOK;
+        },
         _onshow: function( data ) {
             $.each( data.hits, function( undef, hit ) {
                 hit.id = 'search:' + encodeURIComponent( hit.recid[0] );
             } );
 
-            _onresults( data );
+            _options.onresults( data );
         },
+        _onerror: function( error ) {
+            if ( _options.oniniterror && !_pz.initStatusOK ) {
+                _options.oniniterror( error );
+            } else {
+                _options.onerror( error );
+            }
+        }
     };
 
     return Search;

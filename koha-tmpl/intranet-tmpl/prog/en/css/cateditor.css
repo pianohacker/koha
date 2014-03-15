@@ -163,6 +163,34 @@ body {
     padding: 0;
 }
 
+#quicksearch-overlay {
+    background: rgba(255, 255, 255, .9);
+    border: 2px solid #CC8877;
+    border-radius: 5px;
+    -moz-box-sizing: border-box;
+    -webkit-box-sizing: border-box;
+    box-sizing: border-box;
+    color: #664444;
+    position: relative;
+    vertical-align: middle;
+}
+
+#quicksearch-overlay h3 {
+    font-size: 1.5em%;
+    margin: 0;
+    text-align: center;
+    padding: 50px 5px;
+}
+
+#quicksearch-overlay p {
+    bottom: 0;
+    font-size: .8em;
+    overflow: hidden;
+    padding: 8px 15px;
+    position: absolute;
+    text-align: center;
+}
+
 #quicksearch input, #quicksearch a {
     font-size: 1.2em;
     padding: 3px 0;
