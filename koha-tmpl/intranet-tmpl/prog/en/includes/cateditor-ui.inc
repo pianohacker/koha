@@ -157,7 +157,7 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
     // Record loading
     var backends = {
        'new': {
-            recordLabel: _("new record"),
+            titleForRecord: _("Editing new record"),
             get: function( id, callback ) {
                 record = new MARC.Record();
                 KohaBackend.FillRecord( '', record );
@@ -166,7 +166,7 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
             },
         },
         'new-full': {
-            recordLabel: _("new full record"),
+            titleForRecord: _("Editing new full record"),
             get: function( id, callback ) {
                 record = new MARC.Record();
                 KohaBackend.FillRecord( '', record, true );
@@ -175,8 +175,9 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
             },
         },
         'catalog': {
-            recordLabel: _("catalog record #{ID}"),
-            saveLabel: _("to catalog"),
+            titleForRecord: _("Editing catalog record #{ID}"),
+            href: "/cgi-bin/koha/catalogue/detail.pl?biblionumber={ID}",
+            saveLabel: _("Save to catalog"),
             get: function( id, callback ) {
                 if ( !id ) return false;
 
@@ -195,7 +196,7 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
             }
         },
         'iso2709': {
-            saveLabel: _("to ISO2709 (.mrc) file"),
+            saveLabel: _("Save as ISO2709 (.mrc) file"),
             save: function( id, record, done ) {
                 saveAs( new Blob( [record.toISO2709()], { 'type': 'application/octet-stream;charset=utf-8' } ), 'record.mrc' );
 
@@ -203,7 +204,7 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
             }
         },
         'marcxml': {
-            saveLabel: _("to MARCXML (.xml) file"),
+            saveLabel: _("Save as MARCXML (.xml) file"),
             save: function( id, record, done ) {
                 saveAs( new Blob( [record.toXML()], { 'type': 'application/octet-stream;charset=utf-8' } ), 'record.xml' );
 
@@ -211,7 +212,7 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
             }
         },
         'search': {
-            recordLabel: _("search result"),
+            titleForRecord: _("Editing search result"),
             get: function( id, callback ) {
                 if ( !id ) return false;
 
@@ -226,10 +227,17 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
         state.canSave = backends[ state.backend ].save != null;
         state.saveBackend = state.canSave ? state.backend : 'catalog';
 
+        var backend = backends[state.backend];
+
         document.location.hash = '#' + parts[0] + ':' + parts[1];
-        $( '#title' ).text( _("Editing ") + backends[ state.backend ].recordLabel.replace( '{ID}', parts[1] ) );
-        $( 'title', document.head ).html( _("Koha &rsaquo; Cataloging &rsaquo; Editing ") + backends[ state.backend ].recordLabel.replace( '{ID}', parts[1] ) );
-        $( '#save-record span' ).text( _("Save ") + backends[ state.saveBackend ].saveLabel );
+        
+        if ( backend.href ) {
+            $( '#title' ).html( backend.titleForRecord.replace( '{ID}', parts[1] ) + ' <a target="_blank" href="' + backend.href.replace( '{ID}', parts[1] ) + '">' + _("(view)") + '</a>' );
+        } else {
+            $( '#title' ).text( backend.titleForRecord.replace( '{ID}', parts[1] ) );
+        }
+        $( 'title', document.head ).html( _("Koha &rsaquo; Cataloging &rsaquo; Editing ") + backend.titleForRecord.replace( '{ID}', parts[1] ) );
+        $( '#save-record span' ).text( backends[ state.saveBackend ].saveLabel );
     }
 
     function saveRecord( recid, editor, callback ) {
@@ -613,7 +621,7 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
         } );
         saveableBackends.sort();
         $.each( saveableBackends, function( undef, backend ) {
-            $( '#save-dropdown' ).append( '<li><a href="#" data-backend="' + backend[1] + '">' + _("Save ") + backend[0] + '</a></li>' );
+            $( '#save-dropdown' ).append( '<li><a href="#" data-backend="' + backend[1] + '">' + backend[0] + '</a></li>' );
         } );
 
         // Click bindings
