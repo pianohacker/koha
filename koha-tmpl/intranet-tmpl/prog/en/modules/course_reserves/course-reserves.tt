@@ -4,15 +4,11 @@
 [% INCLUDE 'doc-head-close.inc' %]
 
 <link rel="stylesheet" type="text/css" href="[% themelang %]/css/datatables.css" />
-<script type="text/javascript" src="[% themelang %]/lib/jquery/plugins/jquery.dataTables.min.js"></script>
-[% INCLUDE 'datatables-strings.inc' %]
-<script type="text/javascript" src="[% themelang %]/js/datatables.js"></script>
+[% INCLUDE 'datatables.inc' %]
 <script type="text/javascript" id="js">
 $(document).ready(function() {
     $("#course_reserves_table").dataTable($.extend(true, {}, dataTablesDefaults, {
-        "sPaginationType": "four_button",
-        "aLengthMenu": [[10, 20, 50, 100, -1], [10, 20, 50, 100, "All"]],
-        "iDisplayLength": 20
+        "sPaginationType": "four_button"
     }));
 });
 </script>
@@ -30,14 +26,15 @@ $(document).ready(function() {
         <div id="yui-main">
             <div class="yui-b">
                 <div class="yui-g">
-
+                    [% IF CAN_user_coursereserves_add_reserves OR CAN_user_coursereserves_manage_courses OR CAN_user_coursereserves_manage_courses %]
                     <div id="toolbar">
                         <ul class="toolbar">
                             [% IF ( CAN_user_coursereserves_manage_courses ) %]
-                            <li><a class="btn" id="new_course" href="/cgi-bin/koha/course_reserves/course.pl">New course</a></li>
+                            <li><a class="btn btn-small" id="new_course" href="/cgi-bin/koha/course_reserves/course.pl"><i class="icon-plus"></i> New course</a></li>
                             [% END %]
                         </ul>
                     </div><!-- /toolbar -->
+                    [% END %]
 
                     <!--
                     <div id="search-toolbar">

@@ -3,7 +3,6 @@
 <script src="/intranet-tmpl/lib/filesaver.js"></script>
 <script src="/intranet-tmpl/lib/koha/cateditor/marc-mode.js"></script>
 <script src="/intranet-tmpl/lib/require.js"></script>
-<script src="/intranet-tmpl/lib/jquery/plugins/jquery.lightbox_me.js"></script>
 <script>
 require.config( {
     baseUrl: '/intranet-tmpl/lib/koha/cateditor/',
@@ -23,7 +22,7 @@ require.config( {
 [% END %]
 
 <script>
-require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'preferences', 'text-marc', 'widget-utils', 'xslt' ], function( KohaBackend, Search, Macros, MARCEditor, MARC, Preferences, TextMARC, Widget, XSLT ) {
+require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'preferences', 'text-marc', 'widget', 'xslt' ], function( KohaBackend, Search, Macros, MARCEditor, MARC, Preferences, TextMARC, Widget, XSLT ) {
     var xsltResultStylesheets = {
         [% FOREACH stylesheet IN xslt_result_stylesheets %]
         '[% stylesheet.syntax %]': XSLT.Get( '[% stylesheet.url %]' ),
@@ -51,15 +50,15 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
 
     // The columns that should show up in a search, in order, and keyed by the corresponding <metadata> tag in the XSL and Pazpar2 config
     var z3950Labels = [
-		[ "md-work-title", "Title" ],
-		[ "md-series-title", "Series-title" ],
-		[ "md-work-author", "Author" ],
-		[ "md-lccn", "LCCN" ],
-		[ "md-isbn", "ISBN" ],
-		[ "md-issn", "ISSN" ],
-		[ "md-medium", "Medium" ],
-		[ "md-edition", "Edition" ],
-		[ "md-description", "Description" ],
+		[ "md-work-title", _("Title") ],
+		[ "md-series-title", _("Series Title") ],
+		[ "md-work-author", _("Author") ],
+		[ "md-lccn", _("LCCN") ],
+		[ "md-isbn", _("ISBN") ],
+		[ "md-issn", _("ISSN") ],
+		[ "md-medium", _("Medium") ],
+		[ "md-edition", _("Edition") ],
+		[ "md-description", _("Description") ],
     ];
 
     var state = {
@@ -118,25 +117,25 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
         } );
 
         shortcut.add( 'alt+ctrl+k', function(event) {
-            $( '#search-by-keywords' ).focus();
+            if ( Search.IsAvailable() ) $( '#search-by-keywords' ).focus();
 
             return false;
         } );
 
         shortcut.add( 'alt+ctrl+a', function(event) {
-            $( '#search-by-author' ).focus();
+            if ( Search.IsAvailable() ) $( '#search-by-author' ).focus();
 
             return false;
         } );
 
         shortcut.add( 'alt+ctrl+i', function(event) {
-            $( '#search-by-isbn' ).focus();
+            if ( Search.IsAvailable() ) $( '#search-by-isbn' ).focus();
 
             return false;
         } );
 
         shortcut.add( 'alt+ctrl+t', function(event) {
-            $( '#search-by-title' ).focus();
+            if ( Search.IsAvailable() ) $( '#search-by-title' ).focus();
 
             return false;
         } );
@@ -146,8 +145,9 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
                 var q = this.value;
                 if (!q) return false;
 
-                showResultsBox();
-                Search.Start( z3950Targets, $(this).data('qualifier') + q, 20 );
+                if ( Search.Start( z3950Targets, $(this).data('qualifier') + q, 20 ) ) {
+                    showResultsBox();
+                }
 
                 return false;
             }, this), { target: this, type: 'keypress' } );
@@ -157,7 +157,7 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
     // Record loading
     var backends = {
        'new': {
-            recordLabel: _("new record"),
+            titleForRecord: _("Editing new record"),
             get: function( id, callback ) {
                 record = new MARC.Record();
                 KohaBackend.FillRecord( '', record );
@@ -166,7 +166,7 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
             },
         },
         'new-full': {
-            recordLabel: _("new full record"),
+            titleForRecord: _("Editing new full record"),
             get: function( id, callback ) {
                 record = new MARC.Record();
                 KohaBackend.FillRecord( '', record, true );
@@ -175,8 +175,9 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
             },
         },
         'catalog': {
-            recordLabel: _("catalog record #{ID}"),
-            saveLabel: _("to catalog"),
+            titleForRecord: _("Editing catalog record #{ID}"),
+            href: "/cgi-bin/koha/catalogue/detail.pl?biblionumber={ID}",
+            saveLabel: _("Save to catalog"),
             get: function( id, callback ) {
                 if ( !id ) return false;
 
@@ -195,7 +196,7 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
             }
         },
         'iso2709': {
-            saveLabel: _("to ISO2709 (.mrc) file"),
+            saveLabel: _("Save as ISO2709 (.mrc) file"),
             save: function( id, record, done ) {
                 saveAs( new Blob( [record.toISO2709()], { 'type': 'application/octet-stream;charset=utf-8' } ), 'record.mrc' );
 
@@ -203,7 +204,7 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
             }
         },
         'marcxml': {
-            saveLabel: _("to MARCXML (.xml) file"),
+            saveLabel: _("Save as MARCXML (.xml) file"),
             save: function( id, record, done ) {
                 saveAs( new Blob( [record.toXML()], { 'type': 'application/octet-stream;charset=utf-8' } ), 'record.xml' );
 
@@ -211,7 +212,7 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
             }
         },
         'search': {
-            recordLabel: _("search result"),
+            titleForRecord: _("Editing search result"),
             get: function( id, callback ) {
                 if ( !id ) return false;
 
@@ -220,24 +221,23 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
         },
     };
 
-    function clearRecordInfo( name, value ) {
-        $( '#record-info li' ).hide().find('span:eq(1)').text('');
-    }
-
-    function updateRecordInfo( name, value ) {
-        $( '#record-info-' + name ).show().find('span:eq(1)').text(value);
-    }
-
     function setSource(parts) {
         state.backend = parts[0];
         state.recordID = parts[1];
         state.canSave = backends[ state.backend ].save != null;
         state.saveBackend = state.canSave ? state.backend : 'catalog';
 
+        var backend = backends[state.backend];
+
         document.location.hash = '#' + parts[0] + ':' + parts[1];
-        $( '#title' ).text( _("Editing ") + backends[ state.backend ].recordLabel.replace( '{ID}', parts[1] ) );
-        $( 'title', document.head ).html( _("Koha &rsaquo; Cataloging &rsaquo; Editing ") + backends[ state.backend ].recordLabel.replace( '{ID}', parts[1] ) );
-        $( '#save-record span' ).text( _("Save ") + backends[ state.saveBackend ].saveLabel );
+        
+        if ( backend.href ) {
+            $( '#title' ).html( backend.titleForRecord.replace( '{ID}', parts[1] ) + ' <a target="_blank" href="' + backend.href.replace( '{ID}', parts[1] ) + '">' + _("(view)") + '</a>' );
+        } else {
+            $( '#title' ).text( backend.titleForRecord.replace( '{ID}', parts[1] ) );
+        }
+        $( 'title', document.head ).html( _("Koha &rsaquo; Cataloging &rsaquo; Editing ") + backend.titleForRecord.replace( '{ID}', parts[1] ) );
+        $( '#save-record span' ).text( backends[ state.saveBackend ].saveLabel );
     }
 
     function saveRecord( recid, editor, callback ) {
@@ -299,7 +299,6 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
 
     function openRecord( recid, editor, callback ) {
         return loadRecord( recid, editor, function ( record ) {
-            clearRecordInfo();
             setSource( recid.split(':') );
 
             if (callback) callback( record );
@@ -308,7 +307,7 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
 
     // Search functions
     function showAdvancedSearch() {
-        $('#advanced-search-ui').lightbox_me();
+        $('#advanced-search-ui').modal('show');
     }
 
     function startAdvancedSearch() {
@@ -322,16 +321,18 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
 
         if (!search) return;
 
-        $('#advanced-search-ui').trigger('close');
-        showResultsBox();
-        Search.Start( z3950Targets, search, 20 );
+        $('#advanced-search-ui').modal('hide');
+
+        if ( Search.Start( z3950Targets, search, 20 ) ) {
+            showResultsBox();
+        }
     }
 
     function showResultsBox(data) {
         $('#searchresults thead tr').empty();
         $('#searchresults tbody').empty();
         $('#search-targetsinfo').empty().append('<li>' + _("Loading...") + '</li>');
-        $('#search-results-ui').lightbox_me();
+        $('#search-results-ui').modal('show');
     }
 
     function showDetailedResult( hit, $tr, fetchOnly ) {
@@ -391,7 +392,6 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
             result += '<td class="toolscol"><ul><li><a href="#" class="marc-link">' + _("View MARC") + '</a></li>';
             result += '<li><a href="#" class="open-link">' + _("Import") + '</a></li>';
             if ( state.canSave ) result += '<li><a href="#" class="substitute-link" title="' + _("Replace the current record's contents") + '">' + _("Substitute") + '</a></li>';
-            // REMOVE: (vim syntax highlighting bug) "</a></a>"
             result += '</ul></td></tr>';
 
             var $tr = $( result );
@@ -404,13 +404,13 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
                 return false;
             } );
             $tr.find( '.open-link' ).click( function() {
-                $( '#search-results-ui' ).trigger( 'close' );
+                $( '#search-results-ui' ).modal('hide');
                 openRecord( hit.id, editor );
 
                 return false;
             } );
             $tr.find( '.substitute-link' ).click( function() {
-                $( '#search-results-ui' ).trigger( 'close' );
+                $( '#search-results-ui' ).modal('hide');
                 loadRecord( hit.id, editor );
 
                 return false;
@@ -420,20 +420,24 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
             //showDetailedResult( hit, $tr, !!data.activeclients );
         } );
 
-        var $loadingOverlay = $('#search-loading-overlay');
+        var $overlay = $('#search-overlay');
+        $overlay.find('span').text(_("Loading"));
+        $overlay.find('.bar').css( { display: 'block', width: 100 * ( 1 - data.activeclients / Search.includedTargets.length ) + '%' } );
 
         if ( data.activeclients ) {
-            if ( !$loadingOverlay.length ) {
-                $loadingOverlay = $( '<div id="search-loading-overlay">' + _("Loading...") + '<div class="progress progress-striped active"><div class="bar" style="width: 0"></div></div></div>' );
-                $loadingOverlay.css( { position: 'absolute', zIndex: 9001, top: 0, right: 0, bottom: 0, left: 0 } );
-                $loadingOverlay.appendTo( '#searchresults' );
-            }
-            $loadingOverlay.find('.bar').css( { width: 100 * ( 1 - data.activeclients / Search.includedTargets.length ) + '%' } );
-            $loadingOverlay.show();
+            $overlay.find('.bar').css( { display: 'block', width: 100 * ( 1 - data.activeclients / Search.includedTargets.length ) + '%' } );
+            $overlay.show();
         } else {
-            $loadingOverlay.find('.bar').css( { width: '100%' } );
-            $loadingOverlay.fadeOut();
+            $overlay.find('.bar').css( { display: 'block', width: '100%' } );
+            $overlay.fadeOut();
         }
+    }
+
+    function invalidateSearchResults() {
+        var $overlay = $('#search-overlay');
+        $overlay.find('span').text(_("Search expired, please try again"));
+        $overlay.find('.bar').css( { display: 'none' } );
+        $overlay.show();
     }
 
     function showSearchTargets(data) {
@@ -445,7 +449,16 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
     }
 
     function handleSearchError(error) {
-        humanMsg.displayMsg( _("<h3>Internal search error</h3>") + '<p>' + error + '</p>' + _("<p>Please <b>refresh</b> the page and try again."), { className: 'humanError' } );
+        if (error.code == 1) {
+            invalidateSearchResults();
+            Search.Reconnect();
+        } else {
+            humanMsg.displayMsg( _("<h3>Internal search error</h3>") + '<p>' + error + '</p>' + _("<p>Please <b>refresh</b> the page and try again."), { className: 'humanError' } );
+        }
+    }
+
+    function handleSearchInitError(error) {
+        $('#quicksearch-overlay').fadeIn().find('p').text(error);
     }
 
     // Preference functions
@@ -483,7 +496,7 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
         switch (pref) {
             case 'fieldWidgets':
                 _addHandler( '#set-field-widgets', 'click', function( e, oldValue ) {
-                    editor.setUseWidgets( Preference.user.fieldWidgets = !Preference.user.fieldWidgets );
+                    editor.setUseWidgets( Preferences.user.fieldWidgets = !Preferences.user.fieldWidgets );
                 } );
                 break;
             case 'font':
@@ -511,7 +524,10 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
         $( '#macro-list li' ).removeClass( 'active' );
         macroEditor.activeMacro = name;
 
-        if ( !name ) return;
+        if ( !name ) {
+            macroEditor.setValue( '' );
+            return;
+        }
 
         $( '#macro-list li[data-name="' + name + '"]' ).addClass( 'active' );
         var macro = Preferences.user.macros[name];
@@ -520,7 +536,12 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
     }
 
     function storeMacro( name, macro ) {
-        Preferences.user.macros[name] = macro;
+        if ( macro ) {
+            Preferences.user.macros[name] = macro;
+        } else {
+            delete Preferences.user.macros[name];
+        }
+
         Preferences.Save( [% USER_INFO.0.borrowernumber %] );
     }
 
@@ -567,7 +588,7 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
         if ( !name || macroEditor.savedGeneration == macroEditor.changeGeneration() ) return;
 
         macroEditor.savedGeneration = macroEditor.changeGeneration();
-        storeMacro( Preferences.user.macros[name], { contents: macroEditor.getValue(), modified: (new Date()).valueOf(), history: macroEditor.getHistory() } );
+        storeMacro( name, { contents: macroEditor.getValue(), modified: (new Date()).valueOf(), history: macroEditor.getHistory() } );
         $('#macro-save-message').text(_("Saved"));
         showSavedMacros();
     }
@@ -580,6 +601,7 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
             $('#macro-editor')[0],
             {
                 mode: 'null',
+                lineNumbers: true,
             }
         );
 
@@ -599,7 +621,7 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
         } );
         saveableBackends.sort();
         $.each( saveableBackends, function( undef, backend ) {
-            $( '#save-dropdown' ).append( '<li><a href="#" data-backend="' + backend[1] + '">' + _("Save ") + backend[0] + '</a></li>' );
+            $( '#save-dropdown' ).append( '<li><a href="#" data-backend="' + backend[1] + '">' + backend[0] + '</a></li>' );
         } );
 
         // Click bindings
@@ -692,24 +714,39 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
         } );
 
         $('#open-macros').click( function() {
-            $('#macro-ui').lightbox_me();
+            $('#macro-ui').modal('show');
 
             return false;
         } );
 
         $('#run-macro').click( function() {
-            var result = Macros.Run( editor.cm, macroEditor.getValue() );
+            var result = Macros.Run( editor, macroEditor.getValue() );
 
-            if ( result.errors.length ) console.error( 'Failed to run macro:', result.errors );
+            if ( !result.errors.length ) return false;
+
+            var errors = [];
+            $.each( result.errors, function() {
+                var error = '<b>' + _("Line ") + (this.line + 1) + ':</b> ';
+
+                switch ( this.error ) {
+                    case 'failed': error += _("failed to run"); break;
+                    case 'unrecognized': error += _("unrecognized command"); break;
+                }
+
+                errors.push(error);
+            } );
+
+            humanMsg.displayMsg( _("<h3>Failed to run macro:</h3>") + '<ul><li>' + errors.join('</li><li>') + '</li></ul>', { className: 'humanError' } );
 
             return false;
         } );
 
-        $('#new-macro').click( function() {
-            var name = macroEditor.activeMacro || (macroEditor.activeMacro = prompt("Please enter the name of the new macro."));
+        $('#delete-macro').click( function() {
+            if ( !macroEditor.activeMacro || !confirm( _("Are you sure you want to delete this macro?") ) ) return;
 
-            if ( macroEditor.activeMacro ) macroEditor.setValue( '' );
-            loadMacro();
+            storeMacro( macroEditor.activeMacro, undefined );
+            showSavedMacros();
+            loadMacro( undefined );
 
             return false;
         } );
@@ -756,11 +793,34 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
         // Key bindings
         bindGlobalKeys();
 
+        // Setup modals
+        $("#advanced-search-ui, #search-results-ui, #macro-ui").each( function() {
+            $(this).modal({ show: false }).css({
+                marginLeft: function() {
+                    return -($(this).width() / 2);
+                }
+            });
+        } );
+
+        var $quicksearch = $('#quicksearch fieldset');
+        $('<div id="quicksearch-overlay"><h3>' + _("Search unavailable") + '</h3> <p></p></div>').css({
+            position: 'absolute',
+            top: $quicksearch.offset().top,
+            left: $quicksearch.offset().left,
+            height: $quicksearch.outerHeight(),
+            width: $quicksearch.outerWidth(),
+        }).appendTo(document.body).hide();
+
         // Start editor
         Preferences.Load( [% USER_INFO.0.borrowernumber %] );
         displayPreferences(editor);
         makeAuthorisedValueWidgets( '' );
-        Search.Init( z3950Targets, { onresults: function(data) { showSearchResults( editor, data ) }, onbytarget: showSearchTargets, onerror: handleSearchError } );
+        Search.Init( z3950Targets, {
+            onresults: function(data) { showSearchResults( editor, data ) },
+            onbytarget: showSearchTargets,
+            onerror: handleSearchError,
+            oniniterror: handleSearchInitError,
+        } );
 
         function finishCb() {
             $("#loading").hide();

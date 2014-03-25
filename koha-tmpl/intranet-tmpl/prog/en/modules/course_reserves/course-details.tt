@@ -6,18 +6,15 @@
 [% INCLUDE 'doc-head-close.inc' %]
 
 <link rel="stylesheet" type="text/css" href="[% themelang %]/css/datatables.css" />
-<script type="text/javascript" src="[% themelang %]/lib/jquery/plugins/jquery.dataTables.min.js"></script>
-[% INCLUDE 'datatables-strings.inc' %]
-<script type="text/javascript" src="[% themelang %]/js/datatables.js"></script>
+[% INCLUDE 'datatables.inc' %]
 <script type="text/javascript">
 //<![CDATA[
     $(document).ready(function(){
         $("#course_reserves_table").dataTable($.extend(true, {}, dataTablesDefaults, {
             "sPaginationType": "four_button",
-            "aLengthMenu": [[10, 20, 50, 100, -1], [10, 20, 50, 100, "All"]],
-            "iDisplayLength": 20,
             "aoColumnDefs": [
-                { 'bSortable': false, 'aTargets': [ 9, 10, 11 ] }
+                { 'bSortable': false, 'aTargets': [ 'NoSort' ] },
+                { 'sType': "anti-the", 'aTargets' : [ 'antithe'] }
             ]
         }));
 
@@ -45,13 +42,15 @@
 <div id="doc2" class="yui-t7">
     <div id="bd">
         <div id="yui-main">
+            [% IF CAN_user_coursereserves_add_reserves OR CAN_user_coursereserves_manage_courses OR CAN_user_coursereserves_manage_courses %]
             <div id="toolbar">
                 <ul class="toolbar">
-                    [% IF CAN_user_coursereserves_add_reserves %]<li><a class="btn" id="add_items" href="/cgi-bin/koha/course_reserves/add_items.pl?course_id=[% course.course_id %]"><i class="icon-plus"></i> Add reserves</a></li>[% END %]
-                    [% IF ( CAN_user_coursereserves_manage_courses ) %]<li><a class="btn" id="edit_course" href="/cgi-bin/koha/course_reserves/course.pl?course_id=[% course.course_id %]"><i class="icon-pencil"></i> Edit course</a></li>[% END %]
-                    [% IF ( CAN_user_coursereserves_manage_courses ) %]<li><a class="btn" id="delete_course" href="/cgi-bin/koha/course_reserves/mod_course.pl?course_id=[% course.course_id %]&amp;action=del"><i class="icon-remove"></i> Delete course</a></li>[% END %]
+                    [% IF CAN_user_coursereserves_add_reserves %]<li><a class="btn btn-small" id="add_items" href="/cgi-bin/koha/course_reserves/add_items.pl?course_id=[% course.course_id %]"><i class="icon-plus"></i> Add reserves</a></li>[% END %]
+                    [% IF ( CAN_user_coursereserves_manage_courses ) %]<li><a class="btn btn-small" id="edit_course" href="/cgi-bin/koha/course_reserves/course.pl?course_id=[% course.course_id %]"><i class="icon-pencil"></i> Edit course</a></li>[% END %]
+                    [% IF ( CAN_user_coursereserves_manage_courses ) %]<li><a class="btn btn-small" id="delete_course" href="/cgi-bin/koha/course_reserves/mod_course.pl?course_id=[% course.course_id %]&amp;action=del"><i class="icon-remove"></i> Delete course</a></li>[% END %]
                 </ul>
             </div><!-- /toolbar -->
+            [% END %]
 
             <div class="rows">
               <ol>
@@ -73,7 +72,7 @@
                 <caption>Reserves</caption>
                 <thead>
                     <tr>
-                        <th>Title</th>
+                        <th class="antithe">Title</th>
                         <th>Barcode</th>
                         <th>Call number</th>
                         [% IF item_level_itypes %]<th>Item type</th>[% END %]
@@ -82,9 +81,9 @@
                         <th>Library</th>
                         <th>Staff note</th>
                         <th>Public note</th>
-                        [% IF CAN_user_coursereserves_add_reserves %]<th>&nbsp;<!-- Edit --></th>[% END %]
-                        [% IF CAN_user_coursereserves_delete_reserves %]<th>&nbsp;<!-- Remove --></th>[% END %]
-                        <th>Other course reserves</th>
+                        [% IF CAN_user_coursereserves_add_reserves %]<th class="NoSort">&nbsp;<!-- Edit --></th>[% END %]
+                        [% IF CAN_user_coursereserves_delete_reserves %]<th class="NoSort">&nbsp;<!-- Remove --></th>[% END %]
+                        <th class="NoSort">Other course reserves</th>
                     </tr>
                 </thead>
 

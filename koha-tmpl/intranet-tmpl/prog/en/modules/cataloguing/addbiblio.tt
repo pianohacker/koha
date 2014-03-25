@@ -75,7 +75,9 @@
         });
 
         $( '#switcheditor' ).click( function() {
-            if ( !confirm( _("Any changes will not be saved. Continue?") ) ) return;
+            var breedingid = [% breedingid || "null" %];
+
+            if ( !confirm( breedingid ? _("This record cannot be transferred to the advanced editor. Continue?") : _("Any changes will not be saved. Continue?") ) ) return false;
 
             $.cookie( 'catalogue_editor_[% USER_INFO.0.borrowernumber %]', 'advanced', { expires: 365, path: '/' } );
 
@@ -86,6 +88,8 @@
             } else {
                 window.location = '/cgi-bin/koha/cataloguing/editor.pl';
             }
+
+            return false;
         } );
 
 	});

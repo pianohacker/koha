@@ -293,7 +293,7 @@ sub memcached {
     }
 }
 
-=head2 db_schema2dbi
+=head2 db_scheme2dbi
 
     my $dbd_driver_name = C4::Context::db_schema2dbi($scheme);
 
@@ -401,6 +401,7 @@ sub new {
     $self->{tz} = undef; # local timezone object
 
     bless $self, $class;
+    $self->{db_driver} = db_scheme2dbi($self->config('db_scheme'));  # cache database driver
     return $self;
 }
 
@@ -706,8 +707,6 @@ sub Zconn {
         $context->{"Zconn"}->{$server}->destroy() if defined($context->{"Zconn"}->{$server});
 
         $context->{"Zconn"}->{$server} = &_new_Zconn($server,$async,$auth,$piggyback,$syntax);
-        $context->{ Zconn }->{ $server }->option(
-            preferredRecordSyntax => C4::Context->preference("marcflavour") );
         return $context->{"Zconn"}->{$server};
     }
 }
@@ -731,14 +730,36 @@ sub _new_Zconn {
 
     my $tried=0; # first attempt
     my $Zconn; # connection object
-    $server = "biblioserver" unless $server;
-    $syntax = "usmarc" unless $syntax;
+    my $elementSetName;
+    my $index_mode;
+
+    $server //= "biblioserver";
+    $syntax //= "XML";
+
+    if ( $server eq 'biblioserver' ) {
+        $index_mode = $context->{'config'}->{'zebra_bib_index_mode'} // 'grs1';
+    } elsif ( $server eq 'authorityserver' ) {
+        $index_mode = $context->{'config'}->{'zebra_auth_index_mode'} // 'dom';
+    }
+
+    if ( $index_mode eq 'grs1' ) {
+
+        $elementSetName = 'F';
+        $syntax = ( $context->preference("marcflavour") eq 'UNIMARC' )
+                ? 'unimarc'
+                : 'usmarc';
+
+    } else {
+
+        $elementSetName = 'marcxml';
+        $syntax = 'XML';
+    }
 
     my $host = $context->{'listen'}->{$server}->{'content'};
     my $servername = $context->{"config"}->{$server};
     my $user = $context->{"serverinfo"}->{$server}->{"user"};
     my $password = $context->{"serverinfo"}->{$server}->{"password"};
- $auth = 1 if($user && $password);   
+    $auth = 1 if($user && $password);
     retry:
     eval {
         # set options
@@ -750,7 +771,7 @@ sub _new_Zconn {
         $o->option(cqlfile=> $context->{"server"}->{$server}->{"cql2rpn"});
         $o->option(cclfile=> $context->{"serverinfo"}->{$server}->{"ccl2rpn"});
         $o->option(preferredRecordSyntax => $syntax);
-        $o->option(elementSetName => "F"); # F for 'full' as opposed to B for 'brief'
+        $o->option(elementSetName => $elementSetName);
         $o->option(databaseName => ($servername?$servername:"biblios"));
 
         # create a new connection object
@@ -765,23 +786,7 @@ sub _new_Zconn {
         }
 
     };
-#     if ($@) {
-#         # Koha manages the Zebra server -- this doesn't work currently for me because of permissions issues
-#         # Also, I'm skeptical about whether it's the best approach
-#         warn "problem with Zebra";
-#         if ( C4::Context->preference("ManageZebra") ) {
-#             if ($@->code==10000 && $tried==0) { ##No connection try restarting Zebra
-#                 $tried=1;
-#                 warn "trying to restart Zebra";
-#                 my $res=system("zebrasrv -f $ENV{'KOHA_CONF'} >/koha/log/zebra-error.log");
-#                 goto "retry";
-#             } else {
-#                 warn "Error ", $@->code(), ": ", $@->message(), "\n";
-#                 $Zconn="error";
-#                 return $Zconn;
-#             }
-#         }
-#     }
+
     return $Zconn;
 }
 
@@ -793,8 +798,8 @@ sub _new_dbh
 {
 
     ## $context
-    ## correct name for db_schme        
-    my $db_driver = db_scheme2dbi($context->config("db_scheme"));
+    ## correct name for db_scheme
+    my $db_driver = $context->{db_driver};
 
     my $db_name   = $context->config("database");
     my $db_host   = $context->config("hostname");
@@ -817,6 +822,10 @@ sub _new_dbh
 
     if ($@) {
         $dbh->{RaiseError} = 0;
+    }
+
+    if ( $db_driver eq 'mysql' ) {
+        $dbh->{mysql_auto_reconnect} = 1;
     }
 
 	my $tz = $ENV{TZ};
@@ -853,10 +862,15 @@ possibly C<&set_dbh>.
 sub dbh
 {
     my $self = shift;
+    my $params = shift;
     my $sth;
 
-    if (defined($context->{"dbh"}) && $context->{"dbh"}->ping()) {
-	return $context->{"dbh"};
+    unless ( $params->{new} ) {
+        if ( defined($context->{db_driver}) && $context->{db_driver} eq 'mysql' && $context->{"dbh"} ) {
+            return $context->{"dbh"};
+        } elsif ( defined($context->{"dbh"}) && $context->{"dbh"}->ping() ) {
+            return $context->{"dbh"};
+        }
     }
 
     # No database handle or it died . Create one.
@@ -1247,7 +1261,7 @@ sub IsSuperLibrarian {
         return 1;
     }
 
-    return $userenv->{flags} % 2;
+    return ($userenv->{flags}//0) % 2;
 }
 
 1;

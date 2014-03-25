@@ -8012,6 +8012,31 @@ if ( C4::Context->preference("Version") < TransformToNum($DBversion) ) {
     SetVersion($DBversion);
 }
 
+$DBversion = "3.15.00.020";
+if ( C4::Context->preference("Version") < TransformToNum($DBversion) ) {
+    $dbh->do(q|
+        INSERT IGNORE INTO systempreferences (variable,value,options,explanation,type) VALUES('MaxItemsForBatch','1000',NULL,'Max number of items record to process in a batch (modification or deletion)','Integer')
+    |);
+    print "Upgrade to $DBversion done (Bug 11343: Add system preference MaxItemsForBatch )\n";
+    SetVersion($DBversion);
+}
+
+$DBversion = "3.15.00.021";
+if(CheckVersion($DBversion)) {
+    $dbh->do(q{
+        ALTER TABLE `action_logs`
+            DROP KEY timestamp,
+            ADD KEY `timestamp_idx` (`timestamp`),
+            ADD KEY `user_idx` (`user`),
+            ADD KEY `module_idx` (`module`(255)),
+            ADD KEY `action_idx` (`action`(255)),
+            ADD KEY `object_idx` (`object`),
+            ADD KEY `info_idx` (`info`(255))
+    });
+    print "Upgrade to $DBversion done (Bug 3445: Add indexes to action_logs table)\n";
+    SetVersion($DBversion);
+}
+
 =head1 FUNCTIONS
 
 =head2 TableExists($table)

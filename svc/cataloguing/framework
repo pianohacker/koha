@@ -11,7 +11,7 @@ use C4::Service;
 
 my ( $query, $response ) = C4::Service->init( editcatalogue => 'edit_catalogue' );
 
-my ( $frameworkcode ) = C4::Service->require_params( 'frameworkcode' );
+my $frameworkcode = $query->param( 'frameworkcode' ) // '';
 
 my $tagslib = GetMarcStructure( 1, $frameworkcode );
 

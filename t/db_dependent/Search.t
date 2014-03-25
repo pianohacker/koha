@@ -12,7 +12,10 @@ use YAML;
 use C4::Debug;
 require C4::Context;
 
-use Test::More tests => 224;
+# work around spurious wide character warnings
+use open ':std', ':encoding(utf8)';
+
+use Test::More tests => 4;
 use Test::MockModule;
 use MARC::Record;
 use File::Spec;
@@ -22,10 +25,6 @@ use Test::Warn;
 use File::Temp qw/ tempdir /;
 use File::Path;
 use DBI;
-
-# work around spurious wide character warnings
-binmode Test::More->builder->output, ":utf8";
-binmode Test::More->builder->failure_output, ":utf8";
 
 our $child;
 our $datadir;
@@ -40,6 +39,12 @@ sub index_sample_records_and_launch_zebra {
         system("zebraidx -c $datadir/etc/koha/zebradb/$zebra_bib_cfg  -v none,fatal,warn  -g iso2709 -d biblios init");
         system("zebraidx -c $datadir/etc/koha/zebradb/$zebra_bib_cfg  -v none,fatal,warn   -g iso2709 -d biblios update $sourcedir/${marc_type}/zebraexport/biblio");
         system("zebraidx -c $datadir/etc/koha/zebradb/$zebra_bib_cfg  -v none,fatal,warn  -g iso2709 -d biblios commit");
+    }
+    # ... and add large bib records, if present
+    if (-f "$sourcedir/${marc_type}/zebraexport/large_biblio_${indexing_mode}/exported_records.xml") {
+        my $zebra_bib_cfg = ($indexing_mode eq 'dom') ? 'zebra-biblios-dom.cfg' : 'zebra-biblios.cfg';
+        system("zebraidx -c $datadir/etc/koha/zebradb/$zebra_bib_cfg  -v none,fatal,warn   -g marcxml -d biblios update $sourcedir/${marc_type}/zebraexport/large_biblio_${indexing_mode}");
+        system("zebraidx -c $datadir/etc/koha/zebradb/$zebra_bib_cfg  -v none,fatal,warn  -g marcxml -d biblios commit");
     }
     if (-f "$sourcedir/${marc_type}/zebraexport/authority/exported_records") {
         my $zebra_auth_cfg = ($indexing_mode eq 'dom') ? 'zebra-authorities-dom.cfg' : 'zebra-authorities.cfg';
@@ -227,7 +232,11 @@ sub run_marc21_search_tests {
                 '020' => {
                     'sfs' => { 'a' => [ [ 'biblioitems', 'isbn' ] ] },
                     'list' => [ [ 'a', 'biblioitems', 'isbn' ] ]
-                }
+                },
+                '500' => {
+                    'sfs' => { 'a' => [ [ 'biblioitems', 'notes' ] ] },
+                    'list' => [ [ 'a', 'biblioitems', 'notes' ] ]
+                },
             }
         );
         return \%hash;
@@ -349,6 +358,43 @@ sub run_marc21_search_tests {
         getRecords('au:Lessig', 'au:Lessig', [], [ 'biblioserver' ], '20', 0, undef, \%branches, \%itemtypes, 'ccl', undef);
     is($results_hashref->{biblioserver}->{hits}, 4, "getRecords title search for 'Australia' matched right number of records");
 
+if ( $indexing_mode eq 'dom' ) {
+    ( undef, $results_hashref, $facets_loop ) =
+        getRecords('salud', 'salud', [], [ 'biblioserver' ], '19', 0, undef, \%branches, \%itemtypes, 'ccl', undef);
+    ok(MARC::Record::new_from_xml($results_hashref->{biblioserver}->{RECORDS}->[0],'UTF-8')->title_proper() =~ m/^Efectos del ambiente/ &&
+        MARC::Record::new_from_xml($results_hashref->{biblioserver}->{RECORDS}->[7],'UTF-8')->title_proper() eq 'Salud y seguridad de los trabajadores del sector salud: manual para gerentes y administradores^ies' &&
+        MARC::Record::new_from_xml($results_hashref->{biblioserver}->{RECORDS}->[18],'UTF-8')->title_proper() =~ m/^Indicadores de resultados identificados/
+        , "Simple relevance sorting in getRecords matches old behavior");
+
+    ( undef, $results_hashref, $facets_loop ) =
+        getRecords('salud', 'salud', [ 'author_az' ], [ 'biblioserver' ], '38', 0, undef, \%branches, \%itemtypes, 'ccl', undef);
+    ok(MARC::Record::new_from_xml($results_hashref->{biblioserver}->{RECORDS}->[0],'UTF-8')->title_proper() =~ m/la enfermedad laboral\^ies$/ &&
+        MARC::Record::new_from_xml($results_hashref->{biblioserver}->{RECORDS}->[6],'UTF-8')->title_proper() =~ m/^Indicadores de resultados identificados/ &&
+        MARC::Record::new_from_xml($results_hashref->{biblioserver}->{RECORDS}->[18],'UTF-8')->title_proper() eq 'World health statistics 2009^ien'
+        , "Simple ascending author sorting in getRecords matches old behavior");
+
+    ( undef, $results_hashref, $facets_loop ) =
+        getRecords('salud', 'salud', [ 'author_za' ], [ 'biblioserver' ], '38', 0, undef, \%branches, \%itemtypes, 'ccl', undef);
+    ok(MARC::Record::new_from_xml($results_hashref->{biblioserver}->{RECORDS}->[0],'UTF-8')->title_proper() eq 'World health statistics 2009^ien' &&
+        MARC::Record::new_from_xml($results_hashref->{biblioserver}->{RECORDS}->[12],'UTF-8')->title_proper() =~ m/^Indicadores de resultados identificados/ &&
+        MARC::Record::new_from_xml($results_hashref->{biblioserver}->{RECORDS}->[18],'UTF-8')->title_proper() =~ m/la enfermedad laboral\^ies$/
+        , "Simple descending author sorting in getRecords matches old behavior");
+
+    ( undef, $results_hashref, $facets_loop ) =
+        getRecords('salud', 'salud', [ 'pubdate_asc' ], [ 'biblioserver' ], '38', 0, undef, \%branches, \%itemtypes, 'ccl', undef);
+    ok(MARC::Record::new_from_xml($results_hashref->{biblioserver}->{RECORDS}->[0],'UTF-8')->title_proper() eq 'Manual de higiene industrial^ies' &&
+        MARC::Record::new_from_xml($results_hashref->{biblioserver}->{RECORDS}->[7],'UTF-8')->title_proper() =~ m/seguridad e higiene del trabajo\^ies$/ &&
+        MARC::Record::new_from_xml($results_hashref->{biblioserver}->{RECORDS}->[18],'UTF-8')->title_proper() =~ m/^Indicadores de resultados identificados/
+        , "Simple ascending publication date sorting in getRecords matches old behavior");
+
+    ( undef, $results_hashref, $facets_loop ) =
+        getRecords('salud', 'salud', [ 'pubdate_dsc' ], [ 'biblioserver' ], '38', 0, undef, \%branches, \%itemtypes, 'ccl', undef);
+    ok(MARC::Record::new_from_xml($results_hashref->{biblioserver}->{RECORDS}->[0],'UTF-8')->title_proper() =~ m/^Estado de salud/ &&
+        MARC::Record::new_from_xml($results_hashref->{biblioserver}->{RECORDS}->[7],'UTF-8')->title_proper() eq 'World health statistics 2009^ien' &&
+        MARC::Record::new_from_xml($results_hashref->{biblioserver}->{RECORDS}->[18],'UTF-8')->title_proper() eq 'Manual de higiene industrial^ies'
+        , "Simple descending publication date sorting in getRecords matches old behavior");
+
+} elsif ( $indexing_mode eq 'grs1' ){
     ( undef, $results_hashref, $facets_loop ) =
         getRecords('salud', 'salud', [], [ 'biblioserver' ], '19', 0, undef, \%branches, \%itemtypes, 'ccl', undef);
     ok(MARC::Record::new_from_usmarc($results_hashref->{biblioserver}->{RECORDS}->[0])->title_proper() =~ m/^Efectos del ambiente/ &&
@@ -383,14 +429,17 @@ sub run_marc21_search_tests {
         MARC::Record::new_from_usmarc($results_hashref->{biblioserver}->{RECORDS}->[7])->title_proper() eq 'World health statistics 2009^ien' &&
         MARC::Record::new_from_usmarc($results_hashref->{biblioserver}->{RECORDS}->[18])->title_proper() eq 'Manual de higiene industrial^ies'
         , "Simple descending publication date sorting in getRecords matches old behavior");
+}
 
+TODO: {
+    local $TODO = "Switch relevance search to MARCXML too";
     ( undef, $results_hashref, $facets_loop ) =
         getRecords('books', 'books', [ 'relevance' ], [ 'biblioserver' ], '20', 0, undef, \%branches, \%itemtypes, undef, 1);
     $record = MARC::Record::new_from_usmarc($results_hashref->{biblioserver}->{RECORDS}->[0]);
     is($record->title_proper(), 'books', "Scan returned requested item");
     is($record->subfield('100', 'a'), 2, "Scan returned correct number of records matching term");
-
     # Time to test buildQuery and searchResults too.
+}
 
     my ( $query, $simple_query, $query_cgi,
     $query_desc, $limit, $limit_cgi, $limit_desc,
@@ -499,7 +548,7 @@ sub run_marc21_search_tests {
     $stopwords_removed, $query_type ) = buildQuery([], [ 'pqf=@attr 1=_ALLRECORDS @attr 2=103 ""' ], [], [], [], 0, 'en');
 
     ($error, $results_hashref, $facets_loop) = getRecords($query,$simple_query,[ ], [ 'biblioserver' ],20,0,undef,\%branches,\%itemtypes,$query_type,0);
-    is($results_hashref->{biblioserver}->{hits}, 179, "getRecords on _ALLRECORDS PQF returned all records");
+    is($results_hashref->{biblioserver}->{hits}, 180, "getRecords on _ALLRECORDS PQF returned all records");
 
     ( $error, $query, $simple_query, $query_cgi,
     $query_desc, $limit, $limit_cgi, $limit_desc,
@@ -534,7 +583,7 @@ sub run_marc21_search_tests {
         is(MARC::Record::new_from_usmarc($results_hashref->{biblioserver}->{RECORDS}->[0])->title_proper(), 'Salud y seguridad de los trabajadores del sector salud: manual para gerentes y administradores^ies', "Weighted query returns best match first");
     } else {
         local $TODO = "Query weighting does not behave exactly the same in DOM vs. GRS";
-        is(MARC::Record::new_from_usmarc($results_hashref->{biblioserver}->{RECORDS}->[0])->title_proper(), 'Salud y seguridad de los trabajadores del sector salud: manual para gerentes y administradores^ies', "Weighted query returns best match first");
+        is(MARC::Record::new_from_xml($results_hashref->{biblioserver}->{RECORDS}->[0],'UTF-8')->title_proper(), 'Salud y seguridad de los trabajadores del sector salud: manual para gerentes y administradores^ies', "Weighted query returns best match first");
     }
 
     $QueryStemming = $QueryWeightFields = $QueryFuzzy = $QueryRemoveStopwords = 0;
@@ -775,6 +824,15 @@ sub run_marc21_search_tests {
     );
     is($count, 1, 'MARC21 authorities: one hit on match contains "沙士北亞威廉姆" (QP)');
 
+    # retrieve records that are larger than the MARC limit of 99,999 octets
+    ( undef, $results_hashref, $facets_loop ) =
+        getRecords('ti:marc the large record', '', [], [ 'biblioserver' ], '20', 0, undef, \%branches, \%itemtypes, 'ccl', undef);
+    is($results_hashref->{biblioserver}->{hits}, 1, "Can do a search that retrieves an over-large bib record (bug 11096)");
+    @newresults = searchResults('opac', $query_desc, $results_hashref->{'biblioserver'}->{'hits'}, 10, 0, 0,
+        $results_hashref->{'biblioserver'}->{"RECORDS"});
+    is($newresults[0]->{title}, 'Marc the Large Record', 'Able to render the title for over-large bib record (bug 11096)');
+    is($newresults[0]->{biblionumber}, '300', 'Over-large bib record has the correct biblionumber (bug 11096)');
+    like($newresults[0]->{notes}, qr/This is large note #550/, 'Able to render the notes field for over-large bib record (bug 11096)');
 
     cleanup();
 }
@@ -850,10 +908,24 @@ sub run_unimarc_search_tests {
     cleanup();
 }
 
-run_marc21_search_tests('grs1');
-run_marc21_search_tests('dom');
+subtest 'MARC21 + GRS-1' => sub {
+    plan tests => 103;
+    run_marc21_search_tests('grs1');
+};
 
-run_unimarc_search_tests('grs1');
-run_unimarc_search_tests('dom');
+subtest 'MARC21 + DOM' => sub {
+    plan tests => 103;
+    run_marc21_search_tests('dom');
+};
+
+subtest 'UNIMARC + GRS-1' => sub {
+    plan tests => 13;
+    run_unimarc_search_tests('grs1');
+};
+
+subtest 'UNIMARC + DOM' => sub {
+    plan tests => 13;
+    run_unimarc_search_tests('dom');
+};
 
 1;

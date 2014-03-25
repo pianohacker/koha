@@ -1,5 +1,5 @@
-define( [ 'marc-record', 'koha-backend', 'preferences', 'text-marc', 'widget-utils' ], function( MARC, KohaBackend, Preferences, TextMARC, Widget ) {
-    var NOTIFY_TIMEOUT = 100;
+define( [ 'marc-record', 'koha-backend', 'preferences', 'text-marc', 'widget' ], function( MARC, KohaBackend, Preferences, TextMARC, Widget ) {
+    var NOTIFY_TIMEOUT = 250;
 
     function editorCursorActivity( cm ) {
         var editor = cm.marceditor;
@@ -211,6 +211,9 @@ define( [ 'marc-record', 'koha-backend', 'preferences', 'text-marc', 'widget-uti
         this.cm.on( 'cursorActivity', editorCursorActivity );
 
         this.subscribers = [];
+        this.subscribe( function( marceditor ) {
+            Widget.Notify( marceditor );
+        } );
     }
 
     MARCEditor.prototype.setUseWidgets = function( val ) {
@@ -315,6 +318,23 @@ define( [ 'marc-record', 'koha-backend', 'preferences', 'text-marc', 'widget-uti
         }
     };
 
+    MARCEditor.prototype.getFixedField = function(field) {
+        field += ' ';
+        for ( var line = 0; line < this.cm.lineCount(); line++ ) {
+            var contents = this.cm.getLine(line);
+            if ( contents.substr( 0, 4 ) != field ) continue;
+
+            var marks = this.cm.findMarksAt( { line: line, ch: 4 } );
+            if ( marks[0] && marks[0].widget ) {
+                return marks[0].widget.text;
+            } else {
+                return contents.substr(4);
+            }
+        }
+
+        return null;
+    };
+
     MARCEditor.prototype.startNotify = function() {
         if ( this.notifyTimeout ) clearTimeout( this.notifyTimeout );
         this.notifyTimeout = setTimeout( $.proxy( function() {
@@ -326,10 +346,12 @@ define( [ 'marc-record', 'koha-backend', 'preferences', 'text-marc', 'widget-uti
 
     MARCEditor.prototype.notifyAll = function() {
         $.each( this.subscribers, $.proxy( function( undef, subscriber ) {
+            subscriber(this);
         }, this ) );
     };
 
-    MARCEditor.prototype.subscribe = function() {
+    MARCEditor.prototype.subscribe = function( subscriber ) {
+        this.subscribers.push( subscriber );
     };
 
     return MARCEditor;

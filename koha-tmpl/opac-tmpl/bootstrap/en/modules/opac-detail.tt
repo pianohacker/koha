@@ -513,7 +513,7 @@
 
                     <ul>
                         [% IF ( defaulttab == 'holdings' ) %]
-                            <li id="tab_holdings" class="ui-tabs-selected">
+                            <li id="tab_holdings" class="ui-tabs-active">
                         [% ELSE %]
                             <li id="tab_holdings">
                         [% END %]
@@ -555,7 +555,7 @@
                         [% END %]
 
                         [% IF ( subscriptionsnumber ) %]
-                            [% IF ( defaulttab == 'subscriptions' ) %]<li id="tab_subscriptions" class="ui-tabs-selected">[% ELSE %]<li id="tab_subscriptions">[% END %]
+                            [% IF ( defaulttab == 'subscriptions' ) %]<li id="tab_subscriptions" class="ui-tabs-active">[% ELSE %]<li id="tab_subscriptions">[% END %]
                                 <a href="#subscriptions">Subscriptions</a>
                             </li>
                         [% END %]
@@ -575,7 +575,7 @@
                         [% END %]
 
                         [% IF ( serialcollection ) %]
-                            [% IF ( defaulttab == 'serialcollection' ) %]<li id="tab_serialcollection" class="ui-tabs-selected">[% ELSE %]<li id="tab_serialcollection">[% END %]
+                            [% IF ( defaulttab == 'serialcollection' ) %]<li id="tab_serialcollection" class="ui-tabs-active">[% ELSE %]<li id="tab_serialcollection">[% END %]
                                 <a href="#serialcollection">Serial collection</a>
                             </li>
                         [% END %]
@@ -600,7 +600,7 @@
                                 <tr>
                                     <th id="serial_library">Library</th>
                                     <th id="serial_collection">Serial collection</th>
-                                    <th id="serial_itemcallnumber">Item callnumber</th>
+                                    <th id="serial_itemcallnumber">Item call number</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -767,7 +767,7 @@
                                 [% IF ( subscription.closed ) %]
                                     <p>This subscription is closed.</p>
                                 [% END %]
-                                <span style="display:none;"> [% IF ( subscription.callnumber ) %]<p>Callnumber: [% subscription.callnumber %]</p>[% END %]</span>
+                                <span style="display:none;"> [% IF ( subscription.callnumber ) %]<p>Call number: [% subscription.callnumber %]</p>[% END %]</span>
                                 [% IF ( subscription.subscriptionnotes ) %]
                                     <p>[% subscription.subscriptionnotes FILTER html_line_break %] </p>
                                 [% END %]
@@ -777,6 +777,9 @@
                                 [% END %]
                                 [% IF ( subscription.opacnote ) %]
                                     <p>[% subscription.opacnote FILTER html_line_break %]</p>
+                                [% END %]
+                                [% IF ( subscription.callnumber ) %]
+                                  <p>Call number: [% subscription.callnumber %]</p>
                                 [% END %]
                                 [% IF ( subscription.latestserials ) %]
                                     <p> The [% subscription.opacdisplaycount %] latest issues for this subscription:</p>
@@ -1021,14 +1024,16 @@
                         </div>
                         <ul class="pg_menu clearfix">
                             <li class="left_results">
-                                [% IF ( previous ) %]<a href="[% previous |url %]" title="See: [% IF ( previousTitle ) %][% previousTitle |html %][% ELSE %]previous biblio[% END %]">&laquo; Previous</a>
+                                [% IF ( previousBiblionumber ) %]
+                                    <a href="opac-detail.pl?biblionumber=[% previousBiblionumber %][% IF ( query_desc && OpacHighlightedWords ) %]&query_desc=[% query_desc |uri %][% END %]" title="See: [% IF ( previousTitle ) %][% previousTitle |html %][% ELSE %]previous biblio[% END %]">&laquo; Previous</a>
                                 [% ELSE %]
                                     <span>Previous</span>
                                 [% END %]
                             </li>
                             <li class="back_results"><a href="opac-search.pl?[% busc |url %]" title="Back to the results search list">Back to results</a></li>
                             <li class="right_results">
-                                [% IF ( next ) %]<a href="[% next %]" title="See: [% IF ( nextTitle ) %][% nextTitle |html %][% ELSE %]next biblio[% END %]">Next &raquo;</a>
+                                [% IF ( nextBiblionumber ) %]
+                                    <a href="opac-detail.pl?biblionumber=[% nextBiblionumber %][% IF ( query_desc && OpacHighlightedWords ) %]&query_desc=[% query_desc |uri %][% END %]" title="See: [% IF ( nextTitle ) %][% nextTitle |html %][% ELSE %]next biblio[% END %]">Next &raquo;</a>
                                 [% ELSE %]
                                     <span>Next</span>
                                 [% END %]
@@ -1252,7 +1257,12 @@
         var pag_index_ini = [% indexPag %];
         [% IF ( listResults ) %]
             [% FOREACH listResult IN listResults %]
-                arrPagination[[% listResult.index %]] = {url:"[% listResult.url %]", title:"[% listResult.title|remove('\n')|html %]", author:"[% listResult.author|html %]", biblionumber:[% listResult.biblionumber %]};
+                arrPagination[[% listResult.index %]] = {
+                    url:"[% listResult.url %][% IF ( listResult.url && query_desc && OpacHighlightedWords ) %]&query_desc=[% query_desc |uri %][% END %]",
+                    title:"[% listResult.title|remove('\n')|html %]",
+                    author:"[% listResult.author|html %]",
+                    biblionumber:[% listResult.biblionumber %]
+                };
            [% END %]
         [% END %]
     [% END %]

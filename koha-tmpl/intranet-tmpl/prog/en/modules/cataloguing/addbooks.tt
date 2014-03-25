@@ -15,6 +15,11 @@
             PopupZ3950($(this).prop('id'));
             return false;
         });
+
+        $("#useadvanced").click(function(){
+            $.cookie( 'catalogue_editor_[% USER_INFO.0.borrowernumber %]', 'advanced', { expires: 365, path: '/' } );
+            return true;
+        });
      });
 
     /* this function open a popup to search on z3950 server.  */
@@ -48,6 +53,7 @@
 
 [% IF ( CAN_user_editcatalogue_edit_catalogue ) %]
   <div id="toolbar" class="btn-toolbar">
+        <a id="useadvanced" href="/cgi-bin/koha/cataloguing/editor.pl" class="btn btn-small"><i class="icon-edit"></i> Advanced editor</a>
         <div class="btn-group">
             <button class="btn btn-small dropdown-toggle" data-toggle="dropdown"><i class="icon-plus"></i> New record <span class="caret"></span></button>
             <ul class="dropdown-menu">

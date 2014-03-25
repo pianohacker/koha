@@ -1,4 +1,4 @@
-define( [ '/cgi-bin/koha/svc/cataloguing/framework?frameworkcode=&amp;callback=define', 'marc-record' ], function( defaultFramework, MARC ) {
+define( [ '/cgi-bin/koha/svc/cataloguing/framework?frameworkcode=&callback=define', 'marc-record' ], function( defaultFramework, MARC ) {
     var _authorised_values = defaultFramework.authorised_values;
     var _frameworks = {};
     var _framework_mappings = {};
@@ -61,12 +61,11 @@ define( [ '/cgi-bin/koha/svc/cataloguing/framework?frameworkcode=&amp;callback=d
                 record.loadMARCXML(data);
                 callback(record);
             } ).fail( function( data ) {
-                alert('Record load failed.');
+                callback( { data: { error: data } } );
             } );
         },
 
         CreateRecord: function( record, callback ) {
-            console.log( record );
             $.ajax( {
                 type: 'POST',
                 url: '/cgi-bin/koha/svc/new_bib',
@@ -75,12 +74,11 @@ define( [ '/cgi-bin/koha/svc/cataloguing/framework?frameworkcode=&amp;callback=d
             } ).done( function( data ) {
                 callback( _fromXMLStruct( data ) );
             } ).fail( function( data ) {
-                alert('Record save failed.');
+                callback( { error: data } );
             } );
         },
 
         SaveRecord: function( id, record, callback ) {
-            console.log( record );
             $.ajax( {
                 type: 'POST',
                 url: '/cgi-bin/koha/svc/bib/' + id,
@@ -89,7 +87,7 @@ define( [ '/cgi-bin/koha/svc/cataloguing/framework?frameworkcode=&amp;callback=d
             } ).done( function( data ) {
                 callback( _fromXMLStruct( data ) );
             } ).fail( function( data ) {
-                console.log( data );
+                callback( { data: { error: data } } );
             } );
         },
 

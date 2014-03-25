@@ -1,0 +1,6 @@
+Tools:
+    -
+        - Process up to
+        - pref: MaxItemsForBatch
+          class: integer
+        - items in a single modification or deletion batch.
