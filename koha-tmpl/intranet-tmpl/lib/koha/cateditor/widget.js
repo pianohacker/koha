@@ -4,6 +4,7 @@ define( function() {
             // Marker utils
             clearToText: function() {
                 var range = this.mark.find();
+                if ( this.text == null ) throw new Error('Tried to clear widget with no text');
                 this.mark.doc.replaceRange( this.text, range.from, range.to, 'marcAware' );
             },
 

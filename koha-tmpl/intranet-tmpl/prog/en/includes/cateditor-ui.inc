@@ -75,6 +75,10 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
         $.each( KohaBackend.GetAllTagsInfo( frameworkCode ), function( tag, tagInfo ) {
             $.each( tagInfo.subfields, function( subfield, subfieldInfo ) {
                 if ( !subfieldInfo.authorised_value ) return;
+                var authvals = KohaBackend.GetAuthorisedValues( subfieldInfo.authorised_value );
+                if ( !authvals ) return;
+
+                var defaultvalue = subfield.defaultvalue || authvals[0].value;
 
                 var authorisedWidget = {
                     init: function() {
@@ -83,19 +87,22 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
                         return $result[0];
                     },
                     postCreate: function() {
-                        this.setText( subfieldInfo.defaultvalue );
+                        this.setText( defaultvalue );
 
                         $( '<select></select>' ).appendTo( this.node );
                         var $node = $( this.node ).find( 'select' );
-                        $.each( KohaBackend.GetAuthorisedValues( subfieldInfo.authorised_value ), function( undef, authval ) {
-                            $node.append( '<option value="' + authval.value + '">' + authval.lib + '</option>' );
+                        $.each( authvals, function( undef, authval ) {
+                            $node.append( '<option value="' + authval.value + '"' + (authval.value == defaultvalue ? ' selected="selected"' : '') + '>' + authval.lib + '</option>' );
                         } );
                         $node.val( this.text );
 
                         $node.change( $.proxy( function() {
                             this.setText( $node.val() );
                         }, this ) );
-                    }
+                    },
+                    makeTemplate: function() {
+                        return defaultvalue;
+                    },
                 };
 
                 editorWidgets[ tag + subfield ] = authorisedWidget;
