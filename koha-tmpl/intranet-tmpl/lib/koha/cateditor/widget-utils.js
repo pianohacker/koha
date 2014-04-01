@@ -66,6 +66,8 @@ define( function() {
             return true;
         },
 
+	Notify: function() {},
+
         UpdateLine: function( editor, line ) {
             var info = editor.getLineInfo( { line: line, ch: 0 } );
             var lineh = editor.cm.getLineHandle( line );

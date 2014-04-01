@@ -12,6 +12,7 @@ require.config( {
     shim: {
         pz2: { exports: 'pz2' },
     },
+    waitSeconds: 60,
 } );
 </script>
 
@@ -43,7 +44,7 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
                 'syntax': '[% target.syntax %]',
                 'kohasyntax': '[% target.syntax == 'USMARC' ? 'MARC21' : target.syntax %]',
                 'encoding': '[% target.encoding %]',
-                'checked': [% target.checked ? 'true' : 'false' %],
+                'disabled': [% target.checked ? 'false' : 'true' %],
             },
         [% END %]
     };
@@ -236,7 +237,7 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
         } else {
             $( '#title' ).text( backend.titleForRecord.replace( '{ID}', parts[1] ) );
         }
-        $( 'title', document.head ).html( _("Koha &rsaquo; Cataloging &rsaquo; Editing ") + backend.titleForRecord.replace( '{ID}', parts[1] ) );
+        $( 'title', document.head ).html( _("Koha &rsaquo; Cataloging &rsaquo; ") + backend.titleForRecord.replace( '{ID}', parts[1] ) );
         $( '#save-record span' ).text( backends[ state.saveBackend ].saveLabel );
     }
 
@@ -444,7 +445,7 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
         $('#search-targetsinfo').empty();
 
         $.each( data, function( undef, target ) {
-            $('#search-targetsinfo').append( '<li>' + target.name + ' (' + target.hits + ')' + '</li>' );
+            $('#search-targetsinfo').append( '<li>' + target.name + ' (' + (target.hits == 'Error' ? 0 : target.hits) + ')' + '</li>' );
         } );
     }
 
