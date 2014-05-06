@@ -1,7 +1,6 @@
 [% INCLUDE 'doc-head-open.inc' %]
 <title>Koha &rsaquo; Cataloging &rsaquo; Editor</title>
 [% INCLUDE 'doc-head-close.inc' %]
-<script type="text/javascript" src="[% themelang %]/lib/jquery/plugins/jquery.fixFloat.js"></script>
 <link type="text/css" rel="stylesheet" href="[% themelang %]/css/cateditor.css" />
 <link type="text/css" rel="stylesheet" href="/intranet-tmpl/lib/codemirror/codemirror.css" />
 <link rel="stylesheet" type="text/css" href="[% themelang %]/css/humanmsg.css" />
