@@ -406,8 +406,8 @@ sub nb_rows {
 This function returns a DBI statement handler from which the caller can
 fetch the results of the SQL passed via C<$sql>.
 
-If passed any query other than a SELECT, or if there is a db error,
-C<$errors> an array ref is returned containing the error after this
+If passed any query other than a SELECT, or if there is a DB error,
+C<$errors> is returned, and is a hashref containing the error after this
 manner:
 
 C<$error->{'sqlerr'}> contains the offending SQL keyword.
@@ -512,6 +512,7 @@ sub execute_query {
 
     my $sth = C4::Context->dbh->prepare($sql);
     $sth->execute(@$sql_params, $offset, $limit);
+    return ( $sth, { queryerr => $sth->errstr } ) if ($sth->err);
     return ( $sth );
     # my @xmlarray = ... ;
     # my $url = "/cgi-bin/koha/reports/guided_reports.pl?phase=retrieve%20results&id=$id";

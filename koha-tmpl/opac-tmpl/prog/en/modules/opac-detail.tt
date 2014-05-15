@@ -17,6 +17,13 @@
     [% END %]
 [% END %]
 
+[% IF ( using_https ) %]
+    [% SET protocol = "https://" %]
+    [% SET root_syndetics = "secure" %]
+[% ELSE %]
+    [% SET protocol = "http://" %]
+    [% SET root_syndetics = "www" %]
+[% END %]
 [% INCLUDE 'doc-head-open.inc' %][% IF ( LibraryNameTitle ) %][% LibraryNameTitle %][% ELSE %]Koha online[% END %] catalog &rsaquo; Details for: [% title |html %][% FOREACH subtitl IN subtitle %], [% subtitl.subfield |html %][% END %]
 [% INCLUDE 'doc-head-close.inc' %]
 [% INCLUDE 'datatables.inc' %]
@@ -537,12 +544,21 @@ YAHOO.util.Event.onContentReady("furtherm", function () {
 
     <div id="bookcover">
     [% IF ( OPACLocalCoverImages ) %]<div style="block" title="[% biblionumber |url %]" class="[% biblionumber %]" id="local-thumbnail-preview"></div>[% END %]
-    [% IF ( OPACAmazonCoverImages ) %][% IF ( OPACurlOpenInNewWindow ) %]<a href="http://www.amazon[% AmazonTld %]/gp/reader/[% normalized_isbn %]/ref=sib_dp_pt/002-7879865-0184864#reader-link" target="_blank"><img border="0" src="http://images.amazon.com/images/P/[% normalized_isbn %].01.MZZZZZZZ.jpg" alt="Cover image" /></a>[% ELSE %]<a href="http://www.amazon[% AmazonTld %]/gp/reader/[% normalized_isbn %]/ref=sib_dp_pt/002-7879865-0184864#reader-link"><img border="0" src="http://images.amazon.com/images/P/[% normalized_isbn %].01.MZZZZZZZ.jpg" alt="Cover image" /></a>[% END %][% END %]
+    [% IF ( OPACAmazonCoverImages ) %]
+        [% IF ( OPACurlOpenInNewWindow ) %]
+            <a href="http://www.amazon[% AmazonTld %]/dp/[% normalized_isbn %]" target="_blank">
+        [% ELSE %]
+            <a href="http://www.amazon[% AmazonTld %]/dp/[% normalized_isbn %]">
+        [% END %]
+        [% IF ( using_https ) %]
+            <img border="0" src="https://images-na.ssl-images-amazon.com/images/P/[% normalized_isbn %].01.MZZZZZZZ.jpg" alt="Cover image" /></a>
+        [% ELSE %]
+            <img border="0" src="http://images.amazon.com/images/P/[% normalized_isbn %].01.MZZZZZZZ.jpg" alt="Cover image" /></a>
+        [% END %]
+    [% END %]
 
-    [% IF ( SyndeticsEnabled ) %][% IF ( SyndeticsCoverImages ) %][% IF ( content_identifier_exists ) %][% IF ( using_https ) %]
-    <img src="https://secure.syndetics.com/index.aspx?isbn=[% normalized_isbn %]/[% SyndeticsCoverImageSize %].GIF&amp;client=[% SyndeticsClientCode %]&amp;type=xw10&amp;upc=[% normalized_upc %]&amp;oclc=[% normalized_oclc %]" alt="" class="thumbnail" />
-    [% ELSE %]
-    <img src="http://www.syndetics.com/index.aspx?isbn=[% normalized_isbn %]/[% SyndeticsCoverImageSize %].GIF&amp;client=[% SyndeticsClientCode %]&amp;type=xw10&amp;upc=[% normalized_upc %]&amp;oclc=[% normalized_oclc %]" alt="" class="thumbnail" />[% END %]
+    [% IF ( SyndeticsEnabled ) %][% IF ( SyndeticsCoverImages ) %][% IF ( content_identifier_exists ) %]
+        <img src="[% protocol %][% root_syndetics %].syndetics.com/index.aspx?isbn=[% normalized_isbn %]/[% SyndeticsCoverImageSize %].GIF&amp;client=[% SyndeticsClientCode %]&amp;type=xw10&amp;upc=[% normalized_upc %]&amp;oclc=[% normalized_oclc %]" alt="" class="thumbnail" />
 
     [% ELSE %]<span class="no-image">No cover image available</span>[% END %][% END %][% END %]
 
@@ -839,39 +855,26 @@ YAHOO.util.Event.onContentReady("furtherm", function () {
 
         [% IF ( SyndeticsEnabled ) %][% IF ( SyndeticsSeries ) %][% IF ( SyndeticsSERIES1Exists ) %]
         <span class="results_summary">
-        <span class="label">Series information:</span>
-
-        [% IF ( using_https ) %]<a target="_blank" href="https://secure.syndetics.com/ffseries.aspx?isbn=[% normalized_isbn %]&amp;type=series&amp;num=1&amp;client=[% SyndeticsClientCode %][% IF ( normalized_upc ) %]&amp;upc=[% normalized_upc %][% END %][% IF ( normalized_oclc ) %]&amp;oclc=[% normalized_oclc %][% END %]">Click to open in new window</a>
-        [% ELSE %]
-        <a target="_blank" href="http://www.syndetics.com/ffseries.aspx?isbn=[% normalized_isbn %]&amp;type=series&amp;num=1&amp;client=[% SyndeticsClientCode %][% IF ( normalized_upc ) %]&amp;upc=[% normalized_upc %][% END %][% IF ( normalized_oclc ) %]&amp;oclc=[% normalized_oclc %][% END %]">Click to open in new window</a>
-        [% END %]
+            <span class="label">Series information:</span>
+            <a target="_blank" href="[% protocol %][% root_syndetics %].syndetics.com/ffseries.aspx?isbn=[% normalized_isbn %]&amp;type=series&amp;num=1&amp;client=[% SyndeticsClientCode %][% IF ( normalized_upc ) %]&amp;upc=[% normalized_upc %][% END %][% IF ( normalized_oclc ) %]&amp;oclc=[% normalized_oclc %][% END %]">Click to open in new window</a>
         </span>
         [% END %][% END %]
         [% IF ( SyndeticsAVPROFILEExists ) %]
         <span class="results_summary">
-        <span class="label">Audiovisual profile:</span>
-        [% IF ( using_https ) %]<a target="_blank" href="https://secure.syndetics.com/index.aspx?isbn=[% normalized_isbn %]/avprofile.html&amp;client=[% SyndeticsClientCode %][% IF ( normalized_upc ) %]&amp;upc=[% normalized_upc %][% END %][% IF ( normalized_oclc ) %]&amp;oclc=[% normalized_oclc %][% END %]&amp;type=xw10">Click to open in new window</a>
-        [% ELSE %]
-        <a target="_blank" href="http://www.syndetics.com/index.aspx?isbn=[% normalized_isbn %]/avprofile.html&amp;client=[% SyndeticsClientCode %][% IF ( normalized_upc ) %]&amp;upc=[% normalized_upc %][% END %][% IF ( normalized_oclc ) %]&amp;oclc=[% normalized_oclc %][% END %]&amp;type=xw10">Click to open in new window</a>
-        [% END %]
+            <span class="label">Audiovisual profile:</span>
+            <a target="_blank" href="[% protocol %][% root_syndetics %].syndetics.com/index.aspx?isbn=[% normalized_isbn %]/avprofile.html&amp;client=[% SyndeticsClientCode %][% IF ( normalized_upc ) %]&amp;upc=[% normalized_upc %][% END %][% IF ( normalized_oclc ) %]&amp;oclc=[% normalized_oclc %][% END %]&amp;type=xw10">Click to open in new window</a>
         </span>
         [% END %]
         [% IF ( SyndeticsFICTIONExists ) %]
         <span class="results_summary">
-        <span class="label">Fiction notes:</span>
-        [% IF ( using_https ) %]<a target="_blank" href="https://secure.syndetics.com/index.aspx?isbn=[% normalized_isbn %]/fiction.html&amp;client=[% SyndeticsClientCode %][% IF ( normalized_upc ) %]&amp;upc=[% normalized_upc %][% END %][% IF ( normalized_oclc ) %]&amp;oclc=[% normalized_oclc %][% END %]&amp;type=xw10">Click to open in new window</a>
-        [% ELSE %]
-        <a target="_blank" href="http://www.syndetics.com/index.aspx?isbn=[% normalized_isbn %]/fiction.html&amp;client=[% SyndeticsClientCode %][% IF ( normalized_upc ) %]&amp;upc=[% normalized_upc %][% END %][% IF ( normalized_oclc ) %]&amp;oclc=[% normalized_oclc %][% END %]&amp;type=xw10">Click to open in new window</a>
-        [% END %]
+            <span class="label">Fiction notes:</span>
+            <a target="_blank" href="[% protocol %][% root_syndetics %].syndetics.com/index.aspx?isbn=[% normalized_isbn %]/fiction.html&amp;client=[% SyndeticsClientCode %][% IF ( normalized_upc ) %]&amp;upc=[% normalized_upc %][% END %][% IF ( normalized_oclc ) %]&amp;oclc=[% normalized_oclc %][% END %]&amp;type=xw10">Click to open in new window</a>
         </span>
         [% END %]
         [% IF ( SyndeticsAwards ) %][% IF ( SyndeticsAWARDS1Exists ) %]
         <span class="results_summary">
-        <span class="label">Awards:</span>
-        [% IF ( using_https ) %]
-        <a target="_blank" href="https://secure.syndetics.com/ffawards.aspx?isbn=[% normalized_isbn %]&amp;type=awards&amp;client=[% SyndeticsClientCode %][% IF ( normalized_upc ) %]&amp;upc=[% normalized_upc %][% END %][% IF ( normalized_oclc ) %]&amp;oclc=[% normalized_oclc %][% END %]">Click to open in new window</a>
-        [% ELSE %]<a target="_blank" href="http://www.syndetics.com/ffawards.aspx?isbn=[% normalized_isbn %]&amp;type=awards&amp;client=[% SyndeticsClientCode %][% IF ( normalized_upc ) %]&amp;upc=[% normalized_upc %][% END %][% IF ( normalized_oclc ) %]&amp;oclc=[% normalized_oclc %][% END %]">Click to open in new window</a>
-        [% END %]
+            <span class="label">Awards:</span>
+            <a target="_blank" href="[% protocol %][% root_syndetics %].syndetics.com/ffawards.aspx?isbn=[% normalized_isbn %]&amp;type=awards&amp;client=[% SyndeticsClientCode %][% IF ( normalized_upc ) %]&amp;upc=[% normalized_upc %][% END %][% IF ( normalized_oclc ) %]&amp;oclc=[% normalized_oclc %][% END %]">Click to open in new window</a>
         </span>
         [% END %][% END %][% END %]
 
@@ -961,13 +964,8 @@ YAHOO.util.Event.onContentReady("furtherm", function () {
     [% IF ( SyndeticsReviews ) %][% IF ( SYNDETICS_REVIEWS ) %]
         <li id="tab_reviews"> <a href="#reviews">Reviews</a></li>
         <li id="tab_LTFLreviews">
-            [% IF ( using_https ) %]
-                <script src="https://www.librarything.com/forlibraries/widget.js?id=[% LibraryThingForLibrariesID %]" type="text/javascript"></script>
-                <noscript>This page contains enriched content visible when JavaScript is enabled or by clicking <a href="https://www.librarything.com/forlibraries/noscript.php?id=99-274208589&amp;accessibility=1">here</a>.</noscript>
-            [% ELSE %]
-                <script src="http://www.librarything.com/forlibraries/widget.js?id=[% LibraryThingForLibrariesID %]" type="text/javascript"></script>
-                <noscript>This page contains enriched content visible when JavaScript is enabled or by clicking <a href="http://www.librarything.com/forlibraries/noscript.php?id=99-274208589&amp;accessibility=1">here</a>.</noscript>
-            [% END %]
+            <script src="[% protocol %]www.librarything.com/forlibraries/widget.js?id=[% LibraryThingForLibrariesID %]" type="text/javascript"></script>
+            <noscript>This page contains enriched content visible when JavaScript is enabled or by clicking <a href="[% protocol %]www.librarything.com/forlibraries/noscript.php?id=[% LibraryThingForLibrariesID %]&amp;accessibility=1">here</a>.</noscript>
         </li>
     [% END %][% END %]
     [% IF ( SyndeticsAuthorNotes ) %][% IF ( SYNDETICS_ANOTES ) %]
@@ -1338,9 +1336,7 @@ YAHOO.util.Event.onContentReady("furtherm", function () {
 [% IF ( OPACAmazonCoverImages ) %]<img src="http://images.amazon.com/images/P/[% XISBN.normalized_isbn %].01._AA75_PU_PU-5_.jpg" alt="" />[% END %]
 
 [% IF ( SyndeticsEnabled ) %][% IF ( SyndeticsCoverImages ) %][% IF ( XISBN.content_identifier_exists ) %]
-[% IF ( using_https ) %]
-<img border="0" src="https://secure.syndetics.com/index.aspx?isbn=[% XISBN.browser_normalized_isbn %]/SC.GIF&amp;client=[% SyndeticsClientCode %][% IF ( XISBN.browser_normalized_upc ) %]&amp;upc=[% XISBN.browser_normalized_upc %][% END %][% IF ( XISBN.browser_normalized_oclc ) %]&amp;oclc=[% XISBN.browser_normalized_oclc %][% END %]&amp;type=xw10" alt="" />
-[% ELSE %]<img border="0" src="http://www.syndetics.com/index.aspx?isbn=[% XISBN.browser_normalized_isbn %]/SC.GIF&amp;client=[% SyndeticsClientCode %][% IF ( XISBN.browser_normalized_upc ) %]&amp;upc=[% XISBN.browser_normalized_upc %][% END %][% IF ( XISBN.browser_normalized_oclc ) %]&amp;oclc=[% XISBN.browser_normalized_oclc %][% END %]&amp;type=xw10" alt="" />[% END %]
+    <img border="0" src="[% protocol %][% root_syndetics %].syndetics.com/index.aspx?isbn=[% XISBN.browser_normalized_isbn %]/SC.GIF&amp;client=[% SyndeticsClientCode %][% IF ( XISBN.browser_normalized_upc ) %]&amp;upc=[% XISBN.browser_normalized_upc %][% END %][% IF ( XISBN.browser_normalized_oclc ) %]&amp;oclc=[% XISBN.browser_normalized_oclc %][% END %]&amp;type=xw10" alt="" />
 [% ELSE %]<span class="no-image">No cover image available</span>[% END %][% END %][% END %]
 
 </td>
@@ -1470,10 +1466,10 @@ YAHOO.util.Event.onContentReady("furtherm", function () {
 [% IF ( SocialNetworks ) %]
     <div id="social_networks">
         <span>Share</span>
-        <div><a id="facebook" href="http://www.facebook.com/sharer.php?u=[% current_url |url %]&amp;t=[% title |url %]" title="Share on Facebook">Facebook</a></div>
-        <div><a id="linkedin" href="http://www.linkedin.com/shareArticle?mini=true&amp;url=[% current_url |url %]&amp;title=[% title |url %]" title="Share on LinkedIn">LinkedIn</a></div>
-        <div><a id="delicious" href="http://www.delicious.com/save?url=[% current_url |url %]&amp;title=[% title |url %]" title="Share on Delicious">Delicious</a></div>
-        <div><a id="email" href="mailto:?subject=[% title |url %]&amp;body=[% title |url %] ([% current_url |url %])" title="Share by email">Email</a></div>
+        <div><a id="facebook" href="http://www.facebook.com/sharer.php?u=[% protocol %][% current_url |url %]&amp;t=[% title |url %]" title="Share on Facebook">Facebook</a></div>
+        <div><a id="linkedin" href="http://www.linkedin.com/shareArticle?mini=true&amp;url=[% protocol %][% current_url |url %]&amp;title=[% title |url %]" title="Share on LinkedIn">LinkedIn</a></div>
+        <div><a id="delicious" href="http://www.delicious.com/save?url=[% protocol %][% current_url |url %]&amp;title=[% title |url %]" title="Share on Delicious">Delicious</a></div>
+        <div><a id="email" href="mailto:?subject=[% title |url %]&amp;body=[% title |url %] ([% protocol %][% current_url |url %])" title="Share by email">Email</a></div>
         <div><g:plusone size="small" annotation="none"></g:plusone></div>
         <div><a id="twitter" href="https://twitter.com/share" class="twitter-share-button" data-count="none" data-text="[% title %]" data-lang="[% lang %]">Tweet</a></div>
     </div>
@@ -1487,17 +1483,10 @@ YAHOO.util.Event.onContentReady("furtherm", function () {
 </div>
 </div>
 </div>
-[% IF ( LibraryThingForLibrariesID ) %] 
-[% IF ( using_https ) %]
-<script src="https://ltfl.librarything.com/forlibraries/widget.js?systype=koha&amp;id=[% LibraryThingForLibrariesID %]" type="text/javascript"></script>
-<noscript>This page contains enriched content visible when JavaScript is enabled or by clicking 
-<a href="https://www.librarything.com/forlibraries/noscript.php?id=[% LibraryThingForLibrariesID %]&amp;accessibility=1">here</a>.</noscript>
-[% ELSE %]
-<script src="http://ltfl.librarything.com/forlibraries/widget.js?systype=koha&amp;id=[% LibraryThingForLibrariesID %]" type="text/javascript"></script>
-<noscript>This page contains enriched content visible when JavaScript is enabled or by clicking 
-<a href="http://www.librarything.com/forlibraries/noscript.php?id=
-[% LibraryThingForLibrariesID %]&amp;accessibility=1">here</a>.</noscript>
-[% END %]
+[% IF ( LibraryThingForLibrariesID ) %]
+    <script src="[% protocol %]ltfl.librarything.com/forlibraries/widget.js?systype=koha&amp;id=[% LibraryThingForLibrariesID %]" type="text/javascript"></script>
+    <noscript>This page contains enriched content visible when JavaScript is enabled or by clicking
+    <a href="[% protocol %]www.librarything.com/forlibraries/noscript.php?id=[% LibraryThingForLibrariesID %]&amp;accessibility=1">here</a>.</noscript>
 [% END %]
 [% IF ( NovelistSelectProfile ) %]
 <script type="text/javascript" src="http://imageserver.ebscohost.com/novelistselect/ns2init.js"></script>
@@ -1581,7 +1570,7 @@ YAHOO.util.Event.onContentReady("furtherm", function () {
                [% IF ( itemdata_copynumber ) %]<td class="copynumber">[% ITEM_RESULT.copynumber %]</td>[% END %]
               <td class="status">[% INCLUDE 'item-status-schema-org.inc' item = ITEM_RESULT %][% INCLUDE 'item-status.inc' item = ITEM_RESULT %]</td>
              [% IF ( itemdata_itemnotes ) %]<td class="notes" property="description">[% ITEM_RESULT.itemnotes %]</td>[% END %]
-        <td class="date_due"><span title="[% ITEM_RESULT.datedue %]">[% ITEM_RESULT.datedue | $KohaDates %]</span></td>
+        <td class="date_due"><span title="[% ITEM_RESULT.datedue %]">[% ITEM_RESULT.datedue | $KohaDates as_due_date => 1 %]</span></td>
         [% IF ( OPACShowBarcode ) %]<td class="barcode" property="serialNumber">[% ITEM_RESULT.barcode %]</td>[% END %]
         [% IF holds_count.defined || show_priority %]
         <td class="holds_count">

@@ -38,13 +38,13 @@ use Carp;
 use vars qw($VERSION @ISA @EXPORT @EXPORT_OK %EXPORT_TAGS);
 
 BEGIN {
-	require Exporter;
-	# set the version for version checking
+    require Exporter;
+    # set the version for version checking
     $VERSION = 3.07.00.049;
-	@ISA = qw(Exporter);
-	@EXPORT = qw(
-	&GetLetters &GetPreparedLetter &GetWrappedLetter &addalert &getalert &delalert &findrelatedto &SendAlerts &GetPrintMessages
-	);
+    @ISA = qw(Exporter);
+    @EXPORT = qw(
+        &GetLetters &GetPreparedLetter &GetWrappedLetter &addalert &getalert &delalert &findrelatedto &SendAlerts &GetPrintMessages &GetMessageTransportTypes
+    );
 }
 
 =head1 NAME
@@ -98,20 +98,18 @@ $template->param(LETTERLOOP => \@letterloop);
 sub GetLetters {
 
     # returns a reference to a hash of references to ALL letters...
-    my $cat = shift;
+    my ( $cat ) = @_;
     my %letters;
     my $dbh = C4::Context->dbh;
     my $sth;
-    if (defined $cat) {
-        my $query = "SELECT * FROM letter WHERE module = ? ORDER BY name";
-        $sth = $dbh->prepare($query);
-        $sth->execute($cat);
-    }
-    else {
-        my $query = "SELECT * FROM letter ORDER BY name";
-        $sth = $dbh->prepare($query);
-        $sth->execute;
-    }
+    my $query = q{
+        SELECT * FROM letter WHERE 1
+    };
+    $query .= q{ AND module = ? } if defined $cat;
+    $query .= q{ GROUP BY code ORDER BY name};
+    $sth = $dbh->prepare($query);
+    $sth->execute((defined $cat ? $cat : ()));
+
     while ( my $letter = $sth->fetchrow_hashref ) {
         $letters{ $letter->{'code'} } = $letter->{'name'};
     }
@@ -125,7 +123,8 @@ sub GetLetters {
 #        short-term fix, our will work.
 our %letter;
 sub getletter {
-    my ( $module, $code, $branchcode ) = @_;
+    my ( $module, $code, $branchcode, $message_transport_type ) = @_;
+    $message_transport_type ||= 'email';
 
 
     if ( C4::Context->preference('IndependentBranches')
@@ -136,17 +135,22 @@ sub getletter {
     }
     $branchcode //= '';
 
-    if ( my $l = $letter{$module}{$code}{$branchcode} ) {
+    if ( my $l = $letter{$module}{$code}{$branchcode}{$message_transport_type} ) {
         return { %$l }; # deep copy
     }
 
     my $dbh = C4::Context->dbh;
-    my $sth = $dbh->prepare("select * from letter where module=? and code=? and (branchcode = ? or branchcode = '') order by branchcode desc limit 1");
-    $sth->execute( $module, $code, $branchcode );
+    my $sth = $dbh->prepare(q{
+        SELECT *
+        FROM letter
+        WHERE module=? AND code=? AND (branchcode = ? OR branchcode = '') AND message_transport_type = ?
+        ORDER BY branchcode DESC LIMIT 1
+    });
+    $sth->execute( $module, $code, $branchcode, $message_transport_type );
     my $line = $sth->fetchrow_hashref
       or return;
     $line->{'content-type'} = 'text/html; charset="UTF-8"' if $line->{is_html};
-    $letter{$module}{$code}{$branchcode} = $line;
+    $letter{$module}{$code}{$branchcode}{$message_transport_type} = $line;
     return { %$line };
 }
 
@@ -447,9 +451,10 @@ sub GetPreparedLetter {
     my $module      = $params{module} or croak "No module";
     my $letter_code = $params{letter_code} or croak "No letter_code";
     my $branchcode  = $params{branchcode} || '';
+    my $mtt         = $params{message_transport_type} || 'email';
 
-    my $letter = getletter( $module, $letter_code, $branchcode )
-        or warn( "No $module $letter_code letter"),
+    my $letter = getletter( $module, $letter_code, $branchcode, $mtt )
+        or warn( "No $module $letter_code letter transported by " . $mtt ),
             return;
 
     my $tables = $params{tables};
@@ -842,6 +847,24 @@ ENDSQL
     return $sth->fetchall_arrayref({});
 }
 
+=head2 GetMessageTransportTypes
+
+  my @mtt = GetMessageTransportTypes();
+
+  returns an arrayref of transport types
+
+=cut
+
+sub GetMessageTransportTypes {
+    my $dbh = C4::Context->dbh();
+    my $mtts = $dbh->selectcol_arrayref("
+        SELECT message_transport_type
+        FROM message_transport_types
+        ORDER BY message_transport_type
+    ");
+    return $mtts;
+}
+
 =head2 _add_attachements
 
 named parameters:
@@ -893,7 +916,7 @@ sub _get_unsent_messages {
 
     my $dbh = C4::Context->dbh();
     my $statement = << 'ENDSQL';
-SELECT mq.message_id, mq.borrowernumber, mq.subject, mq.content, mq.message_transport_type, mq.status, mq.time_queued, mq.from_address, mq.to_address, mq.content_type, b.branchcode
+SELECT mq.message_id, mq.borrowernumber, mq.subject, mq.content, mq.message_transport_type, mq.status, mq.time_queued, mq.from_address, mq.to_address, mq.content_type, b.branchcode, mq.letter_code
   FROM message_queue mq
   LEFT JOIN borrowers b ON b.borrowernumber = mq.borrowernumber
  WHERE status = ?
@@ -1001,11 +1024,33 @@ $content
 EOS
 }
 
+sub _is_duplicate {
+    my ( $message ) = @_;
+    my $dbh = C4::Context->dbh;
+    my $count = $dbh->selectrow_array(q|
+        SELECT COUNT(*)
+        FROM message_queue
+        WHERE message_transport_type = ?
+        AND borrowernumber = ?
+        AND letter_code = ?
+        AND CAST(time_queued AS date) = CAST(NOW() AS date)
+        AND status="sent"
+        AND content = ?
+    |, {}, $message->{message_transport_type}, $message->{borrowernumber}, $message->{letter_code}, $message->{content} );
+    return $count;
+}
+
 sub _send_message_by_sms {
     my $message = shift or return;
     my $member = C4::Members::GetMember( 'borrowernumber' => $message->{'borrowernumber'} );
 
     unless ( $member->{smsalertnumber} ) {
+        _set_message_status( { message_id => $message->{'message_id'},
+                               status     => 'failed' } );
+        return;
+    }
+
+    if ( _is_duplicate( $message ) ) {
         _set_message_status( { message_id => $message->{'message_id'},
                                status     => 'failed' } );
         return;

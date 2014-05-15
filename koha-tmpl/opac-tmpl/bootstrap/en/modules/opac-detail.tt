@@ -17,6 +17,11 @@
     [% END %]
 [% END %]
 
+[% IF ( using_https ) %]
+    [% SET protocol = "https://" %]
+[% ELSE %]
+    [% SET protocol = "http://" %]
+[% END %]
 [% INCLUDE 'doc-head-open.inc' %][% IF ( LibraryNameTitle ) %][% LibraryNameTitle %][% ELSE %]Koha online[% END %] catalog &rsaquo; Details for: [% title |html %][% FOREACH subtitl IN subtitle %], [% subtitl.subfield |html %][% END %]
 [% INCLUDE 'doc-head-close.inc' %]
 [% IF ( bidi ) %]
@@ -46,9 +51,14 @@
                     [% END %]
                     [% IF ( OPACAmazonCoverImages ) %]
                         [% IF ( OPACurlOpenInNewWindow ) %]
-                            <a href="http://www.amazon[% AmazonTld %]/gp/reader/[% normalized_isbn %]/ref=sib_dp_pt/002-7879865-0184864#reader-link" target="_blank"><img src="http://images.amazon.com/images/P/[% normalized_isbn %].01.MZZZZZZZ.jpg" alt="Cover image" /></a>
+                            <a href="http://www.amazon[% AmazonTld %]/gp/reader/[% normalized_isbn %]/ref=sib_dp_pt/002-7879865-0184864#reader-link" target="_blank">
                         [% ELSE %]
-                            <a href="http://www.amazon[% AmazonTld %]/gp/reader/[% normalized_isbn %]/ref=sib_dp_pt/002-7879865-0184864#reader-link"><img src="http://images.amazon.com/images/P/[% normalized_isbn %].01.MZZZZZZZ.jpg" alt="Cover image" /></a>
+                            <a href="http://www.amazon[% AmazonTld %]/dp/[% normalized_isbn %]">
+                        [% END %]
+                        [% IF ( using_https ) %]
+                            <img border="0" src="https://images-na.ssl-images-amazon.com/images/P/[% normalized_isbn %].01.MZZZZZZZ.jpg" alt="Cover image" /></a>
+                        [% ELSE %]
+                            <img border="0" src="http://images.amazon.com/images/P/[% normalized_isbn %].01.MZZZZZZZ.jpg" alt="Cover image" /></a>
                         [% END %]
                     [% END %]
 
@@ -537,10 +547,10 @@
                                 <li id="tab_LTFLreviews">
                                     [% IF ( using_https ) %]
                                         <script src="https://www.librarything.com/forlibraries/widget.js?id=[% LibraryThingForLibrariesID %]" type="text/javascript"></script>
-                                        <noscript>This page contains enriched content visible when JavaScript is enabled or by clicking <a href="https://www.librarything.com/forlibraries/noscript.php?id=99-274208589&amp;accessibility=1">here</a>.</noscript>
+                                        <noscript>This page contains enriched content visible when JavaScript is enabled or by clicking <a href="https://www.librarything.com/forlibraries/noscript.php?id=[% LibraryThingForLibrariesID %]&amp;accessibility=1">here</a>.</noscript>
                                     [% ELSE %]
                                         <script src="http://www.librarything.com/forlibraries/widget.js?id=[% LibraryThingForLibrariesID %]" type="text/javascript"></script>
-                                        <noscript>This page contains enriched content visible when JavaScript is enabled or by clicking <a href="http://www.librarything.com/forlibraries/noscript.php?id=99-274208589&amp;accessibility=1">here</a>.</noscript>
+                                        <noscript>This page contains enriched content visible when JavaScript is enabled or by clicking <a href="http://www.librarything.com/forlibraries/noscript.php?id=[% LibraryThingForLibrariesID %]&amp;accessibility=1">here</a>.</noscript>
                                     [% END %]
                                 </li>
                             [% END %]
@@ -1072,10 +1082,10 @@
                 [% IF ( SocialNetworks ) %]
                     <div id="social_networks" class="clearfix">
                         <span>Share</span>
-                        <div><a id="facebook" href="http://www.facebook.com/sharer.php?u=[% current_url |url %]&amp;t=[% title |url %]" title="Share on Facebook">Facebook</a></div>
-                        <div><a id="linkedin" href="http://www.linkedin.com/shareArticle?mini=true&amp;url=[% current_url |url %]&amp;title=[% title |url %]" title="Share on LinkedIn">LinkedIn</a></div>
-                        <div><a id="delicious" href="http://www.delicious.com/save?url=[% current_url |url %]&amp;title=[% title |url %]" title="Share on Delicious">Delicious</a></div>
-                        <div><a id="email" href="mailto:?subject=[% title |url %]&amp;body=[% title |url %]%20([% current_url |url %])" title="Share by email">Email</a></div>
+                        <div><a id="facebook" href="http://www.facebook.com/sharer.php?u=[% protocol %][% current_url |url %]&amp;t=[% title |url %]" title="Share on Facebook">Facebook</a></div>
+                        <div><a id="linkedin" href="http://www.linkedin.com/shareArticle?mini=true&amp;url=[% protocol %][% current_url |url %]&amp;title=[% title |url %]" title="Share on LinkedIn">LinkedIn</a></div>
+                        <div><a id="delicious" href="http://www.delicious.com/save?url=[% protocol %][% current_url |url %]&amp;title=[% title |url %]" title="Share on Delicious">Delicious</a></div>
+                        <div><a id="email" href="mailto:?subject=[% title |url %]&amp;body=[% title |url %]%20([% protocol %][% current_url |url %])" title="Share by email">Email</a></div>
                         <div><div class="g-plusone" data-size="small" data-count="false"></div></div>
                         <div><a id="twitter" href="https://twitter.com/share" class="twitter-share-button" data-count="none" data-text="[% title %]" data-lang="[% lang %]">Tweet</a></div>
                     </div>
@@ -1199,7 +1209,7 @@
                     [% IF ( itemdata_copynumber ) %]<td class="copynumber">[% ITEM_RESULT.copynumber %]</td>[% END %]
                     <td class="status">[% INCLUDE 'item-status-schema-org.inc' item = ITEM_RESULT %][% INCLUDE 'item-status.inc' item = ITEM_RESULT %]</td>
                     [% IF ( itemdata_itemnotes ) %]<td class="notes" property="description">[% ITEM_RESULT.itemnotes %]</td>[% END %]
-                    <td class="date_due"><span title="[% ITEM_RESULT.datedue %]">[% ITEM_RESULT.datedue | $KohaDates %]</span></td>
+                    <td class="date_due"><span title="[% ITEM_RESULT.datedue %]">[% ITEM_RESULT.datedue | $KohaDates as_due_date => 1 %]</span></td>
                     [% IF ( OPACShowBarcode ) %]<td class="barcode" property="serialNumber">[% ITEM_RESULT.barcode %]</td>[% END %]
                     [% IF holds_count.defined || show_priority %]
                         <td class="holds_count">

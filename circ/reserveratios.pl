@@ -30,6 +30,7 @@ use C4::Auth;
 use C4::Dates qw/format_date format_date_in_iso/;
 use C4::Debug;
 use C4::Biblio qw/GetMarcBiblio GetRecordValue GetFrameworkCode/;
+use C4::Acquisition qw/GetOrdersByBiblionumber/;
 
 my $input = new CGI;
 my $startdate = $input->param('from');
@@ -46,6 +47,12 @@ my ( $template, $loggedinuser, $cookie ) = get_template_and_user(
         debug           => 1,
     }
 );
+
+my $booksellerid = $input->param('booksellerid') // '';
+my $basketno = $input->param('basketno') // '';
+if ($booksellerid && $basketno) {
+     $template->param( booksellerid => $booksellerid, basketno => $basketno );
+}
 
 my ( $year, $month, $day ) = Today();
 my $todaysdate     = sprintf("%-04.4d-%-02.2d-%02.2d", $year, $month, $day);
@@ -159,6 +166,11 @@ while ( my $data = $sth->fetchrow_hashref ) {
     );
 }
 
+for my $rd ( @reservedata ) {
+    next unless $rd->{biblionumber};
+    $rd->{pendingorders} = CountPendingOrdersByBiblionumber( $rd->{biblionumber} );
+}
+
 $template->param(
     ratio_atleast1  => $ratio_atleast1,
     todaysdate      => format_date($todaysdate),
@@ -169,3 +181,19 @@ $template->param(
 );
 
 output_html_with_http_headers $input, $cookie, $template->output;
+
+sub CountPendingOrdersByBiblionumber {
+    my $biblionumber = shift;
+    my @orders = GetOrdersByBiblionumber( $biblionumber );
+    my $cnt = 0;
+    if (scalar(@orders)) {
+        for my $order ( @orders ) {
+            next if $order->{datecancellationprinted};
+            my $onum = $order->{quantity} // 0;
+            my $rnum = $order->{quantityreceived} // 0;
+            next if $rnum >= $onum;
+            $cnt += ($onum - $rnum);
+        }
+    }
+    return $cnt;
+}

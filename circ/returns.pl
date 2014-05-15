@@ -49,17 +49,6 @@ use Koha::Calendar;
 
 my $query = new CGI;
 
-my $userenv = C4::Context->userenv;
-if (!$userenv){
-    my $sessionID = $query->cookie("CGISESSID");
-    my $session = get_session($sessionID);
-    if ($session->param('branch') eq 'NO_LIBRARY_SET'){
-        # no branch set we can't return
-        print $query->redirect("/cgi-bin/koha/circ/selectbranchprinter.pl");
-        exit;
-    }
-} 
-
 #getting the template
 my ( $template, $librarian, $cookie ) = get_template_and_user(
     {
@@ -71,10 +60,19 @@ my ( $template, $librarian, $cookie ) = get_template_and_user(
     }
 );
 
+my $sessionID = $query->cookie("CGISESSID");
+my $session = get_session($sessionID);
+if ($session->param('branch') eq 'NO_LIBRARY_SET'){
+    # no branch set we can't return
+    print $query->redirect("/cgi-bin/koha/circ/selectbranchprinter.pl");
+    exit;
+}
+
 #####################
 #Global vars
 my $branches = GetBranches();
 my $printers = GetPrinters();
+my $userenv = C4::Context->userenv;
 my $userenv_branch = $userenv->{'branch'} // '';
 my $printer = $userenv->{'branchprinter'} // '';
 
@@ -188,6 +186,33 @@ my $calendar    = Koha::Calendar->new( branchcode => $userenv_branch );
 #dropbox: get last open day (today - 1)
 my $today       = DateTime->now( time_zone => C4::Context->tz());
 my $dropboxdate = $calendar->addDate($today, -1);
+
+my $return_date_override = $query->param('return_date_override');
+my $return_date_override_remember =
+  $query->param('return_date_override_remember');
+if ($return_date_override) {
+    if ( C4::Context->preference('SpecifyReturnDate') ) {
+        # FIXME we really need to stop adding more uses of C4::Dates
+        if ( $return_date_override =~ C4::Dates->regexp('syspref') ) {
+
+            # note that we've overriden the return date
+            $template->param( return_date_was_overriden => 1);
+            # Save the original format if we are remembering for this series
+            $template->param(
+                return_date_override          => $return_date_override,
+                return_date_override_remember => 1
+            ) if ($return_date_override_remember);
+
+            my $dt = dt_from_string($return_date_override);
+            $return_date_override =
+              DateTime::Format::MySQL->format_datetime($dt);
+        }
+    }
+    else {
+        $return_date_override = q{};
+    }
+}
+
 if ($dotransfer){
 # An item has been returned to a branch other than the homebranch, and the librarian has chosen to initiate a transfer
     my $transferitem = $query->param('transferitem');
@@ -224,7 +249,7 @@ if ($barcode) {
 # save the return
 #
     ( $returned, $messages, $issueinformation, $borrower ) =
-      AddReturn( $barcode, $userenv_branch, $exemptfine, $dropboxmode);     # do the return
+      AddReturn( $barcode, $userenv_branch, $exemptfine, $dropboxmode, $return_date_override );
     my $homeorholdingbranchreturn = C4::Context->preference('HomeOrHoldingBranchReturn');
     $homeorholdingbranchreturn ||= 'homebranch';
 
@@ -252,7 +277,8 @@ if ($barcode) {
         itemtype         => $biblio->{'itemtype'},
         ccode            => $biblio->{'ccode'},
         itembiblionumber => $biblio->{'biblionumber'},    
-	additional_materials => $biblio->{'materials'}
+        borrower         => $borrower,
+        additional_materials => $biblio->{'materials'},
     );
 
     my %input = (
@@ -474,6 +500,9 @@ foreach my $code ( keys %$messages ) {
         $err{debarcardnumber}     = $borrower->{cardnumber};
         $err{debarborrowernumber} = $borrower->{borrowernumber};
         $err{debarname}           = "$borrower->{firstname} $borrower->{surname}";
+    }
+    elsif ( $code eq 'PrevDebarred' ) {
+        $err{prevdebarred}        = $messages->{'PrevDebarred'};
     }
     else {
         die "Unknown error code $code";    # note we need all the (empty) elsif's above, or we die.

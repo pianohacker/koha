@@ -152,6 +152,9 @@ use URI::Escape;
 use POSIX qw(ceil floor);
 use String::Random;
 use C4::Branch; # GetBranches
+use C4::Search::History;
+
+use URI::Escape;
 
 my $DisplayMultiPlaceHold = C4::Context->preference("DisplayMultiPlaceHold");
 # create a new CGI object
@@ -160,7 +163,6 @@ use CGI qw('-no_undef_params');
 my $cgi = new CGI;
 
 my ($template,$borrowernumber,$cookie);
-my $lang = C4::Templates::getlanguage($cgi, 'intranet');
 # decide which template to use
 my $template_name;
 my $template_type;
@@ -173,7 +175,7 @@ else {
     $template_type = 'advsearch';
 }
 # load the template
-($template, $borrowernumber, $cookie) = get_template_and_user({
+my ($template, $borrowernumber, $cookie) = get_template_and_user({
     template_name => $template_name,
     query => $cgi,
     type => "intranet",
@@ -181,6 +183,9 @@ else {
     flagsrequired   => { catalogue => 1 },
     }
 );
+
+my $lang = C4::Languages::getlanguage($cgi);
+
 if (C4::Context->preference("marcflavour") eq "UNIMARC" ) {
     $template->param('UNIMARC' => 1);
 }
@@ -411,6 +416,9 @@ my @operands = map uri_unescape($_), $cgi->param('q');
 
 # limits are use to limit to results to a pre-defined category such as branch or language
 my @limits = map uri_unescape($_), $cgi->param('limit');
+my @nolimits = map uri_unescape($_), $cgi->param('nolimit');
+my %is_nolimit = map { $_ => 1 } @nolimits;
+@limits = grep { not $is_nolimit{$_} } @limits;
 
 if($params->{'multibranchlimit'}) {
     my $multibranch = '('.join( " or ", map { "branch: $_ " } @{ GetBranchesInCategory( $params->{'multibranchlimit'} ) } ).')';
@@ -509,7 +517,7 @@ for my $this_cgi ( split('&',$limit_cgi) ) {
     my $input_name = $1;
     my $input_value = $2;
     $input_name =~ s/=$//;
-    push @limit_inputs, { input_name => $input_name, input_value => $input_value };
+    push @limit_inputs, { input_name => $input_name, input_value => uri_unescape($input_value) };
 }
 $template->param ( LIMIT_INPUTS => \@limit_inputs );
 
@@ -546,6 +554,30 @@ for (my $i=0;$i<@servers;$i++) {
         my @newresults = searchResults('intranet', $query_desc, $hits, $results_per_page, $offset, $scan,
                                        $results_hashref->{$server}->{"RECORDS"});
         $total = $total + $results_hashref->{$server}->{"hits"};
+
+        # Search history
+        if (C4::Context->preference('EnableSearchHistory')) {
+            unless ( $offset ) {
+                my $path_info = $cgi->url(-path_info=>1);
+                my $query_cgi_history = $cgi->url(-query=>1);
+                $query_cgi_history =~ s/^$path_info\?//;
+                $query_cgi_history =~ s/;/&/g;
+                my $query_desc_history = $query_desc;
+                $query_desc_history .= ", $limit_desc"
+                    if $limit_desc;
+
+                C4::Search::History::add({
+                    userid => $borrowernumber,
+                    sessionid => $cgi->cookie("CGISESSID"),
+                    query_desc => $query_desc_history,
+                    query_cgi => $query_cgi_history,
+                    total => $total,
+                    type => "biblio",
+                });
+            }
+            $template->param( EnableSearchHistory => 1 );
+        }
+
         ## If there's just one result, redirect to the detail page
         if ($total == 1) {         
             my $biblionumber = $newresults[0]->{biblionumber};
@@ -678,8 +710,8 @@ for (my $i=0;$i<@servers;$i++) {
 } #/end of the for loop
 #$template->param(FEDERATED_RESULTS => \@results_array);
 
-$template->{'VARS'}->{'searchid'} = $cgi->param('searchid')
-  || String::Random::random_string('ssssssss');
+$template->{'VARS'}->{'searchid'} = $cgi->param('searchid');
+
 my $gotonumber = $cgi->param('gotoNumber');
 if ($gotonumber eq 'last' || $gotonumber eq 'first') {
     $template->{'VARS'}->{'gotoNumber'} = $gotonumber;
@@ -688,6 +720,15 @@ $template->{'VARS'}->{'gotoPage'}   = 'detail.pl';
 my $gotopage = $cgi->param('gotoPage');
 $template->{'VARS'}->{'gotoPage'} = $gotopage
   if $gotopage =~ m/^(ISBD|labeledMARC|MARC|more)?detail.pl$/;
+
+my @input_values = map { Encode::decode_utf8($_->{input_value}) } @limit_inputs;
+for my $facet ( @$facets ) {
+    for my $entry ( @{ $facet->{facets} } ) {
+        my $index = $entry->{type_link_value};
+        my $value = $entry->{facet_link_value};
+        $entry->{active} = grep { $_ eq qq{$index:$value} } @input_values;
+    }
+}
 
 $template->param(
             #classlist => $classlist,

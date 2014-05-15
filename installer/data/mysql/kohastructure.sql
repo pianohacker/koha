@@ -153,8 +153,8 @@ CREATE TABLE `biblioitems` ( -- information related to bibliographic records in 
   `volume` mediumtext,
   `number` mediumtext,
   `itemtype` varchar(10) default NULL, -- biblio level item type (MARC21 942$c)
-  `isbn` varchar(30) default NULL, -- ISBN (MARC21 020$a)
-  `issn` varchar(9) default NULL, -- ISSN (MARC21 022$a)
+  `isbn` mediumtext, -- ISBN (MARC21 020$a)
+  `issn` mediumtext, -- ISSN (MARC21 022$a)
   `ean` varchar(13) default NULL,
   `publicationyear` text,
   `publishercode` varchar(255) default NULL, -- publisher (MARC21 260$b)
@@ -186,8 +186,8 @@ CREATE TABLE `biblioitems` ( -- information related to bibliographic records in 
   KEY `bibinoidx` (`biblioitemnumber`),
   KEY `bibnoidx` (`biblionumber`),
   KEY `itemtype_idx` (`itemtype`),
-  KEY `isbn` (`isbn`),
-  KEY `issn` (`issn`),
+  KEY `isbn` (`isbn`(255)),
+  KEY `issn` (`issn`(255)),
   KEY `publishercode` (`publishercode`),
   CONSTRAINT `biblioitems_ibfk_1` FOREIGN KEY (`biblionumber`) REFERENCES `biblio` (`biblionumber`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
@@ -466,6 +466,7 @@ CREATE TABLE `categories` ( -- this table shows information related to Koha patr
   `reservefee` decimal(28,6) default NULL, -- cost to place holds
   `hidelostitems` tinyint(1) NOT NULL default '0', -- are lost items shown to this category (1 for yes, 0 for no)
   `category_type` varchar(1) NOT NULL default 'A', -- type of Koha patron (Adult, Child, Professional, Organizational, Statistical, Staff)
+  `BlockExpiredPatronOpacActions` tinyint(1) NOT NULL default '-1', -- wheither or not a patron of this category can renew books or place holds once their card has expired. 0 means they can, 1 means they cannot, -1 means use syspref BlockExpiredPatronOpacActions
   PRIMARY KEY  (`categorycode`),
   UNIQUE KEY `categorycode` (`categorycode`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
@@ -716,6 +717,7 @@ DROP TABLE IF EXISTS `currency`;
 CREATE TABLE `currency` (
   `currency` varchar(10) NOT NULL default '',
   `symbol` varchar(5) default NULL,
+  `isocode` varchar(5) default NULL,
   `timestamp` timestamp NOT NULL default CURRENT_TIMESTAMP on update CURRENT_TIMESTAMP,
   `rate` float(15,5) default NULL,
   `active` tinyint(1) default NULL,
@@ -755,8 +757,8 @@ CREATE TABLE `deletedbiblioitems` ( -- information about bibliographic records t
   `volume` mediumtext,
   `number` mediumtext,
   `itemtype` varchar(10) default NULL, -- biblio level item type (MARC21 942$c)
-  `isbn` varchar(30) default NULL, -- ISBN (MARC21 020$a)
-  `issn` varchar(9) default NULL, -- ISSN (MARC21 022$a)
+  `isbn` mediumtext default NULL, -- ISBN (MARC21 020$a)
+  `issn` mediumtext default NULL, -- ISSN (MARC21 022$a)
   `ean` varchar(13) default NULL,
   `publicationyear` text,
   `publishercode` varchar(255) default NULL, -- publisher (MARC21 260$b)
@@ -788,7 +790,7 @@ CREATE TABLE `deletedbiblioitems` ( -- information about bibliographic records t
   KEY `bibinoidx` (`biblioitemnumber`),
   KEY `bibnoidx` (`biblionumber`),
   KEY `itemtype_idx` (`itemtype`),
-  KEY `isbn` (`isbn`),
+  KEY `isbn` (`isbn`(255)),
   KEY `publishercode` (`publishercode`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
@@ -1354,7 +1356,10 @@ CREATE TABLE `letter` ( -- table for all notice templates in Koha
   `is_html` tinyint(1) default 0, -- does this notice or slip use HTML (1 for yes, 0 for no)
   `title` varchar(200) NOT NULL default '', -- subject line of the notice
   `content` text, -- body text for the notice or slip
-  PRIMARY KEY  (`module`,`code`, `branchcode`)
+  `message_transport_type` varchar(20) NOT NULL DEFAULT 'email', -- transport type for this notice
+  PRIMARY KEY  (`module`,`code`, `branchcode`, `message_transport_type`),
+  CONSTRAINT `message_transport_type_fk` FOREIGN KEY (`message_transport_type`)
+  REFERENCES `message_transport_types` (`message_transport_type`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 --
@@ -1905,6 +1910,7 @@ CREATE TABLE IF NOT EXISTS `search_history` ( -- patron's opac search history
   `sessionid` varchar(32) NOT NULL, -- a system generated session id
   `query_desc` varchar(255) NOT NULL, -- the search that was performed
   `query_cgi` text NOT NULL, -- the string to append to the search url to rerun the search
+  `type` varchar(16) NOT NULL DEFAULT 'biblio', -- search type, must be 'biblio' or 'authority'
   `total` int(11) NOT NULL, -- the total of results found
   `time` timestamp NOT NULL default CURRENT_TIMESTAMP, -- the date and time the search was run
   KEY `userid` (`userid`),
@@ -2546,6 +2552,22 @@ DROP TABLE IF EXISTS `message_transport_types`;
 CREATE TABLE `message_transport_types` (
   `message_transport_type` varchar(20) NOT NULL,
   PRIMARY KEY  (`message_transport_type`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+--
+-- Table structure for table `overduerules_transport_types`
+--
+
+DROP TABLE IF EXISTS `overduerules_transport_types`;
+CREATE TABLE overduerules_transport_types(
+    `id` INT(11) NOT NULL AUTO_INCREMENT,
+    `branchcode` varchar(10) NOT NULL DEFAULT '',
+    `categorycode` VARCHAR(10) NOT NULL DEFAULT '',
+    `letternumber` INT(1) NOT NULL DEFAULT 1,
+    `message_transport_type` VARCHAR(20) NOT NULL DEFAULT 'email',
+    PRIMARY KEY (id),
+    CONSTRAINT overduerules_fk FOREIGN KEY (branchcode, categorycode) REFERENCES overduerules (branchcode, categorycode) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT mtt_fk FOREIGN KEY (message_transport_type) REFERENCES message_transport_types (message_transport_type) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 --

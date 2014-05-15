@@ -323,17 +323,38 @@ sub GetMemberDetails {
     my $query;
     my $sth;
     if ($borrowernumber) {
-        $sth = $dbh->prepare("SELECT borrowers.*,category_type,categories.description,reservefee,enrolmentperiod FROM borrowers LEFT JOIN categories ON borrowers.categorycode=categories.categorycode WHERE  borrowernumber=?");
+        $sth = $dbh->prepare("
+            SELECT borrowers.*,
+                   category_type,
+                   categories.description,
+                   categories.BlockExpiredPatronOpacActions,
+                   reservefee,
+                   enrolmentperiod
+            FROM borrowers
+            LEFT JOIN categories ON borrowers.categorycode=categories.categorycode
+            WHERE borrowernumber = ?
+        ");
         $sth->execute($borrowernumber);
     }
     elsif ($cardnumber) {
-        $sth = $dbh->prepare("SELECT borrowers.*,category_type,categories.description,reservefee,enrolmentperiod FROM borrowers LEFT JOIN categories ON borrowers.categorycode=categories.categorycode WHERE cardnumber=?");
+        $sth = $dbh->prepare("
+            SELECT borrowers.*,
+                   category_type,
+                   categories.description,
+                   categories.BlockExpiredPatronOpacActions,
+                   reservefee,
+                   enrolmentperiod
+            FROM borrowers
+            LEFT JOIN categories ON borrowers.categorycode = categories.categorycode
+            WHERE cardnumber = ?
+        ");
         $sth->execute($cardnumber);
     }
     else {
         return;
     }
     my $borrower = $sth->fetchrow_hashref;
+    return unless $borrower;
     my ($amount) = GetMemberAccountRecords( $borrowernumber);
     $borrower->{'amountoutstanding'} = $amount;
     # FIXME - patronflags calls GetMemberAccountRecords... just have patronflags return $amount
@@ -359,6 +380,18 @@ sub GetMemberDetails {
     } else {
         $borrower->{'showname'} = $borrower->{'firstname'};
     }
+
+    # Handle setting the true behavior for BlockExpiredPatronOpacActions
+    $borrower->{'BlockExpiredPatronOpacActions'} =
+      C4::Context->preference('BlockExpiredPatronOpacActions')
+      if ( $borrower->{'BlockExpiredPatronOpacActions'} == -1 );
+
+    $borrower->{'is_expired'} = 0;
+    $borrower->{'is_expired'} = 1 if
+      defined($borrower->{dateexpiry}) &&
+      $borrower->{'dateexpiry'} ne '0000-00-00' &&
+      Date_to_Days( Today() ) >
+      Date_to_Days( split /-/, $borrower->{'dateexpiry'} );
 
     return ($borrower);    #, $flags, $accessflagshash);
 }

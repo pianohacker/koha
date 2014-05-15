@@ -23,6 +23,8 @@ use strict;
 #use warnings; FIXME - Bug 2505
 use Date::Calc qw/Today Date_to_Days/;
 use Date::Manip qw/UnixDate/;
+use List::MoreUtils qw( uniq );
+
 use C4::Circulation;
 use C4::Context;
 use C4::Accounts;
@@ -50,6 +52,7 @@ BEGIN {
         &GetOverduesForBranch
         &RemoveNotifyLine
         &AddNotifyLine
+        &GetOverdueMessageTransportTypes
 	);
 	# subs to remove
 	push @EXPORT, qw(
@@ -904,6 +907,36 @@ sub RemoveNotifyLine {
     );
     $sth->execute( $borrowernumber, $itemnumber, $notify_date );
     return 1;
+}
+
+=head2 GetOverdueMessageTransportTypes
+
+    my $message_transport_types = GetOverdueMessageTransportTypes( $branchcode, $categorycode, $letternumber);
+
+    return a arrayref with all message_transport_type for given branchcode, categorycode and letternumber(1,2 or 3)
+
+=cut
+
+sub GetOverdueMessageTransportTypes {
+    my ( $branchcode, $categorycode, $letternumber ) = @_;
+    return unless $categorycode and $letternumber;
+    my $dbh = C4::Context->dbh;
+    my $sth = $dbh->prepare("
+        SELECT message_transport_type FROM overduerules_transport_types
+        WHERE branchcode = ? AND categorycode = ? AND letternumber = ?
+    ");
+    $sth->execute( $branchcode, $categorycode, $letternumber );
+    my @mtts;
+    while ( my $mtt = $sth->fetchrow ) {
+        push @mtts, $mtt;
+    }
+
+    # Put 'print' in first if exists
+    # It avoid to sent a print notice with an email or sms template is no email or sms is defined
+    @mtts = uniq( 'print', @mtts )
+        if grep {/^print$/} @mtts;
+
+    return \@mtts;
 }
 
 1;

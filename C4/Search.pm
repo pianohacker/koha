@@ -68,7 +68,6 @@ This module provides searching functions for Koha's bibliographic databases
   &searchResults
   &getRecords
   &buildQuery
-  &AddSearchHistory
   &GetDistinctValues
   &enabled_staff_search_views
   &PurgeSearchHistory
@@ -457,7 +456,7 @@ sub getRecords {
 
                     ## Check if it's an index scan
                     if ($scan) {
-                        my ( $term, $occ ) = $results[ $i - 1 ]->term($j);
+                        my ( $term, $occ ) = $results[ $i - 1 ]->display_term($j);
 
                  # here we create a minimal MARC record and hand it off to the
                  # template just like a normal result ... perhaps not ideal, but
@@ -1558,7 +1557,7 @@ sub buildQuery {
             $group_OR_limits{$k} .= " or " if $group_OR_limits{$k};
             $limit_desc      .= " or " if $group_OR_limits{$k};
             $group_OR_limits{$k} .= "$this_limit";
-            $limit_cgi       .= "&limit=$this_limit";
+            $limit_cgi       .= "&limit=" . uri_escape($this_limit);
             $limit_desc      .= " $this_limit";
         }
 
@@ -1566,7 +1565,7 @@ sub buildQuery {
         else {
             $limit .= " and " if $limit || $query;
             $limit      .= "$this_limit";
-            $limit_cgi  .= "&limit=$this_limit";
+            $limit_cgi  .= "&limit=" . uri_escape($this_limit);
             if ($this_limit =~ /^branch:(.+)/) {
                 my $branchcode = $1;
                 my $branchname = GetBranchName($branchcode);
@@ -2221,28 +2220,6 @@ sub enabled_staff_search_views
 		can_view_ISBD			=> C4::Context->preference('viewISBD'),			# 1 if the staff search allows the ISBD view
 		can_view_labeledMARC	=> C4::Context->preference('viewLabeledMARC'),	# 1 if the staff search allows the Labeled MARC view
 	);
-}
-
-sub AddSearchHistory{
-	my ($borrowernumber,$session,$query_desc,$query_cgi, $total)=@_;
-    my $dbh = C4::Context->dbh;
-
-    # Add the request the user just made
-    my $sql = "INSERT INTO search_history(userid, sessionid, query_desc, query_cgi, total, time) VALUES(?, ?, ?, ?, ?, NOW())";
-    my $sth   = $dbh->prepare($sql);
-    $sth->execute($borrowernumber, $session, $query_desc, $query_cgi, $total);
-	return $dbh->last_insert_id(undef, 'search_history', undef,undef,undef);
-}
-
-sub GetSearchHistory{
-	my ($borrowernumber,$session)=@_;
-    my $dbh = C4::Context->dbh;
-
-    # Add the request the user just made
-    my $query = "SELECT FROM search_history WHERE (userid=? OR sessionid=?)";
-    my $sth   = $dbh->prepare($query);
-	$sth->execute($borrowernumber, $session);
-    return  $sth->fetchall_hashref({});
 }
 
 sub PurgeSearchHistory{

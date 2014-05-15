@@ -281,8 +281,6 @@ sub SearchAuthorities {
         my %newline;
         $newline{authid} = $authid;
         if ( !$skipmetadata ) {
-            my $summary =
-              BuildSummary( $authrecord, $authid, GetAuthTypeCode($authid) );
             my $query_auth_tag =
 "SELECT auth_tag_to_report FROM auth_types WHERE authtypecode=?";
             my $sth = $dbh->prepare($query_auth_tag);
@@ -291,15 +289,18 @@ sub SearchAuthorities {
             my $reported_tag;
             my $mainentry = $authrecord->field($auth_tag_to_report);
             if ($mainentry) {
-
                 foreach ( $mainentry->subfields() ) {
                     $reported_tag .= '$' . $_->[0] . $_->[1];
                 }
             }
-            my $thisauthtype = GetAuthType(GetAuthTypeCode($authid));
+            my $thisauthtypecode = GetAuthTypeCode($authid);
+            my $thisauthtype = GetAuthType($thisauthtypecode);
             unless (defined $thisauthtype) {
-                $thisauthtype = GetAuthType($authtypecode) if $authtypecode;
+                $thisauthtypecode = $authtypecode;
+                $thisauthtype = GetAuthType($authtypecode);
             }
+            my $summary = BuildSummary( $authrecord, $authid, $thisauthtypecode );
+
             $newline{authtype}     = defined($thisauthtype) ?
                                         $thisauthtype->{'authtypetext'} : '';
             $newline{summary}      = $summary;
@@ -888,12 +889,18 @@ sub BuildSummary {
     my ($record,$authid,$authtypecode)=@_;
     my $dbh=C4::Context->dbh;
     my %summary;
+    my $summary_template;
     # handle $authtypecode is NULL or eq ""
     if ($authtypecode) {
         my $authref = GetAuthType($authtypecode);
         $summary{authtypecode} = $authref->{authtypecode};
         $summary{type} = $authref->{authtypetext};
-        $summary{summary} = $authref->{summary};
+        $summary_template = $authref->{summary};
+        # for MARC21, the authority type summary displays a label meant for
+        # display
+        if (C4::Context->preference('marcflavour') ne 'UNIMARC') {
+            $summary{summary} = $authref->{summary};
+        }
     }
     my $marc21subfields = 'abcdfghjklmnopqrstuvxyz68';
     my %marc21controlrefs = ( 'a' => 'earlier',
@@ -926,14 +933,14 @@ sub BuildSummary {
 #         suit the MARC21 version, so for now the "templating"
 #         feature will be enabled only for UNIMARC for backwards
 #         compatibility.
-    if ($summary{summary} and C4::Context->preference('marcflavour') eq 'UNIMARC') {
+    if ($summary_template and C4::Context->preference('marcflavour') eq 'UNIMARC') {
         my @fields = $record->fields();
 #             $reported_tag = '$9'.$result[$counter];
-        my @stringssummary;
+        my @repets;
         foreach my $field (@fields) {
             my $tag = $field->tag();
             my $tagvalue = $field->as_string();
-            my $localsummary= $summary{summary};
+            my $localsummary= $summary_template;
             $localsummary =~ s/\[(.?.?.?.?)$tag\*(.*?)\]/$1$tagvalue$2\[$1$tag$2\]/g;
             if ($tag<10) {
                 if ($tag eq '001') {
@@ -948,13 +955,13 @@ sub BuildSummary {
                     $localsummary =~ s/\[(.?.?.?.?)$tagsubf(.*?)\]/$1$subfieldvalue$2\[$1$tagsubf$2\]/g;
                 }
             }
-            push @stringssummary, $localsummary if ($localsummary ne $summary{summary});
+            if ($localsummary ne $summary_template) {
+                $localsummary =~ s/\[(.*?)\]//g;
+                $localsummary =~ s/\n/<br>/g;
+                push @repets, $localsummary;
+            }
         }
-        my $resultstring;
-        $resultstring = join(" -- ",@stringssummary);
-        $resultstring =~ s/\[(.*?)\]//g;
-        $resultstring =~ s/\n/<br>/g;
-        $summary{summary}      =  $resultstring;
+        $summary{repets} = \@repets;
     }
     my @authorized;
     my @notes;

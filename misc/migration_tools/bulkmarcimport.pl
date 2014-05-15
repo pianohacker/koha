@@ -39,6 +39,7 @@ my ( $insert, $filters, $update, $all, $yamlfile, $authtypes, $append );
 my $cleanisbn = 1;
 my ($sourcetag,$sourcesubfield,$idmapfl, $dedup_barcode);
 my $framework = '';
+my $localcust;
 
 $|=1;
 
@@ -52,7 +53,7 @@ GetOptions(
     't|test' => \$test_parameter,
     's' => \$skip_marc8_conversion,
     'c:s' => \$char_encoding,
-    'v:s' => \$verbose,
+    'v:+' => \$verbose,
     'fk' => \$fk_off,
     'm:s' => \$format,
     'l:s' => \$logfile,
@@ -74,6 +75,7 @@ GetOptions(
     'yaml:s'        => \$yamlfile,
     'dedupbarcode' => \$dedup_barcode,
     'framework=s' => \$framework,
+    'custom:s'    => \$localcust,
 );
 $biblios ||= !$authorities;
 $insert  ||= !$update;
@@ -87,6 +89,24 @@ if ($all) {
 if ($version || ($input_marc_file eq '')) {
     pod2usage( -verbose => 2 );
     exit;
+}
+
+if(defined $localcust) { #local customize module
+    if(!-e $localcust) {
+        $localcust= $localcust||'LocalChanges'; #default name
+        $localcust=~ s/^.*\/([^\/]+)$/$1/; #extract file name only
+        $localcust=~ s/\.pm$//;           #remove extension
+        my $fqcust= $FindBin::Bin."/$localcust.pm"; #try migration_tools dir
+        if(-e $fqcust) {
+            $localcust= $fqcust;
+        }
+        else {
+            print "WARNING: customize module $localcust.pm not found!\n";
+            exit 1;
+        }
+    }
+    require $localcust if $localcust;
+    $localcust=\&customize if $localcust;
 }
 
 my $dbh = C4::Context->dbh;
@@ -204,9 +224,10 @@ RECORD: while (  ) {
     # skip if we get an empty record (that is MARC valid, but will result in AddBiblio failure
     last unless ( $record );
     $i++;
-    print ".";
-    print "\n$i" unless $i % 100;
-    
+    if( ($verbose//1)==1 ) { #no dot for verbose==2
+        print "." . ( $i % 100==0 ? "\n$i" : '' );
+    }
+
     # transcode the record to UTF8 if needed & applicable.
     if ($record->encoding() eq 'MARC-8' and not $skip_marc8_conversion) {
         # FIXME update condition
@@ -218,6 +239,7 @@ RECORD: while (  ) {
         }
     }
     SetUTF8Flag($record);
+    &$localcust($record) if $localcust;
     my $isbn;
     # remove trailing - in isbn (only for biblios, of course)
     if ($biblios && $cleanisbn) {
@@ -461,6 +483,7 @@ RECORD: while (  ) {
         }
         $dbh->commit() if (0 == $i % $commitnum);
     }
+    print $record->as_formatted()."\n" if ($verbose//0)==2;
     last if $i == $number;
 }
 $dbh->commit();
@@ -739,6 +762,14 @@ is useful when something has set barcodes to be a biblio ID, or similar
 This is the code for the framework that the requested records will have attached
 to them when they are created. If not specified, then the default framework
 will be used.
+
+=item B<-custom>=I<MODULE>
+
+This parameter allows you to use a local module with a customize subroutine
+that is called for each MARC record.
+If no filename is passed, LocalChanges.pm is assumed to be in the
+migration_tools subdirectory. You may pass an absolute file name or a file name
+from the migration_tools directory.
 
 =back
 

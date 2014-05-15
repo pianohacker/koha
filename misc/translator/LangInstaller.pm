@@ -66,6 +66,15 @@ sub new {
     $self->{process}         = "$Bin/tmpl_process3.pl " . ($verbose ? '' : '-q');
     $self->{path_po}         = "$Bin/po";
     $self->{po}              = { '' => $default_pref_po_header };
+    $self->{domain}          = 'messages';
+    $self->{cp}              = `which cp`;
+    $self->{msgmerge}        = `which msgmerge`;
+    $self->{xgettext}        = `which xgettext`;
+    $self->{sed}             = `which sed`;
+    chomp $self->{cp};
+    chomp $self->{msgmerge};
+    chomp $self->{xgettext};
+    chomp $self->{sed};
 
     # Get all .pref file names
     opendir my $fh, $self->{path_pref_en};
@@ -423,6 +432,76 @@ sub create_tmpl {
     }
 }
 
+sub create_messages {
+    my $self = shift;
+
+    print "Create messages ($self->{lang})\n" if $self->{verbose};
+    system
+        "$self->{cp} $self->{domain}.pot " .
+        "$self->{path_po}/$self->{lang}-$self->{domain}.po";
+}
+
+sub update_messages {
+    my $self = shift;
+
+    my $pofile = "$self->{path_po}/$self->{lang}-$self->{domain}.po";
+    print "Update messages ($self->{lang})\n" if $self->{verbose};
+    if ( not -f $pofile ) {
+        print "File $pofile does not exist\n" if $self->{verbose};
+        $self->create_messages();
+    }
+    system "$self->{msgmerge} -U $pofile $self->{domain}.pot";
+}
+
+sub extract_messages {
+    my $self = shift;
+
+    my $intranetdir = $self->{context}->config('intranetdir');
+    my @files_to_scan;
+    my @directories_to_scan = ('.');
+    my @blacklist = qw(blib koha-tmpl skel tmp t);
+    while (@directories_to_scan) {
+        my $dir = shift @directories_to_scan;
+        opendir DIR, "$intranetdir/$dir" or die "Unable to open $dir: $!";
+        foreach my $entry (readdir DIR) {
+            next if $entry =~ /^\./;
+            my $relentry = "$dir/$entry";
+            $relentry =~ s|^\./||;
+            if (-d "$intranetdir/$relentry" and not grep /^$relentry$/, @blacklist) {
+                push @directories_to_scan, "$relentry";
+            } elsif (-f "$intranetdir/$relentry" and $relentry =~ /(pl|pm)$/) {
+                push @files_to_scan, "$relentry";
+            }
+        }
+    }
+
+    my $xgettext_cmd = "$self->{xgettext} -L Perl --from-code=UTF-8 " .
+        "-o $Bin/$self->{domain}.pot -D $intranetdir";
+    $xgettext_cmd .= " $_" foreach (@files_to_scan);
+
+    if (system($xgettext_cmd) != 0) {
+        die "system call failed: $xgettext_cmd";
+    }
+
+    if ( -f "$Bin/$self->{domain}.pot" ) {
+        my $replace_charset_cmd = "$self->{sed} --in-place " .
+            "$Bin/$self->{domain}.pot " .
+            "--expression='s/charset=CHARSET/charset=UTF-8/'";
+        if (system($replace_charset_cmd) != 0) {
+            die "system call failed: $replace_charset_cmd";
+        }
+    } else {
+        print "No messages found\n" if $self->{verbose};
+        return;
+    }
+    return 1;
+}
+
+sub remove_pot {
+    my $self = shift;
+
+    unlink "$Bin/$self->{domain}.pot";
+}
 
 sub install {
     my ($self, $files) = @_;
@@ -444,11 +523,14 @@ sub get_all_langs {
 sub update {
     my ($self, $files) = @_;
     my @langs = $self->{lang} ? ($self->{lang}) : $self->get_all_langs();
+    my $extract_ok = $self->extract_messages();
     for my $lang ( @langs ) {
         $self->set_lang( $lang );
         $self->update_tmpl($files) unless $self->{pref_only};
         $self->update_prefs();
+        $self->update_messages() if $extract_ok;
     }
+    $self->remove_pot() if $extract_ok;
 }
 
 
@@ -457,6 +539,10 @@ sub create {
     return unless $self->{lang};
     $self->create_tmpl($files) unless $self->{pref_only};
     $self->create_prefs();
+    if ($self->extract_messages()) {
+        $self->create_messages();
+        $self->remove_pot();
+    }
 }
 
 

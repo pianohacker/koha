@@ -1634,7 +1634,7 @@ sub GetBranchItemRule {
 =head2 AddReturn
 
   ($doreturn, $messages, $iteminformation, $borrower) =
-      &AddReturn($barcode, $branch, $exemptfine, $dropbox);
+      &AddReturn( $barcode, $branch [,$exemptfine] [,$dropbox] [,$returndate] );
 
 Returns a book.
 
@@ -1645,13 +1645,16 @@ Returns a book.
 =item C<$branch> is the code of the branch where the book is being returned.
 
 =item C<$exemptfine> indicates that overdue charges for the item will be
-removed.
+removed. Optional.
 
 =item C<$dropbox> indicates that the check-in date is assumed to be
 yesterday, or the last non-holiday as defined in C4::Calendar .  If
 overdue charges are applied and C<$dropbox> is true, the last charge
 will be removed.  This assumes that the fines accrual script has run
-for _today_.
+for _today_. Optional.
+
+=item C<$return_date> allows the default return date to be overridden
+by the given return date. Optional.
 
 =back
 
@@ -1706,7 +1709,7 @@ patron who last borrowed the book.
 =cut
 
 sub AddReturn {
-    my ( $barcode, $branch, $exemptfine, $dropbox ) = @_;
+    my ( $barcode, $branch, $exemptfine, $dropbox, $return_date ) = @_;
 
     if ($branch and not GetBranchDetail($branch)) {
         warn "AddReturn error: branch '$branch' not found.  Reverting to " . C4::Context->userenv->{'branch'};
@@ -1778,8 +1781,9 @@ sub AddReturn {
 
     # case of a return of document (deal with issues and holdingbranch)
     my $today = DateTime->now( time_zone => C4::Context->tz() );
+
     if ($doreturn) {
-    my $datedue = $issue->{date_due};
+        my $datedue = $issue->{date_due};
         $borrower or warn "AddReturn without current borrower";
 		my $circControlBranch;
         if ($dropbox) {
@@ -1788,36 +1792,48 @@ sub AddReturn {
             # FIXME: check issuedate > returndate, factoring in holidays
             #$circControlBranch = _GetCircControlBranch($item,$borrower) unless ( $item->{'issuedate'} eq C4::Dates->today('iso') );;
             $circControlBranch = _GetCircControlBranch($item,$borrower);
-        $issue->{'overdue'} = DateTime->compare($issue->{'date_due'}, $today ) == -1 ? 1 : 0;
+            $issue->{'overdue'} = DateTime->compare($issue->{'date_due'}, $today ) == -1 ? 1 : 0;
         }
 
         if ($borrowernumber) {
-            if( C4::Context->preference('CalculateFinesOnReturn') && $issue->{'overdue'}){
-            # we only need to calculate and change the fines if we want to do that on return
-            # Should be on for hourly loans
+            if ( ( C4::Context->preference('CalculateFinesOnReturn') && $issue->{'overdue'} ) || $return_date ) {
+                # we only need to calculate and change the fines if we want to do that on return
+                # Should be on for hourly loans
                 my $control = C4::Context->preference('CircControl');
                 my $control_branchcode =
                     ( $control eq 'ItemHomeLibrary' ) ? $item->{homebranch}
                   : ( $control eq 'PatronLibrary' )   ? $borrower->{branchcode}
                   :                                     $issue->{branchcode};
 
+                my $date_returned =
+                  $return_date ? dt_from_string($return_date) : $today;
+
                 my ( $amount, $type, $unitcounttotal ) =
                   C4::Overdues::CalcFine( $item, $borrower->{categorycode},
-                    $control_branchcode, $datedue, $today );
+                    $control_branchcode, $datedue, $date_returned );
 
                 $type ||= q{};
 
-                if ( $amount > 0
-                    && C4::Context->preference('finesMode') eq 'production' )
-                {
-                    C4::Overdues::UpdateFine( $issue->{itemnumber},
-                        $issue->{borrowernumber},
-                        $amount, $type, output_pref($datedue) );
+                if ( C4::Context->preference('finesMode') eq 'production' ) {
+                    if ( $amount > 0 ) {
+                        C4::Overdues::UpdateFine( $issue->{itemnumber},
+                            $issue->{borrowernumber},
+                            $amount, $type, output_pref($datedue) );
+                    }
+                    elsif ($return_date) {
+
+                       # Backdated returns may have fines that shouldn't exist,
+                       # so in this case, we need to drop those fines to 0
+
+                        C4::Overdues::UpdateFine( $issue->{itemnumber},
+                            $issue->{borrowernumber},
+                            0, $type, output_pref($datedue) );
+                    }
                 }
             }
 
             MarkIssueReturned( $borrowernumber, $item->{'itemnumber'},
-                $circControlBranch, '', $borrower->{'privacy'} );
+                $circControlBranch, $return_date, $borrower->{'privacy'} );
 
             # FIXME is the "= 1" right?  This could be the borrower hash.
             $messages->{'WasReturned'} = 1;
@@ -1873,10 +1889,21 @@ sub AddReturn {
         defined($fix) or warn "_FixOverduesOnReturn($borrowernumber, $item->{itemnumber}...) failed!";  # zero is OK, check defined
         
         if ( $issue->{overdue} && $issue->{date_due} ) {
-# fix fine days
-            my $debardate =
-              _debar_user_on_return( $borrower, $item, $issue->{date_due}, $today );
-            $messages->{Debarred} = $debardate if ($debardate);
+        # fix fine days
+            my ($debardate,$reminder) = _debar_user_on_return( $borrower, $item, $issue->{date_due}, $today );
+            if ($reminder){
+                $messages->{'PrevDebarred'} = $debardate;
+            } else {
+                $messages->{'Debarred'} = $debardate if $debardate;
+            }
+        # there's no overdue on the item but borrower had been previously debarred
+        } elsif ( $issue->{date_due} and $borrower->{'debarred'} ) {
+             my $borrower_debar_dt = dt_from_string( $borrower->{debarred} );
+             $borrower_debar_dt->truncate(to => 'day');
+             my $today_dt = $today->clone()->truncate(to => 'day');
+             if ( DateTime->compare( $borrower_debar_dt, $today_dt ) != -1 ) {
+                 $messages->{'PrevDebarred'} = $borrower->{'debarred'};
+             }
         }
     }
 
@@ -2068,7 +2095,10 @@ sub _debar_user_on_return {
                 expiration     => $new_debar_dt->ymd(),
                 type           => 'SUSPENSION',
             });
-
+            # if borrower was already debarred but does not get an extra debarment
+            if ( $borrower->{debarred} eq Koha::Borrower::Debarments::IsDebarred($borrower->{borrowernumber}) ) {
+                    return ($borrower->{debarred},1);
+            }
             return $new_debar_dt->ymd();
         }
     }

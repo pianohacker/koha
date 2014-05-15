@@ -463,9 +463,11 @@ sub CanItemBeReserved{
     my ($borrowernumber, $itemnumber) = @_;
     
     my $dbh             = C4::Context->dbh;
+    my $ruleitemtype; # itemtype of the matching issuing rule
     my $allowedreserves = 0;
             
     # we retrieve borrowers and items informations #
+    # item->{itype} will come for biblioitems if necessery
     my $item = GetItem($itemnumber);
 
     # If an item is damaged and we don't allow holds on damaged items, we can stop right here
@@ -474,7 +476,7 @@ sub CanItemBeReserved{
     my $borrower = C4::Members::GetMember('borrowernumber'=>$borrowernumber);     
     
     my $controlbranch = C4::Context->preference('ReservesControlBranch');
-    my $itype         = C4::Context->preference('item-level_itypes') ? "itype" : "itemtype";
+    my $itemtypefield = C4::Context->preference('item-level_itypes') ? "itype" : "itemtype";
 
     # we retrieve user rights on this itemtype and branchcode
     my $sth = $dbh->prepare("SELECT categorycode, itemtype, branchcode, reservesallowed 
@@ -498,8 +500,6 @@ sub CanItemBeReserved{
                                 ";
     
     
-    my $itemtype     = $item->{$itype};
-    my $categorycode = $borrower->{categorycode};
     my $branchcode   = "";
     my $branchfield  = "reserves.branchcode";
     
@@ -512,25 +512,25 @@ sub CanItemBeReserved{
     }
     
     # we retrieve rights 
-    $sth->execute($categorycode, $itemtype, $branchcode);
+    $sth->execute($borrower->{'categorycode'}, $item->{'itype'}, $branchcode);
     if(my $rights = $sth->fetchrow_hashref()){
-        $itemtype        = $rights->{itemtype};
+        $ruleitemtype    = $rights->{itemtype};
         $allowedreserves = $rights->{reservesallowed}; 
     }else{
-        $itemtype = '*';
+        $ruleitemtype = '*';
     }
     
     # we retrieve count
     
     $querycount .= "AND $branchfield = ?";
     
-    $querycount .= " AND $itype = ?" if ($itemtype ne "*");
+    $querycount .= " AND $itemtypefield = ?" if ($ruleitemtype ne "*");
     my $sthcount = $dbh->prepare($querycount);
     
-    if($itemtype eq "*"){
+    if($ruleitemtype eq "*"){
         $sthcount->execute($borrowernumber, $branchcode);
     }else{
-        $sthcount->execute($borrowernumber, $branchcode, $itemtype);
+        $sthcount->execute($borrowernumber, $branchcode, $ruleitemtype);
     }
     
     my $reservecount = "0";
@@ -1890,15 +1890,11 @@ sub _koha_notify_reserve {
     
     # Try to get the borrower's email address
     my $to_address = C4::Members::GetNoticeEmailAddress($borrowernumber);
-    
-    my $letter_code;
-    my $print_mode = 0;
-    my $messagingprefs;
-    if ( $to_address || $borrower->{'smsalertnumber'} ) {
-        $messagingprefs = C4::Members::Messaging::GetMessagingPreferences( { borrowernumber => $borrowernumber, message_name => 'Hold_Filled' } );
-    } else {
-        $print_mode = 1;
-    }
+
+    my $messagingprefs = C4::Members::Messaging::GetMessagingPreferences( {
+            borrowernumber => $borrowernumber,
+            message_name => 'Hold_Filled'
+    } );
 
     my $sth = $dbh->prepare("
         SELECT *
@@ -1925,44 +1921,39 @@ sub _koha_notify_reserve {
         substitute => { today => C4::Dates->new()->output() },
     );
 
-
-    if ( $print_mode ) {
-        $letter_params{ 'letter_code' } = 'HOLD_PRINT';
-        my $letter =  C4::Letters::GetPreparedLetter ( %letter_params ) or die "Could not find a letter called '$letter_params{'letter_code'}' in the 'reserves' module";
+    my $notification_sent = 0; #Keeping track if a Hold_filled message is sent. If no message can be sent, then default to a print message.
+    my $send_notification = sub {
+        my ( $mtt, $letter_code ) = (@_);
+        return unless defined $letter_code;
+        $letter_params{letter_code} = $letter_code;
+        $letter_params{message_transport_type} = $mtt;
+        my $letter =  C4::Letters::GetPreparedLetter ( %letter_params );
+        unless ($letter) {
+            warn "Could not find a letter called '$letter_params{'letter_code'}' for $mtt in the 'reserves' module";
+            return;
+        }
 
         C4::Letters::EnqueueLetter( {
             letter => $letter,
             borrowernumber => $borrowernumber,
-            message_transport_type => 'print',
+            from_address => $admin_email_address,
+            message_transport_type => $mtt,
         } );
-        
-        return;
+    };
+
+    while ( my ( $mtt, $letter_code ) = each %{ $messagingprefs->{transports} } ) {
+        if ( ($mtt eq 'email' and not $to_address) or ($mtt eq 'sms' and not $borrower->{smsalertnumber}) ) {
+            # email or sms is requested but not exist
+            next;
+        }
+        &$send_notification($mtt, $letter_code);
+        $notification_sent++;
     }
-
-    if ( $to_address && defined $messagingprefs->{transports}->{'email'} ) {
-        $letter_params{ 'letter_code' } = $messagingprefs->{transports}->{'email'};
-        my $letter =  C4::Letters::GetPreparedLetter ( %letter_params ) or die "Could not find a letter called '$letter_params{'letter_code'}' in the 'reserves' module";
-
-        C4::Letters::EnqueueLetter(
-            {   letter                 => $letter,
-                borrowernumber         => $borrowernumber,
-                message_transport_type => 'email',
-                from_address           => $admin_email_address,
-            }
-        );
+    #Making sure that a print notification is sent if no other transport types can be utilized.
+    if (! $notification_sent) {
+        &$send_notification('print', 'HOLD');
     }
-
-    if ( $borrower->{'smsalertnumber'} && defined $messagingprefs->{transports}->{'sms'} ) {
-        $letter_params{ 'letter_code' } = $messagingprefs->{transports}->{'sms'};
-        my $letter =  C4::Letters::GetPreparedLetter ( %letter_params ) or die "Could not find a letter called '$letter_params{'letter_code'}' in the 'reserves' module";
-
-        C4::Letters::EnqueueLetter(
-            {   letter                 => $letter,
-                borrowernumber         => $borrowernumber,
-                message_transport_type => 'sms',
-            }
-        );
-    }
+    
 }
 
 =head2 _ShiftPriorityByDateAndPriority

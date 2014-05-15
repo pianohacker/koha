@@ -28,6 +28,7 @@ use C4::Branch qw(GetBranchesCount);
 use Koha::DateUtils qw(dt_from_string);
 use Memoize;
 use DateTime::Format::MySQL;
+use Business::ISBN;
 use autouse 'Data::Dumper' => qw(Dumper);
 use DBI qw(:sql_types);
 
@@ -70,6 +71,10 @@ BEGIN {
 		&GetNormalizedEAN
 		&GetNormalizedOCLCNumber
         &xml_escape
+
+        &GetVariationsOfISBN
+        &GetVariationsOfISBNs
+        &NormalizeISBN
 
 		$DEBUG
 	);
@@ -189,7 +194,7 @@ build a HTML select with the following code :
 
 sub GetSupportList{
 	my $advanced_search_types = C4::Context->preference("AdvancedSearchTypes");
-	if (!$advanced_search_types or $advanced_search_types eq 'itemtypes') {  
+    if (!$advanced_search_types or $advanced_search_types =~ /itemtypes/) {
 		my $query = qq|
 			SELECT *
 			FROM   itemtypes
@@ -1434,6 +1439,44 @@ sub GetNormalizedOCLCNumber {
     }
 }
 
+sub GetAuthvalueDropbox {
+    my ( $authcat, $default ) = @_;
+    my $branch_limit = C4::Context->userenv ? C4::Context->userenv->{"branch"} : "";
+    my $dbh = C4::Context->dbh;
+
+    my $query = qq{
+        SELECT *
+        FROM authorised_values
+    };
+    $query .= qq{
+          LEFT JOIN authorised_values_branches ON ( id = av_id )
+    } if $branch_limit;
+    $query .= qq{
+        WHERE category = ?
+    };
+    $query .= " AND ( branchcode = ? OR branchcode IS NULL )" if $branch_limit;
+    $query .= " GROUP BY lib ORDER BY category, lib, lib_opac";
+    my $sth = $dbh->prepare($query);
+    $sth->execute( $authcat, $branch_limit ? $branch_limit : () );
+
+
+    my $option_list = [];
+    my @authorised_values = ( q{} );
+    while (my $av = $sth->fetchrow_hashref) {
+        push @{$option_list}, {
+            value => $av->{authorised_value},
+            label => $av->{lib},
+            default => ($default eq $av->{authorised_value}),
+        };
+    }
+
+    if ( @{$option_list} ) {
+        return $option_list;
+    }
+    return;
+}
+
+
 =head2 GetDailyQuote($opts)
 
 Takes a hashref of options
@@ -1514,15 +1557,111 @@ sub _normalize_match_point {
 }
 
 sub _isbn_cleanup {
-    require Business::ISBN;
-    my $isbn = Business::ISBN->new( $_[0] );
-    if ( $isbn ) {
-        $isbn = $isbn->as_isbn10 if $isbn->type eq 'ISBN13';
-        if (defined $isbn) {
-            return $isbn->as_string([]);
+    my ($isbn) = @_;
+    return NormalizeISBN(
+        {
+            isbn          => $isbn,
+            format        => 'ISBN-10',
+            strip_hyphens => 1,
         }
+    ) if $isbn;
+}
+
+=head2 NormalizedISBN
+
+  my $isbns = NormalizedISBN({
+    isbn => $isbn,
+    strip_hyphens => [0,1],
+    format => ['ISBN-10', 'ISBN-13']
+  });
+
+  Returns an isbn validated by Business::ISBN.
+  Optionally strips hyphens and/or forces the isbn
+  to be of the specified format.
+
+  If the string cannot be validated as an isbn,
+  it returns nothing.
+
+=cut
+
+sub NormalizeISBN {
+    my ($params) = @_;
+
+    my $string        = $params->{isbn};
+    my $strip_hyphens = $params->{strip_hyphens};
+    my $format        = $params->{format};
+
+    return unless $string;
+
+    my $isbn = Business::ISBN->new($string);
+
+    if ( $isbn && $isbn->error != Business::ISBN::BAD_ISBN ) {
+
+        if ( $format eq 'ISBN-10' ) {
+            $isbn = $isbn->as_isbn10();
+        }
+        elsif ( $format eq 'ISBN-13' ) {
+            $isbn = $isbn->as_isbn13();
+        }
+
+        if ($strip_hyphens) {
+            $string = $isbn->as_string( [] );
+        } else {
+            $string = $isbn->as_string();
+        }
+
+        return $string;
     }
-    return;
+}
+
+=head2 GetVariationsOfISBN
+
+  my @isbns = GetVariationsOfISBN( $isbn );
+
+  Returns a list of varations of the given isbn in
+  both ISBN-10 and ISBN-13 formats, with and without
+  hyphens.
+
+  In a scalar context, the isbns are returned as a
+  string delimited by ' | '.
+
+=cut
+
+sub GetVariationsOfISBN {
+    my ($isbn) = @_;
+
+    return unless $isbn;
+
+    my @isbns;
+
+    push( @isbns, NormalizeISBN({ isbn => $isbn }) );
+    push( @isbns, NormalizeISBN({ isbn => $isbn, format => 'ISBN-10' }) );
+    push( @isbns, NormalizeISBN({ isbn => $isbn, format => 'ISBN-13' }) );
+    push( @isbns, NormalizeISBN({ isbn => $isbn, format => 'ISBN-10', strip_hyphens => 1 }) );
+    push( @isbns, NormalizeISBN({ isbn => $isbn, format => 'ISBN-13', strip_hyphens => 1 }) );
+
+    return wantarray ? @isbns : join( " | ", @isbns );
+}
+
+=head2 GetVariationsOfISBNs
+
+  my @isbns = GetVariationsOfISBNs( @isbns );
+
+  Returns a list of varations of the given isbns in
+  both ISBN-10 and ISBN-13 formats, with and without
+  hyphens.
+
+  In a scalar context, the isbns are returned as a
+  string delimited by ' | '.
+
+=cut
+
+sub GetVariationsOfISBNs {
+    my (@isbns) = @_;
+
+    @isbns = map { GetVariationsOfISBN( $_ ) } @isbns;
+
+    return wantarray ? @isbns : join( " | ", @isbns );
 }
 
 1;

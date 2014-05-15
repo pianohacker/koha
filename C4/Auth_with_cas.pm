@@ -65,36 +65,22 @@ sub getMultipleAuth {
 # Logout from CAS
 sub logout_cas {
     my ($query) = @_;
-    my $uri = C4::Context->preference('OPACBaseURL') . $query->script_name();
-    my $casparam = $query->param('cas');
-    # FIXME: This should be more generic and handle whatever parameters there might be
-    $uri .= "?cas=" . $casparam if (defined $casparam);
-    $casparam = $defaultcasserver if (not defined $casparam);
-    my $cas = Authen::CAS::Client->new($casservers->{$casparam});
+    my ( $cas, $uri ) = _get_cas_and_service($query);
     print $query->redirect( $cas->logout_url($uri));
+    print $query->redirect( $cas->logout_url(url => $uri));
 }
 
 # Login to CAS
 sub login_cas {
     my ($query) = @_;
-    my $uri = C4::Context->preference('OPACBaseURL') . $query->script_name();
-    my $casparam = $query->param('cas');
-    # FIXME: This should be more generic and handle whatever parameters there might be
-    $uri .= "?cas=" . $casparam if (defined $casparam);
-    $casparam = $defaultcasserver if (not defined $casparam);
-    my $cas = Authen::CAS::Client->new($casservers->{$casparam});
+    my ( $cas, $uri ) = _get_cas_and_service($query);
     print $query->redirect( $cas->login_url($uri));
 }
 
 # Returns CAS login URL with callback to the requesting URL
 sub login_cas_url {
-
-    my ($query, $key) = @_;
-    my $uri = C4::Context->preference('OPACBaseURL') . $query->url( -absolute => 1, -query => 1 );
-    my $casparam = $query->param('cas');
-    $casparam = $defaultcasserver if (not defined $casparam);
-    $casparam = $key if (defined $key);
-    my $cas = Authen::CAS::Client->new($casservers->{$casparam});
+    my ( $query, $key ) = @_;
+    my ( $cas, $uri ) = _get_cas_and_service( $query, $key );
     return $cas->login_url($uri);
 }
 
@@ -104,12 +90,7 @@ sub checkpw_cas {
     $debug and warn "checkpw_cas";
     my ($dbh, $ticket, $query) = @_;
     my $retnumber;
-    my $uri = C4::Context->preference('OPACBaseURL') . $query->script_name();
-    my $casparam = $query->param('cas');
-    # FIXME: This should be more generic and handle whatever parameters there might be
-    $uri .= "?cas=" . $casparam if (defined $casparam);
-    $casparam = $defaultcasserver if (not defined $casparam);
-    my $cas = Authen::CAS::Client->new($casservers->{$casparam});
+    my ( $cas, $uri ) = _get_cas_and_service($query);
 
     # If we got a ticket
     if ($ticket) {
@@ -157,15 +138,11 @@ sub check_api_auth_cas {
     $debug and warn "check_api_auth_cas";
     my ($dbh, $PT, $query) = @_;
     my $retnumber;
-    my $url = C4::Context->preference('OPACBaseURL') . $query->script_name();
-
-    my $casparam = $query->param('cas');
-    $casparam = $defaultcasserver if (not defined $casparam);
-    my $cas = Authen::CAS::Client->new($casservers->{$casparam});
+    my ( $cas, $uri ) = _get_cas_and_service($query);
 
     # If we have a Proxy Ticket
     if ($PT) {
-        my $r = $cas->proxy_validate( $url, $PT );
+        my $r = $cas->proxy_validate( $uri, $PT );
 
         # If the PT is valid
         if ( $r->is_success ) {
@@ -203,6 +180,37 @@ sub check_api_auth_cas {
     return 0;
 }
 
+# Get CAS handler and service URI
+sub _get_cas_and_service {
+    my $query = shift;
+    my $key   = shift;    # optional
+
+    my $uri = _url_with_get_params($query);
+
+    my $casparam = $defaultcasserver;
+    $casparam = $query->param('cas') if defined $query->param('cas');
+    $casparam = $key if defined $key;
+    my $cas = Authen::CAS::Client->new( $casservers->{$casparam} );
+
+    return ( $cas, $uri );
+}
+
+# Get the current URL with parameters contained directly into URL (GET params)
+# This method replaces $query->url() which will give both GET and POST params
+sub _url_with_get_params {
+    my $query = shift;
+
+    my $uri_base_part = C4::Context->preference('OPACBaseURL') . $query->script_name();
+    my $uri_params_part = '';
+    foreach ( $query->url_param() ) {
+        $uri_params_part .= '&' if $uri_params_part;
+        $uri_params_part .= $_ . '=';
+        $uri_params_part .= URI::Escape::uri_escape( $query->url_param($_) );
+    }
+    $uri_base_part .= '?' if $uri_params_part;
+
+    return $uri_base_part . $uri_params_part;
+}
 
 1;
 __END__

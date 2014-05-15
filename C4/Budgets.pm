@@ -35,6 +35,7 @@ BEGIN {
 
         &GetBudget
         &GetBudgetByOrderNumber
+        &GetBudgetByCode
         &GetBudgets
         &GetBudgetHierarchy
 	    &AddBudget
@@ -56,8 +57,6 @@ BEGIN {
         &ModBudgetPeriod
         &AddBudgetPeriod
 	    &DelBudgetPeriod
-
-        &GetAuthvalueDropbox
 
         &ModBudgetPlan
 
@@ -401,44 +400,6 @@ sub GetBudgetAuthCats  {
 }
 
 # -------------------------------------------------------------------
-sub GetAuthvalueDropbox {
-    my ( $authcat, $default ) = @_;
-    my $branch_limit = C4::Context->userenv ? C4::Context->userenv->{"branch"} : "";
-    my $dbh = C4::Context->dbh;
-
-    my $query = qq{
-        SELECT *
-        FROM authorised_values
-    };
-    $query .= qq{
-          LEFT JOIN authorised_values_branches ON ( id = av_id )
-    } if $branch_limit;
-    $query .= qq{
-        WHERE category = ?
-    };
-    $query .= " AND ( branchcode = ? OR branchcode IS NULL )" if $branch_limit;
-    $query .= " GROUP BY lib ORDER BY category, lib, lib_opac";
-    my $sth = $dbh->prepare($query);
-    $sth->execute( $authcat, $branch_limit ? $branch_limit : () );
-
-
-    my $option_list = [];
-    my @authorised_values = ( q{} );
-    while (my $av = $sth->fetchrow_hashref) {
-        push @{$option_list}, {
-            value => $av->{authorised_value},
-            label => $av->{lib},
-            default => ($default eq $av->{authorised_value}),
-        };
-    }
-
-    if ( @{$option_list} ) {
-        return $option_list;
-    }
-    return;
-}
-
-# -------------------------------------------------------------------
 sub GetBudgetPeriods {
 	my ($filters,$orderby) = @_;
     return SearchInTable("aqbudgetperiods",$filters, $orderby, undef,undef, undef, "wide");
@@ -498,7 +459,7 @@ sub GetBudgetHierarchy {
     my @bind_params;
     my $dbh   = C4::Context->dbh;
     my $query = qq|
-                    SELECT aqbudgets.*, aqbudgetperiods.budget_period_active
+                    SELECT aqbudgets.*, aqbudgetperiods.budget_period_active, aqbudgetperiods.budget_period_description
                     FROM aqbudgets 
                     JOIN aqbudgetperiods USING (budget_period_id)|;
                         
@@ -695,6 +656,31 @@ sub GetBudgetByOrderNumber {
     return $result;
 }
 
+=head2 GetBudgetByCode
+
+    my $budget = &GetBudgetByCode($budget_code);
+
+Retrieve all aqbudgets fields as a hashref for the budget that has
+given budget_code
+
+=cut
+
+sub GetBudgetByCode {
+    my ( $budget_code ) = @_;
+
+    my $dbh = C4::Context->dbh;
+    my $query = qq{
+        SELECT *
+        FROM aqbudgets
+        WHERE budget_code = ?
+        ORDER BY budget_id DESC
+        LIMIT 1
+    };
+    my $sth = $dbh->prepare( $query );
+    $sth->execute( $budget_code );
+    return $sth->fetchrow_hashref;
+}
+
 =head2 GetChildBudgetsSpent
 
   &GetChildBudgetsSpent($budget-id);
@@ -825,30 +811,52 @@ sub CanUserUseBudget {
         }
 
         # Budget restricted to owner
-        if ($budget->{budget_permission} == 1
-        && $budget->{budget_owner_id}
-        && $budget->{budget_owner_id} != $borrower->{borrowernumber}) {
-            return 0;
+        if ( $budget->{budget_permission} == 1 ) {
+            if (    $budget->{budget_owner_id}
+                and $budget->{budget_owner_id} != $borrower->{borrowernumber} )
+            {
+                return 0;
+            }
         }
 
-        my @budget_users = GetBudgetUsers($budget->{budget_id});
-
         # Budget restricted to owner, users and library
-        if ($budget->{budget_permission} == 2
-        && $budget->{budget_owner_id}
-        && $budget->{budget_owner_id} != $borrower->{borrowernumber}
-        && (0 == grep {$borrower->{borrowernumber} == $_} @budget_users)
-        && defined $budget->{budget_branchcode}
-        && $budget->{budget_branchcode} ne C4::Context->userenv->{branch}) {
-            return 0;
+        elsif ( $budget->{budget_permission} == 2 ) {
+            my @budget_users = GetBudgetUsers( $budget->{budget_id} );
+
+            if (
+                (
+                        $budget->{budget_owner_id}
+                    and $budget->{budget_owner_id} !=
+                    $borrower->{borrowernumber}
+                    or not $budget->{budget_owner_id}
+                )
+                and ( 0 == grep { $borrower->{borrowernumber} == $_ }
+                    @budget_users )
+                and defined $budget->{budget_branchcode}
+                and $budget->{budget_branchcode} ne
+                C4::Context->userenv->{branch}
+              )
+            {
+                return 0;
+            }
         }
 
         # Budget restricted to owner and users
-        if ($budget->{budget_permission} == 3
-        && $budget->{budget_owner_id}
-        && $budget->{budget_owner_id} != $borrower->{borrowernumber}
-        && (0 == grep {$borrower->{borrowernumber} == $_} @budget_users)) {
-            return 0;
+        elsif ( $budget->{budget_permission} == 3 ) {
+            my @budget_users = GetBudgetUsers( $budget->{budget_id} );
+            if (
+                (
+                        $budget->{budget_owner_id}
+                    and $budget->{budget_owner_id} !=
+                    $borrower->{borrowernumber}
+                    or not $budget->{budget_owner_id}
+                )
+                and ( 0 == grep { $borrower->{borrowernumber} == $_ }
+                    @budget_users )
+              )
+            {
+                return 0;
+            }
         }
     }
 

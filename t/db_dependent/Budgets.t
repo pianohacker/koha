@@ -1,18 +1,19 @@
 use strict;
 use warnings;
-use Test::More tests=>20;
+use Test::More tests => 22;
 
 BEGIN {use_ok('C4::Budgets') }
+use C4::Context;
 use C4::Dates;
 use C4::Context;
 
 use YAML;
-
-my $dbh = C4::Context->dbh();
+my $dbh = C4::Context->dbh;
 $dbh->{AutoCommit} = 0;
 $dbh->{RaiseError} = 1;
 
-$dbh->do('DELETE FROM aqbudgetperiods');
+$dbh->do(q|DELETE FROM aqbudgetperiods|);
+$dbh->do(q|DELETE FROM aqbudgets|);
 
 #
 # Budget Periods :
@@ -94,6 +95,7 @@ ok($budget_id=AddBudget(
 
 my $budget;
 ok($budget=GetBudget($budget_id) ,"GetBudget OK");
+$budget_id = $budget->{budget_id};
 $$budget{budget_permission}=1;
 ok($mod_status=ModBudget($budget),"ModBudget OK");
 ok(GetBudgets()>0,
@@ -108,6 +110,11 @@ ok(GetBudgets({budget_period_id=>GetBudgetPeriod($bpid)->{budget_period_id}},[{"
 
 my $budget_name = GetBudgetName( $budget_id );
 is($budget_name, $budget->{budget_name}, "Test the GetBudgetName routine");
+
+my $budget_code = $budget->{budget_code};
+my $budget_by_code = GetBudgetByCode( $budget_code );
+is($budget_by_code->{budget_id}, $budget_id, "GetBudgetByCode, check id");
+is($budget_by_code->{budget_notes}, 'This is a note', "GetBudgetByCode, check notes");
 
 my $second_budget_id;
 ok($second_budget_id=AddBudget(
@@ -128,3 +135,4 @@ ok($budgets->[0]->{budget_name} lt $budgets->[1]->{budget_name}, 'default sort o
 ok($del_status=DelBudget($budget_id),
     "DelBudget returned $del_status");
 
+$dbh->rollback;

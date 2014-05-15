@@ -68,6 +68,7 @@ my $show_priority;
 for ( C4::Context->preference("OPACShowHoldQueueDetails") ) {
     m/priority/ and $show_priority = 1;
 }
+
 my $patronupdate = $query->param('patronupdate');
 my $canrenew = 1;
 
@@ -124,19 +125,22 @@ my @bordat;
 $bordat[0] = $borr;
 
 # Warningdate is the date that the warning starts appearing
-if ( $borr->{dateexpiry} && Date_to_Days( $today_year, $today_month, $today_day ) > Date_to_Days( $warning_year, $warning_month, $warning_day ) ) {
-    $borr->{'warnexpired'} = 1;
-}
-elsif ( $borr->{dateexpiry} && C4::Context->preference('NotifyBorrowerDeparture') &&
-        Date_to_Days(Add_Delta_Days($warning_year, $warning_month, $warning_day,- C4::Context->preference('NotifyBorrowerDeparture'))) <
-        Date_to_Days( $today_year, $today_month, $today_day ) ) {
+if ( $borr->{'dateexpiry'} && C4::Context->preference('NotifyBorrowerDeparture') ) {
+    my $days_to_expiry = Date_to_Days( $warning_year, $warning_month, $warning_day ) - Date_to_Days( $today_year, $today_month, $today_day );
+    if ( $days_to_expiry < 0 ) {
+        #borrower card has expired, warn the borrower
+        $borr->{'warnexpired'} = $borr->{'dateexpiry'};
+    } elsif ( $days_to_expiry < C4::Context->preference('NotifyBorrowerDeparture') ) {
         # borrower card soon to expire, warn the borrower
         $borr->{'warndeparture'} = $borr->{dateexpiry};
         if (C4::Context->preference('ReturnBeforeExpiry')){
             $borr->{'returnbeforeexpiry'} = 1;
         }
+    }
 }
 
+# pass on any renew errors to the template for displaying
+my $renew_error = $query->param('renew_error');
 
 $template->param(   BORROWER_INFO     => \@bordat,
                     borrowernumber    => $borrowernumber,
@@ -144,6 +148,8 @@ $template->param(   BORROWER_INFO     => \@bordat,
                     OPACMySummaryHTML => (C4::Context->preference("OPACMySummaryHTML")) ? 1 : 0,
                     surname           => $borr->{surname},
                     showname          => $borr->{showname},
+                    RENEW_ERROR       => $renew_error,
+                    borrower          => $borr,
                 );
 
 #get issued items ....

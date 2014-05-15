@@ -11,8 +11,9 @@ var MSG_CONFIRM_DELETE_HOLD   = _("Are you sure you want to cancel this hold?");
 var MSG_CONFIRM_SUSPEND_HOLDS = _("Are you sure you want to suspend all holds?");
 var MSG_CONFIRM_RESUME_HOLDS  = _("Are you sure you want to resume all suspended holds?");
 
-            $(function() {
-            $('#opac-user-views').tabs();
+    $(document).ready(function(){
+
+        $('#opac-user-views').tabs();
 
         var dTables = $("#checkoutst,#holdst,#overduest");
         dTables.each(function(){
@@ -27,8 +28,10 @@ var MSG_CONFIRM_RESUME_HOLDS  = _("Are you sure you want to resume all suspended
             }));
         });
 
-[% IF ( GoogleJackets ) %]KOHA.Google.GetCoverFromIsbn();[% END %]
-        [% IF ( OpacRenewalAllowed && canrenew && !userdebarred ) %]$("#renewselected").submit(function(){
+    [% IF ( GoogleJackets ) %]KOHA.Google.GetCoverFromIsbn();[% END %]
+
+    [% IF ( OpacRenewalAllowed && canrenew && !userdebarred ) %]
+        $("#renewselected").submit(function(){
             valid = false;
             $("input[type=checkbox]").each(function(){
                 if($(this).is(':checked')){
@@ -46,9 +49,14 @@ var MSG_CONFIRM_RESUME_HOLDS  = _("Are you sure you want to resume all suspended
         $("body").on("click","#renewall_link",function(){
             $("#renewall").submit();
         });
-        $("#checkoutst caption").append("<div id=\"renewcontrols\"><a id=\"renewselected_link\" href=\"#\">"+_("Renew selected")+"</a> <a id=\"renewall_link\" href=\"#\">"+_("Renew all")+"</a></div>");[% END %]
-        $( ".suspend-until" ).datepicker({ minDate: 1 }); // Require that "until date" be in the future
-            });
+        [% IF ( canrenew && !userdebarred && OpacRenewalAllowed && !( borrower.is_expired && borrower.BlockExpiredPatronOpacActions ) ) %]
+            $("#checkoutst caption").append("<div id=\"renewcontrols\"><a id=\"renewselected_link\" href=\"#\">"+_("Renew selected")+"</a> <a id=\"renewall_link\" href=\"#\">"+_("Renew all")+"</a></div>");
+        [% END %]
+    [% END %]
+
+    $( ".suspend-until" ).datepicker({ minDate: 1 }); // Require that "until date" be in the future
+
+    });
 //]]>
 </script>
 </head>
@@ -92,7 +100,25 @@ var MSG_CONFIRM_RESUME_HOLDS  = _("Are you sure you want to resume all suspended
 
         [% IF ( BORROWER_INF.warnexpired ) %]
         <div class="dialog alert" id="warnexpired">
-            <strong>Please note:</strong><span> Your card has expired. Please contact the library for more information.</span>
+            <strong>Please note: </strong><span>Your account has expired as of [% BORROWER_INF.warnexpired | $KohaDates %]. Please contact the library if you wish to renew your account.</span>
+        </div>
+        [% END %]
+
+        [% IF ( RENEW_ERROR ) %]
+        <div class="dialog alert">
+                <strong>Please note:</strong>
+                <span>
+                    Your loan renewal failed because of the following reason(s):
+                    [% FOREACH error IN RENEW_ERROR.split('\|') %]
+                        [% IF error == 'card_expired' %]
+                            Your account has expired. Please contact the library for more information.
+                        [% ELSIF error == 'too_many' %]
+                            You have renewed this item the maximum number of times allowed.
+                        [% ELSIF error == 'on_reserve' %]
+                            This item is on hold for another patron.
+                        [% END %]
+                    [% END %]
+                </span>
         </div>
         [% END %]
 
@@ -143,7 +169,7 @@ var MSG_CONFIRM_RESUME_HOLDS  = _("Are you sure you want to resume all suspended
         [% UNLESS ( item_level_itypes ) %]<th>Item type</th> [% END %]
         [% IF ( show_barcode ) %]<th>Barcode</th>[% END %]
         <th>Call No.</th>
-        [% IF ( OpacRenewalAllowed ) %]
+        [% IF ( OpacRenewalAllowed && !( borrower.is_expired && borrower.BlockExpiredPatronOpacActions ) ) %]
         <th class="nosort">Renew</th>
         [% END %]
 [% IF ( OPACFinesTab ) %]
@@ -167,7 +193,7 @@ var MSG_CONFIRM_RESUME_HOLDS  = _("Are you sure you want to resume all suspended
 
 [% IF ( JacketImages ) %]<td class="jacketcell">
 
-[% IF ( OPACAmazonCoverImages ) %][% IF ( ISSUE.normalized_isbn ) %]<a href="http://www.amazon.com/gp/reader/[% ISSUE.normalized_isbn %]/ref=sib_dp_pt/002-7879865-0184864#reader-link" title="View at Amazon.com"><img border="0" src="http://images.amazon.com/images/P/[% ISSUE.normalized_isbn %].01.THUMBZZZ.jpg" alt="Cover Image" /></a>[% ELSE %]<a href="#"><span class="no-image">No cover image available</span></a>[% END %][% END %]
+[% IF ( OPACAmazonCoverImages ) %][% IF ( ISSUE.normalized_isbn ) %]<a href="http://www.amazon.com/gp/reader/[% ISSUE.normalized_isbn %]/ref=sib_dp_pt/002-7879865-0184864#reader-link" title="View at Amazon.com"><img border="0" src="https://images-na.ssl-images-amazon.com/images/P/[% ISSUE.normalized_isbn %].01.THUMBZZZ.jpg" alt="Cover Image" /></a>[% ELSE %]<a href="#"><span class="no-image">No cover image available</span></a>[% END %][% END %]
 
 [% IF ( GoogleJackets ) %][% IF ( ISSUE.normalized_isbn ) %]<div style="display:block;" title="Click to view in Google Books" class="[% ISSUE.normalized_isbn %]" id="gbs-thumbnail[% loop.count %]"></div>[% ELSE %]<a href="http://books.google.com/books?q=[% ISSUE.title |url %]"><span class="no-image">No cover image available</span></a>[% END %][% END %]
 
@@ -184,14 +210,14 @@ var MSG_CONFIRM_RESUME_HOLDS  = _("Are you sure you want to resume all suspended
                         [% ISSUE.author %]
                     </span></td>
                 [% IF ( ISSUE.overdue ) %]
-                    <td class="date_due overdue"><span title="[% ISSUE.date_due %]">[% ISSUE.date_due | $KohaDates %]</span></td>
+                    <td class="date_due overdue"><span title="[% ISSUE.date_due %]">[% ISSUE.date_due | $KohaDates as_due_date => 1 %]</span></td>
                 [% ELSE %]
-                    <td class="date_due"><span title="[% ISSUE.date_due %]">[% ISSUE.date_due | $KohaDates %]</span></td>
+                    <td class="date_due"><span title="[% ISSUE.date_due %]">[% ISSUE.date_due | $KohaDates as_due_date => 1 %]</span></td>
                 [% END %]
                 [% UNLESS ( item_level_itypes ) %]<td class="itype">[% IF ( ISSUE.imageurl ) %]<img src="[% ISSUE.imageurl %]" title="[% ISSUE.description %]" alt="[% ISSUE.description %]" />[% END %] [% ISSUE.description %]</td>[% END %]
                 [% IF ( show_barcode ) %]<td class="barcode">[% ISSUE.barcode %]</td>[% END %]
                 <td class="call_no">[% ISSUE.itemcallnumber %]</td>
-                [% IF ( OpacRenewalAllowed ) %]
+                [% IF ( OpacRenewalAllowed && !( borrower.is_expired && borrower.BlockExpiredPatronOpacActions ) ) %]
                     <td class="renew">
                     [% IF ( ISSUE.status ) %]
                         [% IF ( canrenew ) %]
@@ -217,11 +243,11 @@ var MSG_CONFIRM_RESUME_HOLDS  = _("Are you sure you want to resume all suspended
             </tr>
         [% END %]</tbody>
         </table>
-       [% IF ( canrenew && !userdebarred && OpacRenewalAllowed ) %]
-        <input type="submit" value="Renew selected" />
+        [% IF ( canrenew && !userdebarred && OpacRenewalAllowed && !( borrower.is_expired && borrower.BlockExpiredPatronOpacActions ) ) %]
+        <input type="submit" value="Renew Selected" />
         [% END %]
         </form>
-        [% IF ( canrenew && !userdebarred && OpacRenewalAllowed ) %]
+        [% IF ( canrenew && !userdebarred && OpacRenewalAllowed && !( borrower.is_expired && borrower.BlockExpiredPatronOpacActions ) ) %]
         <form id="renewall" action="/cgi-bin/koha/opac-renew.pl" method="post">
             <input type="hidden" name="from" value="opac_user" />
             <input type="hidden" name="borrowernumber" value="[% borrowernumber %]" />
@@ -322,7 +348,7 @@ var MSG_CONFIRM_RESUME_HOLDS  = _("Are you sure you want to resume all suspended
 <tr>
 [% IF ( JacketImages ) %]<td class="jacketcell">
 
-[% IF ( OPACAmazonCoverImages ) %][% IF ( OVERDUE.normalized_isbn ) %]<a href="http://www.amazon.com/gp/reader/[% OVERDUE.normalized_isbn %]/ref=sib_dp_pt/002-7879865-0184864#reader-link" title="View at Amazon.com"><img src="http://images.amazon.com/images/P/[% OVERDUE.normalized_isbn %].01.THUMBZZZ.jpg" alt="" class="thumbnail" /></a>[% ELSE %]<a href="#"><span class="no-image">No cover image available</span></a>[% END %][% END %]
+[% IF ( OPACAmazonCoverImages ) %][% IF ( OVERDUE.normalized_isbn ) %]<a href="http://www.amazon.com/gp/reader/[% OVERDUE.normalized_isbn %]/ref=sib_dp_pt/002-7879865-0184864#reader-link" title="View at Amazon.com"><img src="https://images-na.ssl-images-amazon.com/images/P/[% ISSUE.normalized_isbn %].01.THUMBZZZ.jpg" alt="" class="thumbnail" /></a>[% ELSE %]<a href="#"><span class="no-image">No cover image available</span></a>[% END %][% END %]
 
 [% IF ( GoogleJackets ) %][% IF ( OVERDUE.normalized_isbn ) %]<div style="display:block;" title="Click to view in Google Books" class="[% OVERDUE.normalized_isbn %]" id="gbs-thumbnail[% loop.count %]"></div>[% ELSE %]<a href="http://books.google.com/books?q=[% OVERDUE.title |url %]"><span class="no-image">No cover image available</span></a>[% END %][% END %]
 
@@ -342,7 +368,7 @@ var MSG_CONFIRM_RESUME_HOLDS  = _("Are you sure you want to resume all suspended
 [% UNLESS ( item_level_itypes ) %]<td>[% IF ( OVERDUE.imageurl ) %]<img src="[% OVERDUE.imageurl %]" title="[% OVERDUE.description %]" alt="[% OVERDUE.description %]" />[% END %] [% OVERDUE.description %]</td>[% END %]
 [% IF ( show_barcode ) %]<td>[% OVERDUE.barcode %]</td>[% END %]
 <td>[% OVERDUE.itemcallnumber %]</td>
-<td><span title="[% OVERDUE.date_due %]">[% OVERDUE.date_due | $KohaDates %]</span></td>
+<td><span title="[% OVERDUE.date_due %]">[% OVERDUE.date_due | $KohaDates as_due_date => 1 %]</span></td>
                 [% IF ( OpacRenewalAllowed ) %]
 <td>
 [% IF ( OVERDUE.debarred ) %]Account frozen

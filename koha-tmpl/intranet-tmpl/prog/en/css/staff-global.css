@@ -559,6 +559,12 @@ padding: 0;
 width: 100%; 
 }
 
+fieldset.rows.unselected {
+    background-color: white;
+    border-width : 0px;
+    border: 0;
+}
+
 fieldset.rows legend {  
 	margin-left: 1em;
 	font-weight: bold;
@@ -1512,6 +1518,10 @@ li.email {
 	text-indent : 1em;
 }
 
+.facet-count {
+    display: inline-block;
+}
+
 div.pages {
 	margin : .5em 0;
 }
@@ -1756,6 +1766,12 @@ div.lang {
   height:100%;
   overflow:auto;
  }*/
+
+table > caption span.actions {
+    font-size: 66%;
+    font-weight : normal;
+    margin : 0 .5em 0 0;
+}
 
 #CheckAll, #CheckNone, #CheckPending {
 	font-weight : normal;
