@@ -40,6 +40,7 @@ use Modern::Perl;
 
 use base 'Koha::Service';
 
+use C4::Biblio;
 use C4::Reserves;
 
 sub new {
@@ -71,7 +72,15 @@ Used to set a single system preference.
 sub get_holds {
     my ( $self, $borrowernumber ) = @_;
 
-    return { reserves => [ GetReservesFromBorrowernumber($borrowernumber) ] };
+    my @reserves = GetReservesFromBorrowernumber($borrowernumber);
+    foreach my $reserve (@reserves) {
+        my $getiteminfo = GetBiblioFromItemNumber( $reserve->{'itemnumber'} );
+        $reserve->{title} = $getiteminfo->{title};
+        $reserve->{author} = $getiteminfo->{author};
+        $reserve->{barcode} = $getiteminfo->{barcode};
+    }
+
+    return { reserves => \@reserves };
 }
 
 1;
