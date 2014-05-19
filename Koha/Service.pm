@@ -59,8 +59,10 @@ use Modern::Perl;
 use base 'Class::Accessor';
 
 use C4::Auth qw( check_api_auth );
+use C4::Context;
 use C4::Output qw( :ajax );
 use CGI;
+use DateTime;
 use JSON;
 
 our $debug;
@@ -109,6 +111,35 @@ sub new {
     }, $class;
 }
 
+=head2 test
+
+    $service->test( $request_method, $path_info, \%params );
+
+Sets up a fake CGI context for unit tests.
+
+=cut
+
+sub test {
+    my ( $self, $request_method, $path_info, $params ) = @_;
+
+    $ENV{REQUEST_METHOD} = $request_method;
+    $ENV{PATH_INFO} = $path_info;
+    $ENV{HTTP_CONTENT_LENGTH} = "0";
+    $self->query(CGI->new);
+
+    foreach my $key ( keys %$params ) {
+        $self->query->param( $key, $params->{ $key } );
+    }
+
+    my $user     = $ENV{KOHA_USER} || C4::Context->config("user");
+    my $password = $ENV{KOHA_PASS} || C4::Context->config("pass");
+
+    $self->query->param( 'userid', $user );
+    $self->query->param( 'password', $password );
+
+    $self->authenticate;
+}
+
 =head2 authenticate
 
     my ( $query, $cookie ) = $self->authenticate();
@@ -123,14 +154,31 @@ This must be called before the C<croak> or C<output> methods.
 sub authenticate {
     my ( $self ) = @_;
 
-    $self->query(CGI->new);
+    unless ( defined( $self->auth_status ) ) {
+        $self->query(CGI->new) unless ( $self->query );
 
-    my ( $status, $cookie, $sessionID ) = check_api_auth( $self->query, $self->{needed_flags} );
-    $self->cookie($cookie);
-    $self->auth_status($status);
-    $self->croak( 'auth', $status ) if ( $status ne 'ok' && !$self->{authnotrequired} );
+        my ( $status, $cookie, $sessionID ) = check_api_auth( $self->query, $self->{needed_flags} );
+        $self->cookie($cookie);
+        $self->auth_status($status);
+        $self->handle_auth_failure() if ( $status ne 'ok' );
+    }
 
-    return ( $self->query, $cookie );
+    return ( $self->query, $self->cookie );
+}
+
+=head2 handle_auth_failure
+
+    $self->handle_auth_failure();
+
+Called when C<authenticate> fails (C<$self->auth_status> not 'ok'). By default, if
+C<$self->{authnotrequired}> is not set, croaks and outputs an auth error.
+
+=cut
+
+sub handle_auth_failure {
+    my ( $self ) = @_;
+
+    $self->croak( 'auth', $self->auth_status ) if ( !$self->{authnotrequired} );
 }
 
 =head2 output
@@ -157,6 +205,8 @@ is given, outputs JSONP.
 
 =cut
 
+*DateTime::TO_JSON = sub { shift->_stringify; };
+
 sub output {
     my ( $self, $response, $options ) = @_;
 
@@ -170,10 +220,10 @@ sub output {
     };
 
     if ( $options->{type} eq 'json' ) {
-        $response = encode_json($response);
+        $response = JSON->new->convert_blessed->encode($response);
 
         if ( $self->query->param( 'callback' ) ) {
-            $response = $self->query->param( 'callback' ) . '(' . encode_json($response) . ');';
+            $response = $self->query->param( 'callback' ) . '(' . $response . ');';
             $options->{status} = '200 OK';
             $options->{type} = 'js';
         }

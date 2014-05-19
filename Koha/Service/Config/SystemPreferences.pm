@@ -47,7 +47,6 @@ use C4::Log;
 sub new {
     my ( $class ) = @_;
 
-    # Authentication is handled manually below
     return $class->SUPER::new( {
         needed_flags => { parameters => 1 },
         routes => [

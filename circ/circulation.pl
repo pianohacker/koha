@@ -230,6 +230,9 @@ if ($findborrower) {
 # get the borrower information.....
 my $borrower;
 if ($borrowernumber) {
+    if ( $query->cookie( 'checkout_client' ) eq 'beta' ) {
+        print $query->redirect( '/cgi-bin/koha/circ/checkout.pl?borrowernumber=' . $borrowernumber );
+    }
     $borrower = GetMemberDetails( $borrowernumber, 0 );
     my ( $od, $issue, $fines ) = GetMemberIssuesAndFines( $borrowernumber );
 

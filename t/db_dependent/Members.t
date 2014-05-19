@@ -17,8 +17,9 @@
 
 use Modern::Perl;
 
-use Test::More tests => 72;
+use Test::More tests => 73;
 use Test::MockModule;
+use Koha::Service::Patrons;
 use Data::Dumper;
 use C4::Context;
 
@@ -112,6 +113,21 @@ ok ( $member->{firstname}    eq $FIRSTNAME    &&
   or diag("Mismatching member details: ".Dumper(\%data, $member));
 
 is($member->{dateofbirth}, undef, "Empty dates handled correctly");
+
+my $service = Koha::Service::Patrons->new;
+my $borrowernumber = $member->{borrowernumber};
+$service->test( "GET", "/$borrowernumber/patronInfo" );
+my $jsonresponse = $service->dispatch->{patronInfo};
+
+ok ( $jsonresponse->{firstname}    eq $FIRSTNAME    &&
+     $jsonresponse->{surname}      eq $SURNAME      &&
+     $jsonresponse->{categorycode} eq $CATEGORYCODE &&
+     $jsonresponse->{branchcode}   eq $BRANCHCODE
+     , "Got member")
+  or diag("Mismatching member details: ".Dumper(\%data, $jsonresponse));
+
+C4::Context->_unset_userenv;
+C4::Context->set_userenv ( @USERENV );
 
 $member->{firstname} = $CHANGED_FIRSTNAME;
 $member->{email}     = $EMAIL;

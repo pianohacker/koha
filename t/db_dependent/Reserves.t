@@ -17,7 +17,7 @@
 
 use Modern::Perl;
 
-use Test::More tests => 53;
+use Test::More tests => 55;
 
 use MARC::Record;
 use DateTime::Duration;
@@ -27,14 +27,19 @@ use C4::Biblio;
 use C4::Items;
 use C4::Members;
 use C4::Circulation;
+use JSON;
 use t::lib::Mocks;
+use Test::WWW::Mechanize;
 
 use Koha::DateUtils;
 
 use Data::Dumper;
 BEGIN {
     use_ok('C4::Reserves');
+    use_ok('Koha::Service::Patrons');
 }
+
+
 
 # a very minimal mack of userenv for use by the test of DelItemCheck
 *C4::Context::userenv = sub {
@@ -126,6 +131,15 @@ is($status, "Reserved", "CheckReserves Test 2");
 
 ($status, $reserve, $all_reserves) = CheckReserves(undef, $barcode);
 is($status, "Reserved", "CheckReserves Test 3");
+
+my $service = Koha::Service::Patrons->new;
+$service->test( "GET", "/$borrowernumber/holds" );
+my $jsonresponse = $service->dispatch;
+
+ok(
+    ref($jsonresponse->{holds}) eq "ARRAY" && scalar @{ $jsonresponse->{holds} } == 1,
+    "checks to make sure that API returns one hold"
+);
 
 my $ReservesControlBranch = C4::Context->preference('ReservesControlBranch');
 C4::Context->set_preference( 'ReservesControlBranch', 'ItemHomeLibrary' );
