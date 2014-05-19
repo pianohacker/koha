@@ -19,14 +19,14 @@ KOHA.AJAX = {
             return;
         }
 
-        var error = eval( '(' + xhr.responseText + ')' );
+        var data = eval( '(' + xhr.responseText + ')' );
 
-        if ( error.type == 'auth' ) {
+        if ( data.error == 'auth' ) {
             humanMsg.displayMsg( MSG_SESSION_TIMED_OUT );
         }
 
         if ( callback ) {
-            callback( error );
+            callback( data );
         } else {
             humanMsg.displayAlert( MSG_DATA_NOT_SAVED );
         }
