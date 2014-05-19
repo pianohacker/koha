@@ -21,7 +21,7 @@ package Koha::Service::Bib;
 
 use Modern::Perl;
 
-use base 'Koha::Service';
+use base 'Koha::Service::XML';
 
 use C4::Biblio;
 use C4::Items;
@@ -30,28 +30,13 @@ use XML::Simple;
 sub new {
     my ( $class ) = @_;
 
-    # Authentication is handled manually below
     return $class->SUPER::new( {
-        authnotrequired => 1,
-        needed_flags => { editcatalogue => 'edit_catalogue'},
+        needed_flags => { editcatalogue => 'edit_catalogue' },
         routes => [
             [ qr'GET /(\d+)', 'fetch_bib' ],
             [ qr'POST /(\d+)', 'update_bib' ],
         ]
     } );
-}
-
-sub run {
-    my ( $self ) = @_;
-
-    $self->authenticate;
-
-    unless ( $self->auth_status eq "ok" ) {
-        $self->output( XMLout( { auth_status => $self->auth_status }, NoAttr => 1, RootName => 'response', XMLDecl => 1 ), { type => 'xml', status => '403 Forbidden' } );
-        exit;
-    }
-
-    $self->dispatch;
 }
 
 sub fetch_bib {
@@ -60,7 +45,7 @@ sub fetch_bib {
     my $record = GetMarcBiblio( $biblionumber, $self->query->url_param('items') );
 
     if (defined $record) {
-        $self->output( $record->as_xml_record(), { type => 'xml' } );
+        return $record->as_xml_record();
     } else {
         $self->output( '', { status => '404 Not Found', type => 'xml' } );
     }
@@ -77,7 +62,6 @@ sub update_bib {
 
     my $result = {};
     my $inxml = $self->query->param('POSTDATA');
-    use Data::Dumper; warn Dumper($self->query);
 
     my $record = eval {MARC::Record::new_from_xml( $inxml, "utf8", C4::Context->preference('marcflavour'))};
     my $do_not_escape = 0;
@@ -115,7 +99,7 @@ sub update_bib {
         $do_not_escape = 1;
     }
 
-    $self->output( XMLout($result, NoAttr => 1, RootName => 'response', XMLDecl => 1, NoEscape => $do_not_escape), { type => 'xml' } );
+    return XMLout($result, NoAttr => 1, RootName => 'response', XMLDecl => 1, NoEscape => $do_not_escape);
 }
 
 1;

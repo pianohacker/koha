@@ -20,6 +20,7 @@ package Koha::Service::Authentication;
 
 use Modern::Perl;
 
+# Handles authentication and output manually, so no reason to inherit from Koha::Service::XML
 use base 'Koha::Service';
 
 use C4::Auth qw/check_api_auth/;
@@ -29,11 +30,13 @@ use XML::Simple;
 sub new {
     my ( $class ) = @_;
 
-    # Authentication is handled manually below
     return $class->SUPER::new( {
-        authnotrequired => 1,
         needed_flags => { editcatalogue => 'edit_catalogue'},
     } );
+}
+
+sub handle_auth_failure {
+    # Stub, to allow run() to output XML itself.
 }
 
 sub run {
@@ -55,6 +58,7 @@ sub run {
 
     $self->authenticate;
 
+    # Can't reuse Koha::Service::XML, as result node has different name.
     $self->output( XMLout({ status => $self->auth_status }, NoAttr => 1, RootName => 'response', XMLDecl => 1), { type => 'xml' } );
 }
 

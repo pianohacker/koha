@@ -22,7 +22,7 @@ package Koha::Service::BibProfile;
 
 use Modern::Perl;
 
-use base 'Koha::Service';
+use base 'Koha::Service::XML';
 
 use C4::Context;
 use C4::Koha;
@@ -33,8 +33,7 @@ sub new {
 
     # Authentication is handled manually below
     return $class->SUPER::new( {
-        authnotrequired => 1,
-        needed_flags => { editcatalogue => 'edit_catalogue'},
+        needed_flags => { editcatalogue => 'edit_catalogue' },
         routes => [
             [ qr'GET /(\d+)', 'fetch_bib' ],
             [ qr'POST /(\d+)', 'update_bib' ],
@@ -46,11 +45,6 @@ sub run {
     my ( $self ) = @_;
 
     $self->authenticate;
-
-    unless ( $self->auth_status eq "ok" ) {
-        $self->output( XMLout( { auth_status => $self->auth_status }, NoAttr => 1, RootName => 'response', XMLDecl => 1 ), { type => 'xml', status => '403 Forbidden' } );
-        exit;
-    }
 
     # get list of required tags
     my $result = {};
@@ -69,7 +63,7 @@ sub run {
             XMLDecl => 1,
             GroupTags => {mandatory_tags => 'tag', mandatory_subfields => 'subfield', reserved_tags => 'tag', valid_values => 'value'}
         ),
-        { type => 'xml', status => '403 Forbidden' }
+        { type => 'xml' }
     );
 }
 

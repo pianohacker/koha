@@ -83,7 +83,7 @@ C<\%options> may contain the following:
 
 =item authnotrequired
 
-Defaults to false. If set, means that C<authenticate> will not croak if the user is not logged in.
+Defaults to false. If set, means that C<handle_auth_error> will not croak if the user is not logged in.
 
 =item needed_flags
 
@@ -123,14 +123,31 @@ This must be called before the C<croak> or C<output> methods.
 sub authenticate {
     my ( $self ) = @_;
 
-    $self->query(CGI->new);
+    unless ( defined( $self->auth_status ) ) {
+        $self->query(CGI->new);
 
-    my ( $status, $cookie, $sessionID ) = check_api_auth( $self->query, $self->{needed_flags} );
-    $self->cookie($cookie);
-    $self->auth_status($status);
-    $self->croak( 'auth', $status ) if ( $status ne 'ok' && !$self->{authnotrequired} );
+        my ( $status, $cookie, $sessionID ) = check_api_auth( $self->query, $self->{needed_flags} );
+        $self->cookie($cookie);
+        $self->auth_status($status);
+        $self->handle_auth_failure() if ( $status ne 'ok' );
+    }
 
-    return ( $self->query, $cookie );
+    return ( $self->query, $self->cookie );
+}
+
+=head2 handle_auth_failure
+
+    $self->handle_auth_failure();
+
+Called when C<authenticate> fails (C<$self->auth_status> not 'ok'). By default, if
+C<$self->{authnotrequired}> is not set, croaks and outputs an auth error.
+
+=cut
+
+sub handle_auth_failure {
+    my ( $self ) = @_;
+
+    $self->croak( 'auth', $self->auth_status ) if ( !$self->{authnotrequired} );
 }
 
 =head2 output
