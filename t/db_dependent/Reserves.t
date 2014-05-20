@@ -2,7 +2,7 @@
 
 use Modern::Perl;
 
-use Test::More tests => 39;
+use Test::More tests => 37;
 
 use MARC::Record;
 use DateTime::Duration;
@@ -21,7 +21,10 @@ use Koha::DateUtils;
 use Data::Dumper;
 BEGIN {
     use_ok('C4::Reserves');
+    use_ok('Koha::Service::Patrons');
 }
+
+
 
 # a very minimal mack of userenv for use by the test of DelItemCheck
 *C4::Context::userenv = sub {
@@ -38,18 +41,6 @@ $dbh->{RaiseError} = 1;
 
 my $user     = $ENV{KOHA_USER} || C4::Context->config("user");
 my $password = $ENV{KOHA_PASS} || C4::Context->config("pass");
-my $intranet = "http://" . C4::Context->preference("staffClientBaseURL");
-
-my $agent = Test::WWW::Mechanize->new( autocheck => 1 );
-
-$agent->get_ok( "$intranet/cgi-bin/koha/mainpage.pl", 'connect to intranet' );
-$agent->form_name('loginform');
-$agent->field( 'password', $password );
-$agent->field( 'userid',   $user );
-$agent->field( 'branch',   '' );
-$agent->click_ok( '', 'login to staff client' );
-
-$agent->get_ok( "$intranet/cgi-bin/koha/mainpage.pl", 'load main page' );
 
 # Add branches if not existing
 foreach my $addbra ('CPL', 'FPL', 'RPL') {
@@ -128,17 +119,14 @@ is($status, "Reserved", "CheckReserves Test 2");
 ($status, $reserve, $all_reserves) = CheckReserves(undef, $barcode);
 is($status, "Reserved", "CheckReserves Test 3");
 
-$agent->get(
-    "$intranet/cgi-bin/koha/svc/patrons/$borrowernumber/holds",
-    "get holds from API"
-);
+my $service = Koha::Service::Patrons->new;
+$service->test( "GET", "/$borrowernumber/holds", { userid => $user, password => $password } );
+$service->authenticate;
 
-my $jsonresponse = decode_json $agent->content();
-
-diag(Dumper($jsonresponse));
+my $jsonresponse = $service->dispatch;
 
 ok(
-    ref($jsonresponse->{reserves}) eq "ARRAY" && scalar $jsonresponse->{reserves} == 1,
+    ref($jsonresponse->{reserves}) eq "ARRAY" && scalar @{ $jsonresponse->{reserves} } == 1,
     "checks to make sure that API returns one hold"
 );
 
