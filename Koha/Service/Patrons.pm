@@ -21,16 +21,15 @@ package Koha::Service::Patrons;
 
 =head1 NAME
 
-svc/config/systempreferences - Web service for setting system preferences
+svc/patrons - Web service for getting patron information
 
 =head1 SYNOPSIS
 
-  POST /svc/config/systempreferences/
+  GET /svc/patrons/BORROWERNUMBER
 
 =head1 DESCRIPTION
 
-This service is used to set system preferences, either one at a time or in
-batches.
+This service is used to query and change patron information.
 
 =head1 METHODS
 
@@ -57,17 +56,15 @@ sub new {
     } );
 }
 
-=head2 set_single_preference
+=head2 get_holds
 
 =over 4
 
-POST /svc/config/systempreferences/$preference
-
-value=$value
+GET /svc/patrons/BORROWERNUMBER/holds
 
 =back
 
-Used to set a single system preference.
+Retrieves information on the holds for a patron.
 
 =cut
 
@@ -84,6 +81,18 @@ sub get_holds {
 
     return { holds => \@holds };
 }
+
+=head2 get_checkouts
+
+=over 4
+
+GET /svc/patrons/BORROWERNUMBER/checkouts
+
+=back
+
+Retrieves information on the checkouts for a patron.
+
+=cut
 
 sub get_checkouts {
     my ( $self, $borrowernumber ) = @_;

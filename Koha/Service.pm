@@ -110,12 +110,22 @@ sub new {
     }, $class;
 }
 
+=head2 test
+
+    $service->test( $request_method, $path_info, \%params );
+
+Sets up a fake CGI context for unit tests.
+
+=cut
+
 sub test {
     my ( $self, $request_method, $path_info, $params ) = @_;
+
     $ENV{REQUEST_METHOD} = $request_method;
     $ENV{PATH_INFO} = $path_info;
     $ENV{HTTP_CONTENT_LENGTH} = "0";
     $self->query(CGI->new);
+
     foreach my $key ( keys %$params ) {
         $self->query->param( $key, $params->{ $key } );
     }
