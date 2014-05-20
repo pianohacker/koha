@@ -109,6 +109,17 @@ sub new {
     }, $class;
 }
 
+sub test {
+    my ( $self, $request_method, $path_info, $params ) = @_;
+    $ENV{REQUEST_METHOD} = $request_method;
+    $ENV{PATH_INFO} = $path_info;
+    $ENV{HTTP_CONTENT_LENGTH} = "0";
+    $self->query(CGI->new);
+    foreach my $key ( keys %$params ) {
+        $self->query->param( $key, $params->{ $key } );
+    }
+}
+
 =head2 authenticate
 
     my ( $query, $cookie ) = $self->authenticate();
@@ -124,7 +135,7 @@ sub authenticate {
     my ( $self ) = @_;
 
     unless ( defined( $self->auth_status ) ) {
-        $self->query(CGI->new);
+        $self->query(CGI->new) unless ( $self->query );
 
         my ( $status, $cookie, $sessionID ) = check_api_auth( $self->query, $self->{needed_flags} );
         $self->cookie($cookie);
