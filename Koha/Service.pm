@@ -61,6 +61,7 @@ use base 'Class::Accessor';
 use C4::Auth qw( check_api_auth );
 use C4::Output qw( :ajax );
 use CGI;
+use DateTime;
 use JSON;
 
 our $debug;
@@ -185,6 +186,8 @@ is given, outputs JSONP.
 
 =cut
 
+*DateTime::TO_JSON = sub { shift->_stringify; };
+
 sub output {
     my ( $self, $response, $options ) = @_;
 
@@ -198,10 +201,10 @@ sub output {
     };
 
     if ( $options->{type} eq 'json' ) {
-        $response = encode_json($response);
+        $response = JSON->new->convert_blessed->encode($response);
 
         if ( $self->query->param( 'callback' ) ) {
-            $response = $self->query->param( 'callback' ) . '(' . encode_json($response) . ');';
+            $response = $self->query->param( 'callback' ) . '(' . $response . ');';
             $options->{status} = '200 OK';
             $options->{type} = 'js';
         }

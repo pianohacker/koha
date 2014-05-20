@@ -126,7 +126,7 @@ $service->authenticate;
 my $jsonresponse = $service->dispatch;
 
 ok(
-    ref($jsonresponse->{reserves}) eq "ARRAY" && scalar @{ $jsonresponse->{reserves} } == 1,
+    ref($jsonresponse->{holds}) eq "ARRAY" && scalar @{ $jsonresponse->{holds} } == 1,
     "checks to make sure that API returns one hold"
 );
 

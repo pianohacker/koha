@@ -41,6 +41,7 @@ use Modern::Perl;
 use base 'Koha::Service';
 
 use C4::Biblio;
+use C4::Members;
 use C4::Reserves;
 
 sub new {
@@ -51,6 +52,7 @@ sub new {
         needed_flags => { circulate => 'circulate_remaining_permissions' },
         routes => [
             [ qr'GET /(\d+)/holds', 'get_holds' ],
+            [ qr'GET /(\d+)/checkouts', 'get_checkouts' ],
         ]
     } );
 }
@@ -72,15 +74,21 @@ Used to set a single system preference.
 sub get_holds {
     my ( $self, $borrowernumber ) = @_;
 
-    my @reserves = GetReservesFromBorrowernumber($borrowernumber);
-    foreach my $reserve (@reserves) {
-        my $getiteminfo = GetBiblioFromItemNumber( $reserve->{'itemnumber'} );
-        $reserve->{title} = $getiteminfo->{title};
-        $reserve->{author} = $getiteminfo->{author};
-        $reserve->{barcode} = $getiteminfo->{barcode};
+    my @holds = GetReservesFromBorrowernumber($borrowernumber);
+    foreach my $hold (@holds) {
+        my $getiteminfo = GetBiblioFromItemNumber( $hold->{'itemnumber'} );
+        $hold->{title} = $getiteminfo->{title};
+        $hold->{author} = $getiteminfo->{author};
+        $hold->{barcode} = $getiteminfo->{barcode};
     }
 
-    return { reserves => \@reserves };
+    return { holds => \@holds };
+}
+
+sub get_checkouts {
+    my ( $self, $borrowernumber ) = @_;
+
+    return { checkouts => GetPendingIssues( $borrowernumber ) };
 }
 
 1;
