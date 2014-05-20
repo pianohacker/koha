@@ -83,7 +83,7 @@ C<\%options> may contain the following:
 
 =item authnotrequired
 
-Defaults to false. If set, means that C<handle_auth_error> will not croak if the user is not logged in.
+Defaults to false. If set, means that C<handle_auth_failure> will not croak if the user is not logged in.
 
 =item needed_flags
 
@@ -201,7 +201,7 @@ sub output {
 
 =head2 croak
 
-    $self->croak( $error, $detail, \%flags );
+    $self->croak( $error[, $detail[, \%flags]] );
 
 Outputs an error as JSON, then exits the service with HTTP status 400.
 
@@ -222,12 +222,12 @@ The final result of this is a JSON structure like so:
 =cut
 
 sub croak {
-    my ( $self, $type, $error, $flags ) = @_;
+    my ( $self, $error, $detail, $flags ) = @_;
 
     my $response = $flags || {};
 
-    $response->{message} = $error;
-    $response->{error} = $type;
+    $response->{error} = $error;
+    $response->{detail} = $detail;
 
     $self->output( $response, { status => '400 Bad Request' } );
     exit;

@@ -25,17 +25,41 @@ Koha::Service::XML - base class for XML webservices.
 
 Extends Koha::Service to output authentication errors and other results using XML by default.
 
+=head1 METHODS
+
 =cut
 
 use base 'Koha::Service';
 
 use XML::Simple;
 
+=head2 output_simple
+
+    $self->output_simple( $response[, \%options] );
+
+Processes $response though XML::Simple, then calls C<output>.
+
+See C<Koha::Service->output> for meaning of C<\%options>.
+
+=cut
+
+sub output_simple {
+    my ( $self, $response, $options ) = @_;
+
+    # Set defaults
+    $options = {
+        type => 'xml',
+        %{ $options || {} },
+    };
+
+    $self->output( XMLout( $response, NoAttr => 1, RootName => 'response', XMLDecl => 1 ), $options );
+}
+
 sub handle_auth_failure {
     my ( $self ) = @_;
 
     if ( !$self->{authnotrequired} ) {
-        $self->output( XMLout( { auth_status => $self->auth_status }, NoAttr => 1, RootName => 'response', XMLDecl => 1 ), { type => 'xml', status => '403 Forbidden' } );
+        $self->output_simple( { auth_status => $self->auth_status }, { type => 'xml', status => '403 Forbidden' } );
         exit;
     }
 }
