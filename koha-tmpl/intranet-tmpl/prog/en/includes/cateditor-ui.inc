@@ -10,12 +10,6 @@ require.config( {
             themelang: '[% themelang %]',
         },
     },
-    paths: {
-        pz2: '../../pz2',
-    },
-    shim: {
-        pz2: { exports: 'pz2' },
-    },
 } );
 </script>
 
@@ -27,30 +21,27 @@ require.config( {
 
 <script>
 require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'preferences', 'resources', 'text-marc', 'widget' ], function( KohaBackend, Search, Macros, MARCEditor, MARC, Preferences, Resources, TextMARC, Widget ) {
-    var z3950Targets = {
-        [% FOREACH target = z3950_targets %]
-            '[% target.host %]:[% target.port %]/[% target.db %]': {
-                'name': '[% target.name %]',
-                'authentication': '[% target.userid %]:[% target.password %]',
-                'syntax': '[% target.syntax %]',
-                'kohasyntax': '[% target.syntax == 'USMARC' ? 'MARC21' : target.syntax %]',
-                'encoding': '[% target.encoding %]',
-                'checked': [% target.checked ? 'true' : 'false' %],
+    var z3950Servers = {
+        [% FOREACH server = z3950_servers %]
+            [% server.id %]: {
+                'name': '[% server.name %]',
+                'kohasyntax': '[% server.syntax == 'USMARC' ? 'MARC21' : server.syntax %]',
+                'checked': [% server.checked ? 'true' : 'false' %],
             },
         [% END %]
     };
 
     // The columns that should show up in a search, in order, and keyed by the corresponding <metadata> tag in the XSL and Pazpar2 config
     var z3950Labels = [
-		[ "md-work-title", _("Title") ],
-		[ "md-series-title", _("Series Title") ],
-		[ "md-work-author", _("Author") ],
-		[ "md-lccn", _("LCCN") ],
-		[ "md-isbn", _("ISBN") ],
-		[ "md-issn", _("ISSN") ],
-		[ "md-medium", _("Medium") ],
-		[ "md-edition", _("Edition") ],
-		[ "md-description", _("Description") ],
+		[ "title", _("Title") ],
+		[ "series", _("Series Title") ],
+		[ "author", _("Author") ],
+		[ "lccn", _("LCCN") ],
+		[ "isbn", _("ISBN") ],
+		[ "issn", _("ISSN") ],
+		[ "medium", _("Medium") ],
+		[ "edition", _("Edition") ],
+		[ "notes", _("Notes") ],
     ];
 
     var state = {
@@ -132,10 +123,18 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
 
         $('#quicksearch .search-box').each( function() {
             shortcut.add( 'enter', $.proxy( function() {
-                var q = this.value;
-                if (!q) return false;
+                var terms = [];
 
-                if ( Search.Start( z3950Targets, $(this).data('qualifier') + q, 20 ) ) {
+                $('#quicksearch .search-box').each( function() {
+                    if ( !this.value ) return;
+
+                    terms.push( [ $(this).data('qualifier'), this.value ] );
+                } );
+
+                if ( !terms.length ) return;
+
+                if ( Search.Run( z3950Servers, Search.JoinTerms(terms) ) ) {
+                    $("#search-overlay").show();
                     showResultsBox();
                 }
 
@@ -166,7 +165,10 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
         },
         'catalog': {
             titleForRecord: _("Editing catalog record #{ID}"),
-            href: "/cgi-bin/koha/catalogue/detail.pl?biblionumber={ID}",
+            links: [
+                { title: _("view"), href: "/cgi-bin/koha/catalogue/detail.pl?biblionumber={ID}" },
+                { title: _("edit items"), href: "/cgi-bin/koha/cataloguing/additem.pl?biblionumber={ID}" },
+            ],
             saveLabel: _("Save to catalog"),
             get: function( id, callback ) {
                 if ( !id ) return false;
@@ -206,8 +208,9 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
             get: function( id, callback ) {
                 if ( !id ) return false;
 
-                Search.GetDetailedRecord( decodeURIComponent(id), callback );
+                callback( backends.search.records[ id ] );
             },
+            records: {},
         },
     };
 
@@ -221,13 +224,13 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
 
         document.location.hash = '#' + parts[0] + ':' + parts[1];
 
-        if ( backend.href ) {
-            $( '#title' ).html( backend.titleForRecord.replace( '{ID}', parts[1] ) + ' <a target="_blank" href="' + backend.href.replace( '{ID}', parts[1] ) + '">' + _("(view)") + '</a>' );
-        } else {
-            $( '#title' ).text( backend.titleForRecord.replace( '{ID}', parts[1] ) );
-        }
+        $('#title').text( backend.titleForRecord.replace( '{ID}', parts[1] ) );
+
+        $.each( backend.links || [], function( i, link ) {
+            $('#title').append(' <a target="_blank" href="' + link.href.replace( '{ID}', parts[1] ) + '">(' + link.title + ')</a>' );
+        } );
         $( 'title', document.head ).html( _("Koha &rsaquo; Cataloging &rsaquo; ") + backend.titleForRecord.replace( '{ID}', parts[1] ) );
-        $( '#save-record span' ).text( backends[ state.saveBackend ].saveLabel );
+        $('#save-record span').text( backends[ state.saveBackend ].saveLabel );
     }
 
     function saveRecord( recid, editor, callback ) {
@@ -313,33 +316,40 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
 
         $('#advanced-search-ui').modal('hide');
 
-        if ( Search.Start( z3950Targets, search, 20 ) ) {
+        if ( Search.Run( z3950Servers, search, 20 ) ) {
+            $("#search-overlay").show();
             showResultsBox();
         }
     }
 
     function showResultsBox(data) {
+        $('#search-top-pages, #search-bottom-pages').find('.pagination').empty();
         $('#searchresults thead tr').empty();
         $('#searchresults tbody').empty();
-        $('#search-targetsinfo').empty().append('<li>' + _("Loading...") + '</li>');
+        $('#search-serversinfo').empty().append('<li>' + _("Loading...") + '</li>');
         $('#search-results-ui').modal('show');
     }
 
     function showSearchResults( editor, data ) {
+        backends.search.records = {};
+
         $('#searchresults thead tr').empty();
         $('#searchresults tbody').empty();
+        $('#search-serversinfo').empty();
+
+        $.each( data.num_fetched, function( server_id, num_fetched ) {
+            if ( num_fetched < data.num_hits[server_id] ) {
+                num_fetched += '+';
+            }
+
+            $('#search-serversinfo').append( '<li>' + z3950Servers[server_id].name + ' (' + num_fetched + ')' + '</li>' );
+        } );
 
         var seenColumns = {};
 
         $.each( data.hits, function( undef, hit ) {
-            for ( key in hit ) {
-                if ( /^md-/.test(key) ) seenColumns[key] = true;
-            }
-
-            $.each( hit.location, function( undef, location ) {
-                for ( key in location ) {
-                    if ( /^md-/.test(key) ) seenColumns[key] = true;
-                }
+            $.each( hit.metadata, function(key) {
+                seenColumns[key] = true;
             } );
         } );
 
@@ -354,16 +364,17 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
         $('#searchresults thead tr').append('<th>' + _("Tools") + '</th>');
 
         $.each( data.hits, function( undef, hit ) {
+            backends.search.records[ hit.server + '-' + hit.index ] = hit.record;
+            hit.id = 'search:' + hit.server + '-' + hit.index;
+
             var result = '<tr>';
-            result += '<td class="sourcecol">' + hit.location[0]['@name'] + '</td>';
+            result += '<td class="sourcecol">' + z3950Servers[ hit.server ].name + '</td>';
 
             $.each( z3950Labels, function( undef, label ) {
                 if ( !seenColumns[ label[0] ] ) return;
 
-                if ( hit[ label[0] ] ) {
-                    result += '<td class="infocol">' + hit[ label[0] ].join('<br/>') + '</td>';
-                } else if ( hit.location[0][ label[0] ] ) {
-                    result += '<td class="infocol">' + hit.location[0][ label[0] ].join('<br/>') + '</td>';
+                if ( hit.metadata[ label[0] ] ) {
+                    result += '<td class="infocol">' + hit.metadata[ label[0] ] + '</td>';
                 } else {
                     result += '<td class="infocol">&nbsp;</td>';
                 }
@@ -376,10 +387,23 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
 
             var $tr = $( result );
             $tr.find( '.marc-link' ).click( function() {
-                Search.GetDetailedRecord( hit.recid, function( record ) {
-                    var $columns = $tr.find( '.infocol' );
-                    CodeMirror.runMode( TextMARC.RecordToText( record ), 'marc', $( '<td class="infocol results-marc" colspan="' + $columns.length + '"></td>' ).replaceAll( $columns.slice(1).remove().end()[0] )[0] );
-                } );
+                var $info_columns = $tr.find( '.infocol' );
+                var $marc_column = $tr.find( '.marccol' );
+
+                if ( !$marc_column.length ) {
+                    $marc_column = $( '<td class="marccol" colspan="' + $info_columns.length + '"></td>' ).insertAfter( $info_columns.eq(-1) ).hide();
+                    CodeMirror.runMode( TextMARC.RecordToText( hit.record ), 'marc', $marc_column[0] );
+                }
+
+                if ( $marc_column.is(':visible') ) {
+                    $tr.find('.marc-link').text( _("View MARC") );
+                    $info_columns.show();
+                    $marc_column.hide();
+                } else {
+                    $tr.find('.marc-link').text( _("Hide MARC") );
+                    $marc_column.show();
+                    $info_columns.hide();
+                }
 
                 return false;
             } );
@@ -398,12 +422,34 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
             $('#searchresults tbody').append( $tr );
         } );
 
+        var pages = [];
+        var cur_page = data.offset / data.page_size;
+        var max_page = Math.ceil( data.total_fetched / data.page_size ) - 1;
+
+        if ( cur_page != 0 ) {
+            pages.push( '<li><a class="search-nav" href="#" data-offset="' + (data.offset - data.page_size) + '">&laquo; ' + _("Previous") + '</a></li>' );
+        }
+
+        for ( var page = Math.max( 0, cur_page - 9 ); page <= Math.min( max_page, cur_page + 9 ); page++ ) {
+            if ( page == cur_page ) {
+                pages.push( ' <li class="active"><a href="#">' + ( page + 1 ) + '</a></li>' );
+            } else {
+                pages.push( ' <li><a class="search-nav" href="#" data-offset="' + ( page * data.page_size ) + '">' + ( page + 1 ) + '</a></li>' );
+            }
+        }
+
+        if ( cur_page < max_page ) {
+            pages.push( ' <li><a class="search-nav" href="#" data-offset="' + (data.offset + data.page_size) + '">' + _("Next") + ' &raquo;</a></li>' );
+        }
+
+        if ( pages.length > 1 ) $( '#search-top-pages, #search-bottom-pages' ).find( '.pagination' ).html( '<ul>' + pages.join( '' ) + '</ul>');
+
         var $overlay = $('#search-overlay');
         $overlay.find('span').text(_("Loading"));
-        $overlay.find('.bar').css( { display: 'block', width: 100 * ( 1 - data.activeclients / Search.includedTargets.length ) + '%' } );
+        $overlay.find('.bar').css( { display: 'block', width: 100 * ( 1 - data.activeclients / Search.includedServers.length ) + '%' } );
 
         if ( data.activeclients ) {
-            $overlay.find('.bar').css( { display: 'block', width: 100 * ( 1 - data.activeclients / Search.includedTargets.length ) + '%' } );
+            $overlay.find('.bar').css( { display: 'block', width: 100 * ( 1 - data.activeclients / Search.includedServers.length ) + '%' } );
             $overlay.show();
         } else {
             $overlay.find('.bar').css( { display: 'block', width: '100%' } );
@@ -416,14 +462,6 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
         $overlay.find('span').text(_("Search expired, please try again"));
         $overlay.find('.bar').css( { display: 'none' } );
         $overlay.show();
-    }
-
-    function showSearchTargets(data) {
-        $('#search-targetsinfo').empty();
-
-        $.each( data, function( undef, target ) {
-            $('#search-targetsinfo').append( '<li>' + target.name + ' (' + target.hits + ')' + '</li>' );
-        } );
     }
 
     function handleSearchError(error) {
@@ -768,6 +806,12 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
             return false;
         } );
 
+        $( document ).on( 'click', 'a.search-nav', function() {
+            $("#search-overlay").show();
+            Search.Fetch( $( this ).data( 'offset' ) );
+            return false;
+        });
+
         // Key bindings
         bindGlobalKeys();
 
@@ -805,14 +849,13 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
         });
 
         // Start editor
-        Preferences.Load( [% USER_INFO.0.borrowernumber %] );
+        Preferences.Load( [% USER_INFO.0.borrowernumber || 0 %] );
         displayPreferences(editor);
         makeAuthorisedValueWidgets( '' );
-        Search.Init( z3950Targets, {
+        Search.Init( {
+            page_size: 20,
             onresults: function(data) { showSearchResults( editor, data ) },
-            onbytarget: showSearchTargets,
             onerror: handleSearchError,
-            oniniterror: handleSearchInitError,
         } );
 
         function finishCb() {

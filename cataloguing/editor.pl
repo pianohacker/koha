@@ -45,8 +45,9 @@ $template->{VARS}->{DefaultLanguageField008} = pack( 'A3', C4::Context->preferen
 
 # Z39.50 servers
 my $dbh = C4::Context->dbh;
-$template->{VARS}->{z3950_targets} = $dbh->selectall_arrayref( q{
+$template->{VARS}->{z3950_servers} = $dbh->selectall_arrayref( q{
     SELECT * FROM z3950servers
+    WHERE recordtype != 'authority'
     ORDER BY name
 }, { Slice => {} } );
 

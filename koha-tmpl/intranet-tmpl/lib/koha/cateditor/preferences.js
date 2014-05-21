@@ -1,7 +1,8 @@
 define( function() {
     var Preferences = {
         Load: function( borrowernumber ) {
-            if ( !borrowernumber ) return;
+            if ( borrowernumber == null ) return;
+
             var saved_prefs;
             try {
                 saved_prefs = JSON.parse( localStorage[ 'cateditor_preferences_' + borrowernumber ] );

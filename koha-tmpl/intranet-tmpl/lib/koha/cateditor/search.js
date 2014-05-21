@@ -1,94 +1,88 @@
-define( [ 'marc-record', 'pz2' ], function( MARC, Pazpar2 ) {
-    //var _pz;
-    var _onresults;
-    var _recordCache = {};
+define( [ 'marc-record' ], function( MARC ) {
     var _options;
+    var _records = {};
+    var _last;
+
+    var _pqfMapping = {
+        author: '1=1004', // s=al',
+        cn_dewey: '1=13',
+        cn_lc: '1=16',
+        date: '1=30', // r=r',
+        isbn: '1=7',
+        issn: '1=8',
+        lccn: '1=9',
+        local_number: '1=12',
+        music_identifier: '1=51',
+        standard_identifier: '1=1007',
+        subject: '1=21', // s=al',
+        term: '1=1016', // t=l,r s=al',
+        title: '1=4', // s=al',
+    }
 
     var Search = {
-        Init: function( targets, options ) {
-            var initOpts = {};
+        Init: function( options ) {
+            _options = options;
+        },
+        JoinTerms: function( terms ) {
+            var q = '';
 
-            $.each( targets, function ( url, info ) {
-                initOpts[ 'pz:name[' + url + ']' ] = info.name;
-                initOpts[ 'pz:queryencoding[' + url + ']' ] = info.encoding;
-                initOpts[ 'pz:xslt[' + url + ']' ] = info.kohasyntax.toLowerCase() + '-work-groups.xsl';
-                initOpts[ 'pz:requestsyntax[' + url + ']' ] = info.syntax;
+            $.each( terms, function( i, term ) {
+                var term = '@attr ' + _pqfMapping[ term[0] ] + ' "' + term[1].replace( '"', '\\"' ) + '"'
 
-                // Load in default CCL mappings
-                // Pazpar2 seems to have a bug where wildcard cclmaps are ignored.
-                // What an incredible surprise.
-                initOpts[ 'pz:cclmap:term[' + url + ']' ] = 'u=1016 t=l,r s=al';
-                initOpts[ 'pz:cclmap:Author-name[' + url + ']' ] = 'u=1004 s=al';
-                initOpts[ 'pz:cclmap:Classification-Dewey[' + url + ']' ] = 'u=13';
-                initOpts[ 'pz:cclmap:Classification-LC[' + url + ']' ] = 'u=16';
-                initOpts[ 'pz:cclmap:Date[' + url + ']' ] = 'u=30 r=r';
-                initOpts[ 'pz:cclmap:Identifier-ISBN[' + url + ']' ] = 'u=7';
-                initOpts[ 'pz:cclmap:Identifier-ISSN[' + url + ']' ] = 'u=8';
-                initOpts[ 'pz:cclmap:Identifier-publisher-for-music[' + url + ']' ] = 'u=51';
-                initOpts[ 'pz:cclmap:Identifier-standard[' + url + ']' ] = 'u=1007';
-                initOpts[ 'pz:cclmap:LC-card-number[' + url + ']' ] = 'u=9';
-                initOpts[ 'pz:cclmap:Local-number[' + url + ']' ] = 'u=12';
-                initOpts[ 'pz:cclmap:Subject[' + url + ']' ] = 'u=21 s=al';
-                initOpts[ 'pz:cclmap:Title[' + url + ']' ] = 'u=4 s=al';
-
-                if ( info.authentication ) initOpts[ 'pz:authentication[' + url + ']' ] = info.authentication;
+                if ( q ) {
+                    q = '@and ' + q + ' ' + term;
+                } else {
+                    q = term;
+                }
             } );
 
-            _options =  $.extend( {
-                initopts: initOpts,
-                onshow: Search._onshow,
-                errorhandler: Search._onerror,
-            }, options );
-
-            _pz = new Pazpar2( _options );
+            return q;
         },
-        Reconnect: function() {
-            _pz.reset();
-            _pz = new Pazpar2( _options );
-        },
-        Start: function( targets, q, limit ) {
-            Search.includedTargets = [];
-            recordcache = {};
+        Run: function( servers, q, options ) {
+            Search.includedServers = [];
+            _records = {};
+            _last = {
+                servers: servers,
+                q: q,
+                options: options,
+            };
 
-            $.each( targets, function ( url, info ) {
-                if ( !info.disabled ) Search.includedTargets.push( url );
+            options = $.extend( {
+                offset: 0,
+                page_size: 20,
+            }, _options, options );
+
+            $.each( servers, function ( id, info ) {
+                if ( info.checked ) Search.includedServers.push( id );
             } );
 
-            _pz.search( q, limit, 'relevance:0', 'pz:id=' + Search.includedTargets.join( '|' ) );
+            $.get(
+                '/cgi-bin/koha/svc/z3950',
+                {
+                    q: q,
+                    servers: Search.includedServers.join( ',' ),
+                    offset: options.offset,
+                    page_size: options.page_size
+                }
+            )
+                .done( function( data ) {
+                    $.each( data.hits, function( undef, hit ) {
+                        var record = new MARC.Record();
+                        record.loadMARCXML( hit.record );
+                        hit.record = record;
+                    } );
+
+                    _options.onresults( data );
+                } )
+                .fail( function( error ) {
+                    _options.onerror( error );
+                } );
+
             return true;
         },
         Fetch: function( offset ) {
-            _pz.show( offset );
-        },
-        GetDetailedRecord: function( recid, callback ) {
-            if ( _recordCache[recid] ) {
-                callback( _recordCache[recid] );
-                return;
-            }
-
-            _pz.record( recid, 0, undefined, { callback: function(data) {
-                var record = _recordCache[recid] = new MARC.Record();
-                record.loadMARCXML(data.xmlDoc);
-
-                callback(record);
-            } } );
-        },
-        IsAvailable: function() {
-            return _pz.initStatusOK;
-        },
-        _onshow: function( data ) {
-            $.each( data.hits, function( undef, hit ) {
-                hit.id = 'search:' + encodeURIComponent( hit.recid[0] );
-            } );
-
-            _options.onresults( data );
-        },
-        _onerror: function( error ) {
-            if ( _options.oniniterror && !_pz.initStatusOK ) {
-                _options.oniniterror( error );
-            } else {
-                _options.onerror( error );
-            }
+            if ( !_last ) return;
+            Search.Run( _last.servers, _last.q, $.extend( {}, _last.options, { offset: offset } ) );
         }
     };
 
