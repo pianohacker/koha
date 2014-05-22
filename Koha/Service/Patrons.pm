@@ -100,4 +100,22 @@ sub get_checkouts {
     return { checkouts => GetPendingIssues( $borrowernumber ) };
 }
 
+=head2 get_patron_info
+
+=over 4
+
+GET /svc/patrons/BORROWERNUMBER/patronInfo
+
+=back
+
+Retrieves information on a patron.
+
+=cut
+
+sub get_patron_info {
+    my ( $self, $borrowernumber ) = @_;
+
+    return { patronInfo => GetMemberDetails( $borrowernumber, 0 ) };
+}
+
 1;
