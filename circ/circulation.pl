@@ -538,7 +538,7 @@ if ($borrower) {
     my $issueslist = GetPendingIssues($borrower->{'borrowernumber'});
     my $relissueslist = [];
     if ( @relborrowernumbers ) {
-        $relissueslist = GetPendingIssue(@relborrowernumbers);
+        $relissueslist = GetPendingIssues(@relborrowernumbers);
     }
 
     build_issue_data($issueslist, 0);
