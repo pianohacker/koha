@@ -5,7 +5,6 @@
    [% SET exports_enabled = 1 %]
 [% END %]
 [% USE AuthorisedValues %]
-[% borrowernumber = '{{ borrowernumber }}' %]
 [% INCLUDE 'doc-head-open.inc' angular_app = "checkoutApp" %]
 [% SET destination = "circ" %]
 <title>Koha &rsaquo; Circulation
@@ -25,7 +24,7 @@
 var checkoutApp = angular.module( 'checkoutApp', [] );
 
 checkoutApp.controller( 'CheckoutController', function ( $scope, $http ) {
-    $scope.borrowernumber = 5;
+    $scope.borrowernumber = [% borrowernumber %];
 
     $http.get( '/cgi-bin/koha/svc/patrons/' + $scope.borrowernumber + '/patronInfo' ).success( function( data ) {
         $scope.borrower = data.patronInfo;

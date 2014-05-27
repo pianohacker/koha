@@ -51,7 +51,7 @@ sub new {
     return $class->SUPER::new( {
         needed_flags => { circulate => 'circulate_remaining_permissions' },
         routes => [
-            [ qr'POST /(\d+)/checkouts', 'add_checkout']
+            [ qr'POST /(\d+)/checkouts', 'add_checkout'],
             [ qr'GET /(\d+)/checkouts', 'get_checkouts' ],
             [ qr'GET /(\d+)/holds', 'get_holds' ],
             [ qr'GET /(\d+)/patronInfo', 'get_patron_info' ],

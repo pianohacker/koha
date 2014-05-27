@@ -42,7 +42,21 @@ $(document).ready(function(){
         searchToHold();
         return false;
     })
+    $("#switchclient").click( function() {
+        var borrowernumber = [% borrowernumber || "null" %];
+
+        if ( $.cookie('checkout_client' ) == 'beta' ) {
+            $.cookie( 'checkout_client', 'standard', { expires: 365, path: '/' } );
+            window.location = '/cgi-bin/koha/circ/circulation.pl?borrowernumber=' + borrowernumber;
+        }
+        else {
+            $.cookie( 'checkout_client', 'beta', { expires: 365, path: '/' } );
+            window.location = '/cgi-bin/koha/circ/checkout.pl?borrowernumber=' + borrowernumber;
+        }
+        return false;
+    } );
 });
+
 function confirm_deletion() {
     var is_confirmed = window.confirm(_("Are you sure you want to delete this patron? This cannot be undone."));
     if (is_confirmed) {
@@ -151,6 +165,7 @@ function searchToHold(){
                     <li class="disabled"><a data-toggle="tooltip" data-placement="left" title="Patron is an adult" id="updatechild" href="#">Update child to adult patron</a></li></li>
                 [% END %]
                 <li><a id="exportcheckins" href="#">Export today's checked in barcodes</a></li>
+                <li><a id="switchclient" href="#">Switch checkout client</a></li>
             </ul>
     </div>
 </div>

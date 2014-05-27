@@ -21,6 +21,7 @@ use Modern::Perl;
 
 use C4::Auth;
 use C4::Output;
+use C4::Members;
 use CGI;
 
 my $query = CGI->new;
@@ -34,5 +35,11 @@ my ( $template, $loggedinuser, $cookie ) = get_template_and_user (
         flagsrequired   => { circulate => 'circulate_remaining_permissions' },
     }
 );
+
+my $borrowernumber = $query->param( 'borrowernumber' );
+$template->{ VARS }->{ borrowernumber }=$borrowernumber;
+$template->{ VARS }->{ circview }=1;
+$template->param( %{ GetMemberDetails( $borrowernumber, 0 ) } );
+
 
 output_html_with_http_headers $query, $cookie, $template->output;
