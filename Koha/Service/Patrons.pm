@@ -39,10 +39,12 @@ use Modern::Perl;
 use base 'Koha::Service';
 
 use C4::Biblio;
+use C4::Circulation;
 use C4::Context;
 use C4::Dates;
 use C4::Members;
 use C4::Reserves;
+use Koha::DateUtils;
 
 sub new {
     my ( $class ) = @_;
@@ -55,6 +57,7 @@ sub new {
             [ qr'GET /(\d+)/checkouts', 'get_checkouts' ],
             [ qr'GET /(\d+)/holds', 'get_holds' ],
             [ qr'GET /(\d+)/patronInfo', 'get_patron_info' ],
+            [ qr'POST /(\d+)/checkouts/(\d+(?:,\d+)*)', 'renew_checkouts', [ 'renewed' ] ],
         ]
     } );
 }
@@ -171,5 +174,37 @@ POST /svc/patrons/BORROWERNUMBER/checkouts/ITEMNUMBER,ITEMNUMBER,.../?renewed=1
 
 =back
 
+Renews several checkouts.
+
+=cut
+
+sub renew_checkouts {
+    my ( $self, $borrowernumber, $itemnumbers ) = @_;
+
+    my @items = split /,/, $itemnumbers;
+
+    my $branch = C4::Context->userenv ? C4::Context->userenv->{'branch'} : '';
+    my $datedue;
+    if ( $self->query->param('newduedate') ) {
+        $datedue = dt_from_string( $self->query->param('newduedate') );
+        $datedue->set_hour(23);
+        $datedue->set_minute(59);
+    }
+
+    my $override_limit = $self->query->param("override_limit") || 0;
+    my @responses;
+    foreach my $itemno (@items) {
+        # check status before renewing issue
+        my ( $renewokay, $error ) =
+          CanBookBeRenewed( $borrowernumber, $itemno, $override_limit );
+        if ($renewokay) {
+            push @responses, { itemnumber => $itemno, datedue => AddRenewal( $borrowernumber, $itemno, $branch, $datedue ) };
+        } else {
+            push @responses, { itemnumber => $itemno, error => $error };
+        }
+    }
+
+    return { responses => \@responses };
+}
 
 1;
