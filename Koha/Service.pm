@@ -59,6 +59,7 @@ use Modern::Perl;
 use base 'Class::Accessor';
 
 use C4::Auth qw( check_api_auth );
+use C4::Context;
 use C4::Output qw( :ajax );
 use CGI;
 use DateTime;
@@ -129,6 +130,14 @@ sub test {
     foreach my $key ( keys %$params ) {
         $self->query->param( $key, $params->{ $key } );
     }
+
+    my $user     = $ENV{KOHA_USER} || C4::Context->config("user");
+    my $password = $ENV{KOHA_PASS} || C4::Context->config("pass");
+
+    $self->query->param( 'userid', $user );
+    $self->query->param( 'password', $password );
+
+    $self->authenticate;
 }
 
 =head2 authenticate

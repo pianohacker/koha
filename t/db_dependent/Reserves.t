@@ -39,9 +39,6 @@ $dbh->{RaiseError} = 1;
 
 # Setup Test------------------------
 
-my $user     = $ENV{KOHA_USER} || C4::Context->config("user");
-my $password = $ENV{KOHA_PASS} || C4::Context->config("pass");
-
 # Add branches if not existing
 foreach my $addbra ('CPL', 'FPL', 'RPL') {
     $dbh->do("INSERT INTO branches (branchcode,branchname) VALUES (?,?)", undef, ($addbra,"$addbra branch")) unless GetBranchName($addbra);
@@ -120,9 +117,7 @@ is($status, "Reserved", "CheckReserves Test 2");
 is($status, "Reserved", "CheckReserves Test 3");
 
 my $service = Koha::Service::Patrons->new;
-$service->test( "GET", "/$borrowernumber/holds", { userid => $user, password => $password } );
-$service->authenticate;
-
+$service->test( "GET", "/$borrowernumber/holds" );
 my $jsonresponse = $service->dispatch;
 
 ok(
