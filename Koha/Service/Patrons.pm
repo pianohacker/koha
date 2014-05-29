@@ -59,7 +59,7 @@ sub new {
     } );
 }
 
-=head2 get_checkouts
+=head2 add_checkout
 
 =over 4
 
@@ -71,7 +71,7 @@ Checks out an item
 
 =cut
 
-sub add_checkouts {
+sub add_checkout {
     my ( $self, $borrowernumber ) = @_;
 
     my $datedue;
@@ -162,5 +162,14 @@ sub get_patron_info {
 
     return { patronInfo => GetMemberDetails( $borrowernumber, 0 ) };
 }
+
+=head2 renew_checkouts
+
+=over 4
+
+POST /svc/patrons/BORROWERNUMBER/checkouts/ITEMNUMBER,ITEMNUMBER,.../?renewed=1
+
+=back
+
 
 1;
