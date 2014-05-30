@@ -24,15 +24,35 @@
 var checkoutApp = angular.module( 'checkoutApp', [] );
 
 checkoutApp.controller( 'CheckoutController', function ( $scope, $http ) {
+    $http.defaults.headers.post["Content-Type"] = "application/x-www-form-urlencoded";
     $scope.borrowernumber = [% borrowernumber %];
 
     $http.get( '/cgi-bin/koha/svc/patrons/' + $scope.borrowernumber + '/patronInfo' ).success( function( data ) {
         $scope.borrower = data.patronInfo;
-    } );
+    });
 
-    $http.get( '/cgi-bin/koha/svc/patrons/' + $scope.borrowernumber + '/checkouts' ).success( function( data ) {
-        $scope.checkouts = data.checkouts;
-    } );
+    function get_checkouts() {
+        $http.get( '/cgi-bin/koha/svc/patrons/' + $scope.borrowernumber + '/checkouts' ).success( function( data ) {
+            $scope.checkouts = data.checkouts;
+        });
+    }
+
+    get_checkouts();
+
+    $scope.checkout = function() {
+        $http.post(
+            '/cgi-bin/koha/svc/patrons/' + $scope.borrowernumber + '/checkouts',
+            $.param({ barcode:$scope.barcode }) ).success(function( data ) {
+                if( data.errors || data.questions ) {
+                    $scope.errors = data.errors;
+                    $scope.questions = data.questions;
+                }else {
+                    $scope.errors = null;
+                    $scope.questions = null;
+                    get_checkouts();
+                }
+            });
+    };
 } );
 
 $(document).ready( function() {
@@ -103,6 +123,53 @@ $(document).ready( function() {
 </form>
 </div>
 
+<div class="yui-g" ng-show="errors">
+<div id="circ_impossible" class="dialog alert">
+<!-- RESULT OF ISSUING REQUEST -->
+    <ul>
+
+        <li ng-show="errors.STATS">Local use recorded</li>
+
+
+        <li ng-show="errors.INVALID_DATE">The due date &quot;{{errors.INVALID_DATE}}&quot; is invalid</li>
+
+        <li ng-show="errors.UNKNOWN_BARCODE">The barcode was not found {{barcode}}</li>
+
+        <li ng-show="errors.NOT_FOR_LOAN">
+            <span ng-show="errors.itemtype_notforloan">Item type not for loan.</span>
+
+            <span ng-show="errors.item_notforloan">Item not for loan</span>
+        </li>
+
+        <li ng-show="errors.WTHDRAWN">Item has been withdrawn</li>
+
+        <li ng-show="errors.RESTRICTED">Item is restricted</li>
+
+        <li ng-show="errors.GNA">Patron's address is in doubt</li>
+
+        <li ng-show="errors.CARD_LOST">Patron's card is lost</li>
+
+        <li ng-show="errors.DERBARRED">Patron is restricted</li>
+
+        <li ng-show="errors.NO_MORE_RENEWALS">No more renewals possible</li>
+
+        <li ng-show="errors.AGE_RESTRICTION">Age restriction {{errors.AGE_RESTRICTION}}.</li>
+
+        <li ng-show="errors.EXPIRED">Patron's card is expired</li>
+
+        <li ng-show="errors.TOO_MANY">Too many checked out. {{errors.current_loan_count}} checked out, only {{errors.max_loans_allowed}} are allowed.</li>
+
+        <li ng-show="errors.ITEMNOTSAMEBRANCH">This item belongs to {{errors.itemhomebranch}} and cannot be checked out from this location.</li>
+
+        <li ng-show="errors.USERBLOCKEDREMAINING">Patron has had overdue items and is blocked for {{errors.USERBLOCKEDREMAINING}} day(s).</li>
+
+        <li ng-show="errors.USERBLOCKEDOVERDUE">Checkouts are BLOCKED because patron has overdue items</li>
+    </ul>
+
+</div></div>
+<!-- /impossible -->
+
+
 [% IF ( was_renewed ) %]<div class="dialog message">Patron's account has been renewed until [% expiry %]</div>[% END %]
 
 [% IF additional_materials %]
@@ -134,8 +201,7 @@ $(document).ready( function() {
 
 [% END %]
 
-
-<form method="post" action="/cgi-bin/koha/circ/circulation.pl" id="mainform" name="mainform" autocomplete="off">
+<form method="post" id="mainform" name="mainform" autocomplete="off" ng-submit="checkout()">
 <fieldset id="circ_circulation_issue">
     [% IF ( DisplayClearScreenButton ) %]
         <span id="clearscreen"><a href="/cgi-bin/koha/circ/circulation.pl" title="Clear screen">x</a></span>
@@ -145,11 +211,8 @@ $(document).ready( function() {
 
 	<div class="hint">Enter item barcode:</div>
 
-    [% IF NEEDSCONFIRMATION %]
-	    <input type="text" name="barcode" id="barcode" class="barcode focus" size="14" disabled="disabled" />
-    [% ELSE %]
-	    <input type="text" name="barcode" id="barcode" class="barcode focus" size="14" />
-    [% END %]
+	<input type="text" name="barcode" id="barcode" class="barcode focus" size="14" ng-attr-disabled="{{questions? 'disabled':''}}" ng-model="barcode"/>
+
     <input type="submit" value="Check Out" />
 
     [% IF ( Koha.Preference( 'SpecifyDueDate' ) ) %]<div class="date-select">
