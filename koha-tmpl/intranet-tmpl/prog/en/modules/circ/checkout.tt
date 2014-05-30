@@ -21,11 +21,22 @@
 [% INCLUDE 'timepicker.inc' %]
 <script src="[% interface %]/lib/angular.min.js"></script>
 <script>
+var authorised_values = {
+    [% FOREACH category IN authorised_values -%]
+        "[% category.key %]":{
+            [% FOREACH value IN category.value -%]
+                "[% value.value %]":"[% value.lib %]",
+            [% END -%]
+        },
+    [% END -%]
+}
+
 var checkoutApp = angular.module( 'checkoutApp', [] );
 
 checkoutApp.controller( 'CheckoutController', function ( $scope, $http ) {
     $http.defaults.headers.post["Content-Type"] = "application/x-www-form-urlencoded";
     $scope.borrowernumber = [% borrowernumber %];
+    $scope.authorised_values = authorised_values;
 
     $http.get( '/cgi-bin/koha/svc/patrons/' + $scope.borrowernumber + '/patronInfo' ).success( function( data ) {
         $scope.borrower = data.patronInfo;
@@ -138,7 +149,11 @@ $(document).ready( function() {
         <li ng-show="errors.NOT_FOR_LOAN">
             <span ng-show="errors.itemtype_notforloan">Item type not for loan.</span>
 
-            <span ng-show="errors.item_notforloan">Item not for loan</span>
+            <span ng-show="errors.item_notforloan">
+                Item not for loan
+
+                <span ng-show="authorised_values['[% authvalcode_notforloan %]'][errors.item_notforloan]"> ({{authorised_values['[% authvalcode_notforloan %]'][errors.item_notforloan]}})</span>
+            </span>
         </li>
 
         <li ng-show="errors.WTHDRAWN">Item has been withdrawn</li>
@@ -159,7 +174,7 @@ $(document).ready( function() {
 
         <li ng-show="errors.TOO_MANY">Too many checked out. {{errors.current_loan_count}} checked out, only {{errors.max_loans_allowed}} are allowed.</li>
 
-        <li ng-show="errors.ITEMNOTSAMEBRANCH">This item belongs to {{errors.itemhomebranch}} and cannot be checked out from this location.</li>
+        <li ng-show="errors.ITEMNOTSAMEBRANCH">This item belongs to {{authorised_values.branches[errors.itemhomebranch]}} and cannot be checked out from this location.</li>
 
         <li ng-show="errors.USERBLOCKEDREMAINING">Patron has had overdue items and is blocked for {{errors.USERBLOCKEDREMAINING}} day(s).</li>
 
