@@ -26,6 +26,7 @@ use C4::Context;
 use C4::Output;
 use C4::Members;
 use CGI;
+use Koha::Database;
 
 my $query = CGI->new;
 
@@ -44,7 +45,7 @@ $template->{ VARS }->{ borrowernumber }=$borrowernumber;
 $template->{ VARS }->{ circview }=1;
 $template->param( %{ GetMemberDetails( $borrowernumber, 0 ) } );
 
-my $dbh = C4::Context->dbh;
+my $schema = Koha::Database->new->schema;
 my $authorised_values = {};
 
 $authorised_values->{branches} = [];
@@ -57,9 +58,11 @@ foreach my $thisbranch ( sort keys %$branches ) {
     push @{ $authorised_values->{branches} }, { value => $thisbranch, lib => $branches->{$thisbranch}->{'branchname'} };
 }
 
-$authorised_values->{itemtypes} = $dbh->selectall_arrayref( q{
-SELECT itemtype AS value, description AS lib FROM itemtypes ORDER BY description
-}, { Slice => {} } );
+$authorised_values->{itemtypes} = [ $schema->resultset( "Itemtype" )->search( undef, {
+    columns => [ { value => 'itemtype' }, { lib => "description" } ],
+    order_by => "description",
+    result_class => 'DBIx::Class::ResultClass::HashRefInflator'
+} ) ];
 
 my $class_sources = GetClassSources();
 
@@ -72,19 +75,20 @@ foreach my $class_source (sort keys %$class_sources) {
 }
 
 my $branch_limit = C4::Context->userenv ? C4::Context->userenv->{"branch"} : "";
-my $auth_query = "SELECT category, authorised_value, lib
-FROM authorised_values";
-$auth_query .= qq{ LEFT JOIN authorised_values_branches ON ( id = av_id )} if $branch_limit;
-$auth_query .= " AND ( branchcode = ? OR branchcode IS NULL )" if $branch_limit;
-$auth_query .= " GROUP BY lib ORDER BY lib, lib_opac";
-my $authorised_values_sth = $dbh->prepare( $auth_query );
-$authorised_values_sth->execute(
-    $branch_limit ? $branch_limit : (),
-);
+my $results;
+if( $branch_limit ) {
+    $results = $schema->resultset( "AuthorisedValue" )->search(
+    { "authorised_values_branches.branchcode" => { "=", [ $branch_limit, undef ] } },
+    { join => "authorised_values_branches", order_by => "lib" } );
+} else {
+    $results = $schema->resultset( "AuthorisedValue" )->search(
+    undef,
+    { order_by => "lib" } );
+}
 
-while ( my ( $category, $value, $lib ) = $authorised_values_sth->fetchrow_array ) {
-    $authorised_values->{$category} ||= [];
-    push @{ $authorised_values->{$category} }, { value => $value, lib => $lib };
+foreach my $result ( $results->all ) {
+    $authorised_values->{$result->category} ||= [];
+    push @{ $authorised_values->{$result->category} }, { value => $result->authorised_value, lib => $result->lib };
 }
 
 $template->{VARS}->{authorised_values} = $authorised_values;
