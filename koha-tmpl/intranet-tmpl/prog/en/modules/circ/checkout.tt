@@ -154,6 +154,7 @@ $(document).ready( function() {
                         <th scope="col">Title</th>
                         <th scope="col">Author</th>
                         <th scope="col">Barcode</th>
+                        <th scope="col">Status</th>
                         <th scope="col">&nbsp;</th>
                     </thead>
                     <tbody>
@@ -161,6 +162,14 @@ $(document).ready( function() {
                             <td>{{ choice.title }}</td>
                             <td>{{ choice.author }}</td>
                             <td>{{ choice.barcode }}</td>
+                            <td>
+                                <span ng-hide="choice.available">
+                                    Available
+                                </span>
+                                <span ng-show="choice.available">
+                                    Not Available
+                                </span>
+                            </td>
                             <td><button ng-click="checkout(choice.barcode)">Check Out</button></td>
                         </tr>
                     </tbody>

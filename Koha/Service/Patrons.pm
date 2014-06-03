@@ -42,6 +42,7 @@ use C4::Biblio;
 use C4::Circulation;
 use C4::Context;
 use C4::Dates;
+use C4::Items;
 use C4::Members;
 use C4::Reserves;
 use C4::Search qw( SimpleSearch );
@@ -104,18 +105,19 @@ sub add_checkout {
         if ( $total_hits > 0 ) {
             my @options = ();
             foreach my $hit ( @{$results} ) {
-                my $chosen = TransformMarcToKoha(
-                    C4::Context->dbh,
+                my $biblionumber = C4::Biblio::get_koha_field_from_marc(
+                    'biblio',
+                    'biblionumber',
                     C4::Search::new_record_from_zebra('biblioserver',$hit)
                 );
 
-                # offer all barcodes individually
-                if ( $chosen->{barcode} ) {
-                    foreach my $barcode ( sort split(/\s*\|\s*/, $chosen->{barcode}) ) {
-                        my %chosen_single = %{$chosen};
-                        $chosen_single{barcode} = $barcode;
-                        push( @options, \%chosen_single );
-                    }
+                next unless ( $biblionumber );
+
+                # offer all items with barcodes individually
+                foreach my $item ( GetItemsInfo( $biblionumber ) ) {
+                    $item->{available} = !( $item->{itemnotforloan} || $item->{onloan} || $item->{itemlost} || $item->{withdrawn} || $item->{damaged} || $item->{transfertwhen} || $item->{reservedate} );
+
+                    push @options, $item if ( $item->{barcode} );
                 }
             }
 
