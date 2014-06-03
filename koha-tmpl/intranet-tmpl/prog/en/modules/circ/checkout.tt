@@ -51,15 +51,20 @@ checkoutApp.controller( 'CheckoutController', function ( $scope, $http ) {
     get_checkouts();
 
     $scope.checkout = function(barcode) {
+        barcode = barcode || $scope.barcode;
         $http.post(
             '/cgi-bin/koha/svc/patrons/' + $scope.borrowernumber + '/checkouts',
-            $.param({ barcode: barcode || $scope.barcode }) ).success(function( data ) {
-                if( data.errors || data.questions ) {
+            $.param({ barcode: barcode }) ).success(function( data ) {
+                $scope.last_barcode = barcode;
+                $scope.barcode = '';
+
+                if ( data.errors || data.questions ) {
                     $scope.errors = data.errors;
                     $scope.questions = data.questions;
                 }else {
                     $scope.errors = null;
                     $scope.questions = null;
+                    $('#barcode')[0].focus();
                     get_checkouts();
                 }
             });
@@ -145,7 +150,7 @@ $(document).ready( function() {
         <li ng-show="errors.INVALID_DATE">The due date &quot;{{errors.INVALID_DATE}}&quot; is invalid</li>
 
         <li ng-show="errors.UNKNOWN_BARCODE">
-            The barcode &quot;{{barcode}}&quot; was not found
+            The barcode &quot;{{last_barcode}}&quot; was not found
 
             <div ng-show="errors.fallback_choices">
                 The following items were found by searching:
