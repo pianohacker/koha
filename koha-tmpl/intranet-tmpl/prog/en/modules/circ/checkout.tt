@@ -40,6 +40,8 @@ checkoutApp.controller( 'CheckoutController', function ( $scope, $http ) {
 
     $http.get( '/cgi-bin/koha/svc/patrons/' + $scope.borrowernumber + '/patronInfo' ).success( function( data ) {
         $scope.borrower = data.patronInfo;
+        $('#yui-main > .yui-b').show();
+        $('.loading-overlay').hide();
     });
 
     function get_checkouts() {
@@ -87,6 +89,10 @@ $(document).ready( function() {
 </head>
 <body id="circ_circulation" class="circ" ng-controller="CheckoutController">
 
+   <div class="loading-overlay">
+       <div>Loading, please wait...</div>
+   </div>
+
 [% INCLUDE 'header.inc' %]
 [% INCLUDE 'circ-search.inc' %]
 
@@ -97,7 +103,7 @@ $(document).ready( function() {
 
    <div id="bd">
 	<div id="yui-main">
-	<div class="yui-b">
+	<div class="yui-b" style="display: none">
 
 [% INCLUDE 'members-toolbar.inc' %]
 
