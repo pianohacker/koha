@@ -31,7 +31,12 @@ var authorised_values = {
     [% END -%]
 }
 
-var checkoutApp = angular.module( 'checkoutApp', [] );
+var checkoutApp = angular.module( 'checkoutApp', [] )
+    .filter( 'isNotEmpty', function() {
+        return function(obj) {
+            return !$.isEmptyObject(obj);
+        };
+    } );
 
 checkoutApp.controller( 'CheckoutController', function ( $scope, $http ) {
     $http.defaults.headers.post["Content-Type"] = "application/x-www-form-urlencoded";
@@ -61,9 +66,11 @@ checkoutApp.controller( 'CheckoutController', function ( $scope, $http ) {
                 $scope.barcode = '';
 
                 if ( data.errors || data.questions ) {
+                    $scope.last_item = data.item;
                     $scope.errors = data.errors;
                     $scope.questions = data.questions;
                 }else {
+                    $scope.last_item = null;
                     $scope.errors = null;
                     $scope.questions = null;
                     $('#barcode')[0].focus();
@@ -145,13 +152,12 @@ $(document).ready( function() {
 </form>
 </div>
 
-<div class="yui-g" ng-show="errors">
+<div class="yui-g" ng-show="errors | isNotEmpty">
 <div id="circ_impossible" class="dialog alert">
 <!-- RESULT OF ISSUING REQUEST -->
     <ul>
 
         <li ng-show="errors.STATS">Local use recorded</li>
-
 
         <li ng-show="errors.INVALID_DATE">The due date &quot;{{errors.INVALID_DATE}}&quot; is invalid</li>
 
@@ -226,6 +232,154 @@ $(document).ready( function() {
 </div></div>
 <!-- /impossible -->
 
+<div class="yui-g" ng-show="questions | isNotEmpty">
+
+<div id="circ_needsconfirmation" class="dialog alert">
+[% IF CAN_user_circulate_force_checkout %]
+  <h3>Please confirm checkout</h3>
+[% ELSE %]
+  <h3>Cannot check out</h3>
+[% END %]
+
+<ul>
+    <li ng-show="questions.AGE_RESTRICTION">
+        Age restriction {{ questions.AGE_RESTRICTION }}.
+        [% IF CAN_user_circulate_force_checkout %]
+            Check out anyway?
+        [% END %]
+    </li>
+
+    <li ng-show="questions.DEBT">The patron has a debt of {{ questions.DEBT }}.</li>
+
+    <li ng-show="questions.RENEW_ISSUE">Item <i>{{ last_item.title }}</i> ({{ last_barcode }}) is currently checked out to this patron.  Renew?</li>
+
+    <li ng-show="questions.RESERVE_WAITING">
+        Item <i>{{ last_item.title }}</i> ({{ last_barcode }}) has been waiting for
+        <a href="/cgi-bin/koha/members/moremember.pl?borrowernumber={{ questions.resborrowernumber }}">{{ questions.resfirstname }} {{ questions.ressurname }}</a>
+        ({{ questions.rescardnumber }}) at {{ questions.resbranchname }} since {{ questions.reswaitingdate }}.
+    </li>
+
+    <li ng-show="questions.RESERVED">
+        Item <i>{{ last_item.title }}</i> ({{ last_barcode }}) has been on hold for
+        <a href="/cgi-bin/koha/members/moremember.pl?borrowernumber={{ questions.resborrowernumber }}">{{ questions.resfirstname }} {{ questions.ressurname }}</a>
+        ({{ questions.rescardnumber }}) at {{ questions.resbranchname }} since {{ questions.resreservedate }}.
+    </li>
+
+    <li ng-show="questions.ISSUED_TO_ANOTHER">Item <i>{{ last_item.title }}</i> ({{ last_barcode }}) is checked out to <a href="/cgi-bin/koha/members/moremember.pl?borrowernumber={{ questions.issued_borrowernumber }}">{{ questions.issued_firstname }} {{ questions.issued_surname }}</a> ({{ questions.issued_cardnumber }}).
+      [% IF CAN_user_circulate_force_checkout %]
+        Check in and check out?
+      [% END %]
+    </li>
+
+    <li ng-show="questions.TOO_MANY">Too many checked out. {{questions.current_loan_count}} checked out, only {{questions.max_loans_allowed}} are allowed.</li>
+
+    <li ng-show="questions.BORRNOTSAMEBRANCH">This patron is from a different library ({{ questions.BORRNOTSAMEBRANCH }}).</li>
+
+    <li ng-show="questions.PATRON_CANT">This patron can't check out this item per library circulation policy.</li>
+
+    <li ng-show="questions.NOT_FOR_LOAN_FORCING">
+        <span ng-show="questions.itemtype_notforloan">Item type is normally not for loan.</span>
+
+        <span ng-show="questions.item_notforloan">
+            Item is normally not for loan
+
+            <span ng-show="authorised_values['[% authvalcode_notforloan %]'][questions.item_notforloan]"> ({{authorised_values['[% authvalcode_notforloan %]'][questions.item_notforloan]}})</span>.
+        </span>
+
+        [% IF CAN_user_circulate_force_checkout %]
+            Check out anyway?
+        [% END %]
+    </li>
+
+    <li ng-show="questions.USERBLOCKEDOVERDUE">
+        Patron has {{ questions.USERBLOCKEDOVERDUE }} overdue item(s).
+        [% IF CAN_user_circulate_force_checkout %]
+                Check out anyway?
+        [% END %]
+    </li>
+
+    <li ng-show="questions.ITEM_LOST">
+        This item has been lost with a status of "{{ questions.ITEM_LOST }}".
+        [% IF CAN_user_circulate_force_checkout %]
+            Check out anyway?
+        [% END %]
+    </li>
+
+    <li ng-show="questions.HIGHHOLDS">High demand item. Loan period shortened to {{ questions.HIGHHOLDS.duration }} days (due {{ questions.HIGHHOLDS.returndate }}). Check out anyway?</li>
+
+    <li ng-show="questions.BIBLIO_ALREADY_ISSUED">
+        Patron has already checked out another item from this record.
+        [% IF CAN_user_circulate_force_checkout %]
+            Check out anyway?
+        [% END %]
+    </li>
+</ul>
+
+<!--% IF HIGHHOLDS %-->
+	<!--<script language="JavaScript" type="text/javascript">-->
+	<!--$(document).ready(function() {-->
+		<!--$("input[name=duedatespec]:hidden").val('% HIGHHOLDS.returndate %');-->
+	<!--});-->
+	<!--</script>-->
+<!--% END %-->
+
+<!--% IF CAN_user_circulate_force_checkout or HIGHHOLDS %-->
+<!--<form method="post" action="/cgi-bin/koha/circ/circulation.pl" autocomplete="off">-->
+
+<!--% IF ( RESERVED ) %-->
+    <!--<p>-->
+    <!--<input type="checkbox" id="cancelreserve" name="cancelreserve" value="cancel" />-->
+    <!--<label for="cancelreserve">Cancel hold</label>-->
+    <!--</p>-->
+<!--% END %-->
+
+<!--% IF ( RESERVE_WAITING ) %-->
+<!--<p>-->
+    <!--<label for="cancelreserve">Cancel hold</label>-->
+    <!--<input type="radio" value="cancel" name="cancelreserve" id="cancelreserve" /><br />-->
+    <!--<label for="revertreserve">Revert waiting status</label>-->
+    <!--<input type="radio" value="revert" name="cancelreserve" id="revertreserve" checked="checked"/>-->
+<!--</p>-->
+<!--% END %-->
+
+    <!--<input type="hidden" name="barcode" value="% barcode |html %" />-->
+    <!--<input type="hidden" name="borrowernumber" value="% borrowernumber %" />-->
+    <!--<input type="hidden" name="issueconfirmed" value="1" />-->
+    <!--% IF ( DEBT ) %<input type="hidden" name="debt_confirmed" value="1" />% END %-->
+    <!--% IF ( INVALID_DATE ) %-->
+    <!--<p>-->
+    <!--<input type="text" size="13" id="duedatespec" name="duedatespec" readonly="readonly" value="% duedatespec %" />-->
+    <!--<label for="duedatespec">Due date</label>-->
+    <!--</p>-->
+    <!--% ELSE %-->
+    <!--<input type="hidden" name="duedatespec" value="% duedatespec %" />-->
+    <!--% END %-->
+    <!--<input type="hidden" name="stickyduedate" value="% stickyduedate %" />-->
+    <!--<input type="hidden" name="branch" value="% branch %" />-->
+    <!--% IF ( RENEW_ISSUE ) %-->
+    <!--<input type="submit" class="approve" value="Yes, Renew (Y)" accesskey="y" />-->
+    <!--% ELSE %-->
+    <!--<input type="submit" class="approve" value="Yes, Check Out (Y)" accesskey="y" />-->
+    <!--% END %-->
+<!--</form>-->
+<!--% END %-->
+
+<!--<form method="get" action="/cgi-bin/koha/circ/circulation.pl">-->
+    <!--<input type="hidden" name="borrowernumber" value="% borrowernumber %" />-->
+    <!--<input type="hidden" name="duedatespec" value="% duedatespec %" />-->
+    <!--<input type="hidden" name="stickyduedate" value="% stickyduedate %" />-->
+    <!--% IF CAN_user_circulate_force_checkout or HIGHHOLDS %-->
+        <!--% IF ( RENEW_ISSUE ) %-->
+        <!--<input type="submit" class="deny" value="No, Don't Renew (N)" accesskey="n" />-->
+        <!--% ELSE %-->
+        <!--<input type="submit" class="deny" value="No, Don't Check Out (N)" accesskey="n" />-->
+        <!--% END %-->
+    <!--% ELSE %-->
+        <!--<input type="submit" class="deny" value="Continue" />-->
+    <!--% END %-->
+<!--</form>-->
+
+</div></div>
 
 [% IF ( was_renewed ) %]<div class="dialog message">Patron's account has been renewed until [% expiry %]</div>[% END %]
 

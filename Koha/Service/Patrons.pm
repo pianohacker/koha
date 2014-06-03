@@ -126,7 +126,12 @@ sub add_checkout {
     }
 
     if ( %$errors || ( %$questions && !$self->query->param('confirmed') ) ) {
-        return { errors => $errors, questions => $questions, alerts => $alerts };
+        return {
+            item => GetBiblioFromItemNumber( undef, $barcode ),
+            errors => $errors,
+            questions => $questions,
+            alerts => $alerts
+        };
     }
 
     AddIssue( $borrower, $barcode, $datedue );
