@@ -50,10 +50,10 @@ checkoutApp.controller( 'CheckoutController', function ( $scope, $http ) {
 
     get_checkouts();
 
-    $scope.checkout = function() {
+    $scope.checkout = function(barcode) {
         $http.post(
             '/cgi-bin/koha/svc/patrons/' + $scope.borrowernumber + '/checkouts',
-            $.param({ barcode:$scope.barcode }) ).success(function( data ) {
+            $.param({ barcode: barcode || $scope.barcode }) ).success(function( data ) {
                 if( data.errors || data.questions ) {
                     $scope.errors = data.errors;
                     $scope.questions = data.questions;
@@ -144,7 +144,29 @@ $(document).ready( function() {
 
         <li ng-show="errors.INVALID_DATE">The due date &quot;{{errors.INVALID_DATE}}&quot; is invalid</li>
 
-        <li ng-show="errors.UNKNOWN_BARCODE">The barcode was not found {{barcode}}</li>
+        <li ng-show="errors.UNKNOWN_BARCODE">
+            The barcode &quot;{{barcode}}&quot; was not found
+
+            <div ng-show="errors.fallback_choices">
+                The following items were found by searching:
+                <table>
+                    <thead>
+                        <th scope="col">Title</th>
+                        <th scope="col">Author</th>
+                        <th scope="col">Barcode</th>
+                        <th scope="col">&nbsp;</th>
+                    </thead>
+                    <tbody>
+                        <tr ng-repeat="choice in errors.fallback_choices">
+                            <td>{{ choice.title }}</td>
+                            <td>{{ choice.author }}</td>
+                            <td>{{ choice.barcode }}</td>
+                            <td><button ng-click="checkout(choice.barcode)">Check Out</button></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </li>
 
         <li ng-show="errors.NOT_FOR_LOAN">
             <span ng-show="errors.itemtype_notforloan">Item type not for loan.</span>

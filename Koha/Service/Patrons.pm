@@ -44,6 +44,7 @@ use C4::Context;
 use C4::Dates;
 use C4::Members;
 use C4::Reserves;
+use C4::Search qw( SimpleSearch );
 use Koha::DateUtils;
 
 sub new {
@@ -94,6 +95,33 @@ sub add_checkout {
 
     my ( $errors, $questions, $alerts ) =
     CanBookBeIssued( $borrower, $barcode, $datedue );
+
+    if ( $errors->{'UNKNOWN_BARCODE'} && C4::Context->preference("itemBarcodeFallbackSearch") ) {
+        my $query = "kw=" . $barcode;
+        my ( $searcherror, $results, $total_hits ) = SimpleSearch($query);
+
+        # if multiple hits, offer options to librarian
+        if ( $total_hits > 0 ) {
+            my @options = ();
+            foreach my $hit ( @{$results} ) {
+                my $chosen = TransformMarcToKoha(
+                    C4::Context->dbh,
+                    C4::Search::new_record_from_zebra('biblioserver',$hit)
+                );
+
+                # offer all barcodes individually
+                if ( $chosen->{barcode} ) {
+                    foreach my $barcode ( sort split(/\s*\|\s*/, $chosen->{barcode}) ) {
+                        my %chosen_single = %{$chosen};
+                        $chosen_single{barcode} = $barcode;
+                        push( @options, \%chosen_single );
+                    }
+                }
+            }
+
+            $errors->{fallback_choices} = \@options;
+        }
+    }
 
     if ( %$errors || ( %$questions && !$self->query->param('confirmed') ) ) {
         return { errors => $errors, questions => $questions, alerts => $alerts };
