@@ -78,6 +78,12 @@ checkoutApp.controller( 'CheckoutController', function ( $scope, $http ) {
                 }
             });
     };
+
+    $scope.cancelCheckout = function() {
+        $scope.questions = null;
+        $scope.errors = null;
+        $('#barcode')[0].focus();
+    };
 } );
 
 $(document).ready( function() {
@@ -315,69 +321,44 @@ $(document).ready( function() {
     </li>
 </ul>
 
-<!--% IF HIGHHOLDS %-->
-	<!--<script language="JavaScript" type="text/javascript">-->
-	<!--$(document).ready(function() {-->
-		<!--$("input[name=duedatespec]:hidden").val('% HIGHHOLDS.returndate %');-->
-	<!--});-->
-	<!--</script>-->
-<!--% END %-->
+[% IF CAN_user_circulate_force_checkout %]
+<form autocomplete="off">
+[% ELSE %]
+<form autocomplete="off" ng-show="questions.HIGHHOLDS">
+[% END %]
 
-<!--% IF CAN_user_circulate_force_checkout or HIGHHOLDS %-->
-<!--<form method="post" action="/cgi-bin/koha/circ/circulation.pl" autocomplete="off">-->
+   <p ng-show="questions.RESERVED">
+       <input type="checkbox" id="cancelreserve" name="cancelreserve" value="cancel" />
+       <label for="cancelreserve">Cancel hold</label>
+   </p>
 
-<!--% IF ( RESERVED ) %-->
-    <!--<p>-->
-    <!--<input type="checkbox" id="cancelreserve" name="cancelreserve" value="cancel" />-->
-    <!--<label for="cancelreserve">Cancel hold</label>-->
-    <!--</p>-->
-<!--% END %-->
+   <p ng-show="questions.RESERVE_WAITING">
+       <label for="cancelreserve">Cancel hold</label>
+       <input type="radio" value="cancel" name="cancelreserve" id="cancelreserve" /><br />
+       <label for="revertreserve">Revert waiting status</label>
+       <input type="radio" value="revert" name="cancelreserve" id="revertreserve" checked="checked"/>
+   </p>
 
-<!--% IF ( RESERVE_WAITING ) %-->
-<!--<p>-->
-    <!--<label for="cancelreserve">Cancel hold</label>-->
-    <!--<input type="radio" value="cancel" name="cancelreserve" id="cancelreserve" /><br />-->
-    <!--<label for="revertreserve">Revert waiting status</label>-->
-    <!--<input type="radio" value="revert" name="cancelreserve" id="revertreserve" checked="checked"/>-->
-<!--</p>-->
-<!--% END %-->
+   <p ng-show="questions.INVALID_DATE">
+       <input type="text" size="13" id="duedatespec" name="duedatespec" readonly="readonly" value="% duedatespec %" />
+       <label for="duedatespec">Due date</label>
+   </p>
 
-    <!--<input type="hidden" name="barcode" value="% barcode |html %" />-->
-    <!--<input type="hidden" name="borrowernumber" value="% borrowernumber %" />-->
-    <!--<input type="hidden" name="issueconfirmed" value="1" />-->
-    <!--% IF ( DEBT ) %<input type="hidden" name="debt_confirmed" value="1" />% END %-->
-    <!--% IF ( INVALID_DATE ) %-->
-    <!--<p>-->
-    <!--<input type="text" size="13" id="duedatespec" name="duedatespec" readonly="readonly" value="% duedatespec %" />-->
-    <!--<label for="duedatespec">Due date</label>-->
-    <!--</p>-->
-    <!--% ELSE %-->
-    <!--<input type="hidden" name="duedatespec" value="% duedatespec %" />-->
-    <!--% END %-->
-    <!--<input type="hidden" name="stickyduedate" value="% stickyduedate %" />-->
-    <!--<input type="hidden" name="branch" value="% branch %" />-->
-    <!--% IF ( RENEW_ISSUE ) %-->
-    <!--<input type="submit" class="approve" value="Yes, Renew (Y)" accesskey="y" />-->
-    <!--% ELSE %-->
-    <!--<input type="submit" class="approve" value="Yes, Check Out (Y)" accesskey="y" />-->
-    <!--% END %-->
-<!--</form>-->
-<!--% END %-->
+    <input type="submit" class="approve" value="Yes, Renew (Y)" accesskey="y" ng-show="questions.RENEW_ISSUE" ng-click="confirmCheckout()" />
 
-<!--<form method="get" action="/cgi-bin/koha/circ/circulation.pl">-->
-    <!--<input type="hidden" name="borrowernumber" value="% borrowernumber %" />-->
-    <!--<input type="hidden" name="duedatespec" value="% duedatespec %" />-->
-    <!--<input type="hidden" name="stickyduedate" value="% stickyduedate %" />-->
-    <!--% IF CAN_user_circulate_force_checkout or HIGHHOLDS %-->
-        <!--% IF ( RENEW_ISSUE ) %-->
-        <!--<input type="submit" class="deny" value="No, Don't Renew (N)" accesskey="n" />-->
-        <!--% ELSE %-->
-        <!--<input type="submit" class="deny" value="No, Don't Check Out (N)" accesskey="n" />-->
-        <!--% END %-->
-    <!--% ELSE %-->
-        <!--<input type="submit" class="deny" value="Continue" />-->
-    <!--% END %-->
-<!--</form>-->
+    <input type="submit" class="approve" value="Yes, Check Out (Y)" accesskey="y" ng-hide="questions.RENEW_ISSUE" ng-click="confirmCheckout()" />
+
+    <input type="submit" class="deny" value="No, Don't Renew (N)" accesskey="n" ng-show="questions.RENEW_ISSUE" ng-click="cancelCheckout()" />
+   
+    <input type="submit" class="deny" value="No, Don't Check Out (N)" accesskey="n" ng-hide="questions.RENEW_ISSUE" ng-click="cancelCheckout()" />
+
+</form>
+
+[% UNLESS CAN_user_circulate_force_checkout %]
+<form ng-hide="questions.HIGHHOLDS">
+   <input type="submit" class="deny" value="Continue" ng-click="cancelCheckout()" />
+</form>
+[% END %]
 
 </div></div>
 
