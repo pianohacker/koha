@@ -84,6 +84,8 @@ checkoutApp.controller( 'CheckoutController', function ( $scope, $http ) {
         $scope.errors = null;
         $('#barcode')[0].focus();
     };
+
+     
 } );
 
 $(document).ready( function() {
