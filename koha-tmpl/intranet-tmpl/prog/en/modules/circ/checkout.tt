@@ -57,11 +57,14 @@ checkoutApp.controller( 'CheckoutController', function ( $scope, $http ) {
 
     get_checkouts();
 
-    $scope.checkout = function(barcode) {
-        barcode = barcode || $scope.barcode;
-        $http.post(
-            '/cgi-bin/koha/svc/patrons/' + $scope.borrowernumber + '/checkouts',
-            $.param({ barcode: barcode }) ).success(function( data ) {
+    $scope.checkout = function(barcode, confirmed) {
+        var barcode = barcode || $scope.barcode;
+        var params = { barcode: barcode, duedate: $scope.duedatespec };
+        if ( confirmed ) {
+            params.confirmed = 1;
+            params.cancelreserve = $scope.cancelreserve;
+        }
+        $http.post( '/cgi-bin/koha/svc/patrons/' + $scope.borrowernumber + '/checkouts', $.param( params ) ).success(function( data ) {
                 $scope.last_barcode = barcode;
                 $scope.barcode = '';
 
@@ -69,10 +72,12 @@ checkoutApp.controller( 'CheckoutController', function ( $scope, $http ) {
                     $scope.last_item = data.item;
                     $scope.errors = data.errors;
                     $scope.questions = data.questions;
+                    $scope.cancelreserve = data.questions.RESERVE_WAITING ? "revert" : null;
                 }else {
                     $scope.last_item = null;
                     $scope.errors = null;
                     $scope.questions = null;
+                    if ( !$scope.stickyduedate ) $scope.duedatespec = "";
                     $('#barcode')[0].focus();
                     get_checkouts();
                 }
@@ -99,6 +104,15 @@ $(document).ready( function() {
             }
         }
     }[% END %] );
+    $("#duedatespec").datetimepicker({
+        onClose: function(dateText, inst) { $("#barcode").focus(); },
+        hour: 23,
+        minute: 59
+    });
+    $("#confduedatespec").datetimepicker({
+        hour: 23,
+        minute: 59
+    });
 } );
 </script>
 </head>
@@ -330,25 +344,25 @@ $(document).ready( function() {
 [% END %]
 
    <p ng-show="questions.RESERVED">
-       <input type="checkbox" id="cancelreserve" name="cancelreserve" value="cancel" />
+       <input type="checkbox" id="cancelreserve" name="cancelreserve" value="cancel" ng-model="cancelreserve"/>
        <label for="cancelreserve">Cancel hold</label>
    </p>
 
    <p ng-show="questions.RESERVE_WAITING">
        <label for="cancelreserve">Cancel hold</label>
-       <input type="radio" value="cancel" name="cancelreserve" id="cancelreserve" /><br />
+       <input type="radio" value="cancel" name="cancelreserve" id="cancelreserve" ng-model="cancelreserve"/><br />
        <label for="revertreserve">Revert waiting status</label>
-       <input type="radio" value="revert" name="cancelreserve" id="revertreserve" checked="checked"/>
+       <input type="radio" value="revert" name="cancelreserve" id="revertreserve" checked="checked" ng-model="cancelreserve"/>
    </p>
 
    <p ng-show="questions.INVALID_DATE">
-       <input type="text" size="13" id="duedatespec" name="duedatespec" readonly="readonly" value="% duedatespec %" />
-       <label for="duedatespec">Due date</label>
+       <input type="text" size="13" id="confduedatespec" name="duedatespec" readonly="readonly" ng-model="duedatespec" />
+       <label for="confduedatespec">Due date</label>
    </p>
 
-    <input type="submit" class="approve" value="Yes, Renew (Y)" accesskey="y" ng-show="questions.RENEW_ISSUE" ng-click="confirmCheckout()" />
+    <input type="submit" class="approve" value="Yes, Renew (Y)" accesskey="y" ng-show="questions.RENEW_ISSUE" ng-click="checkout( last_barcode, true )" />
 
-    <input type="submit" class="approve" value="Yes, Check Out (Y)" accesskey="y" ng-hide="questions.RENEW_ISSUE" ng-click="confirmCheckout()" />
+    <input type="submit" class="approve" value="Yes, Check Out (Y)" accesskey="y" ng-hide="questions.RENEW_ISSUE" ng-click="checkout( last_barcode, true )" />
 
     <input type="submit" class="deny" value="No, Don't Renew (N)" accesskey="n" ng-show="questions.RENEW_ISSUE" ng-click="cancelCheckout()" />
    
@@ -411,25 +425,11 @@ $(document).ready( function() {
 
     [% IF ( Koha.Preference( 'SpecifyDueDate' ) ) %]<div class="date-select">
         <div class="hint">Specify due date [% INCLUDE 'date-format.inc' %]: </div>
-        [% IF ( duedatespec ) %]<input type="text" size="13" id="duedatespec" name="duedatespec" value="[% duedatespec %]" readonly="readonly" />[% ELSE %]<input type="text" size="13" id="duedatespec" name="duedatespec" value="" readonly="readonly" />
-[% END %]
-          <label for="stickyduedate"> Remember for session:</label>
-[% IF ( stickyduedate ) %]
-<input type="checkbox" id="stickyduedate" onclick="this.form.barcode.focus();" name="stickyduedate" checked="checked" />
-[% ELSE %]
-<input type="checkbox" id="stickyduedate" onclick="this.form.barcode.focus();" name="stickyduedate" />
-[% END %]
-          <input type="button" class="action" id="cleardate" value="Clear" name="cleardate" onclick="this.checked = false; this.form.duedatespec.value = ''; this.form.stickyduedate.checked = false; this.form.barcode.focus(); return false;" />
+        <input type="text" size="13" id="duedatespec" name="duedatespec" readonly="readonly" ng-model="duedatespec" />
+        <label for="stickyduedate"> Remember for session:</label>
+        <input type="checkbox" id="stickyduedate" onclick="this.form.barcode.focus();" name="stickyduedate" ng-model="stickyduedate"/>
+        <input type="button" class="action" id="cleardate" value="Clear" name="cleardate" onclick="this.checked = false; this.form.duedatespec.value = ''; this.form.stickyduedate.checked = false; this.form.barcode.focus(); return false;" />
 </div>[% END %]
-          <input type="hidden" name="borrowernumber" id="borrowernumber" value="[% borrowernumber %]" />
-          <input type="hidden" name="branch" value="[% branch %]" />
-          <input type="hidden" name="printer" value="[% printer %]" />
-          <input type="hidden" name="print" value="maybe" />
-          <input type="hidden" name="debt_confirmed" value="[% debt_confirmed %]" />
-                [% IF ( CHARGES ) %]
-                        <input type="hidden" name="charges" value="yes" />
-                        <input type="hidden" name="oldamount" value="[% amountold %]" />
-                [% END %]
 </fieldset>
 </form></div>[% END %]<!-- /unless noissues -->
 
