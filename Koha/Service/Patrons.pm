@@ -180,7 +180,29 @@ Retrieves information on the checkouts for a patron.
 sub get_checkouts {
     my ( $self, $borrowernumber ) = @_;
 
-    return { checkouts => GetPendingIssues( $borrowernumber ) };
+    my $checkouts = GetPendingIssues( $borrowernumber );
+
+    foreach my $checkout ( @$checkouts ) {
+        $checkout->{issuedate_formatted} = output_pref(
+            {
+                dt          => dt_from_string( $checkout->{issuedate} ),
+                as_due_date => 1
+            }
+        );
+
+        $checkout->{date_due_formatted} = output_pref(
+            {
+                dt          => dt_from_string( $checkout->{date_due} ),
+                as_due_date => 1
+            }
+        );
+
+        ($checkout->{'charge'}, $checkout->{'itemtype_charge'}) = GetIssuingCharges(
+            $checkout->{'itemnumber'}, $checkout->{'borrowernumber'}
+        );
+    }
+
+    return { checkouts => $checkouts };
 }
 
 =head2 get_patron_info

@@ -14,12 +14,16 @@
 </title>
 [% INCLUDE 'doc-head-close.inc' %]
 [% INCLUDE 'calendar.inc' %]
-[% IF ( UseTablesortForCirc ) %]<link rel="stylesheet" type="text/css" href="[% themelang %]/css/datatables.css" />
-[% INCLUDE 'datatables.inc' %][% END %]
+<link rel="stylesheet" type="text/css" href="[% themelang %]/css/datatables.css" />
+<link rel="stylesheet" type="text/css" href="[% interface %]/lib/angular/datatables.bootstrap.min.css" />
+[% INCLUDE 'datatables.inc' %]
+[% INCLUDE 'strings.inc' %]
 <script src="[% interface %]/lib/jquery/plugins/jquery.checkboxes.min.js"></script>
 <script src="[% interface %]/lib/jquery/plugins/jquery-ui-timepicker-addon.min.js"></script>
 [% INCLUDE 'timepicker.inc' %]
-<script src="[% interface %]/lib/angular.min.js"></script>
+<script src="[% interface %]/lib/angular/angular.min.js"></script>
+<script src="[% interface %]/lib/angular/angular-datatables.min.js"></script>
+<script src="[% interface %]/lib/jquery/plugins/jquery.dataTables.rowGrouping.js"></script>
 <script>
 var authorised_values = {
     [% FOREACH category IN authorised_values -%]
@@ -31,7 +35,7 @@ var authorised_values = {
     [% END -%]
 }
 
-var checkoutApp = angular.module( 'checkoutApp', [] )
+var checkoutApp = angular.module( 'checkoutApp', [ 'datatables' ] )
     .filter( 'isNotEmpty', function() {
         return function(obj) {
             return !$.isEmptyObject(obj);
@@ -39,6 +43,7 @@ var checkoutApp = angular.module( 'checkoutApp', [] )
     } );
 
 checkoutApp.controller( 'CheckoutController', function ( $scope, $http ) {
+    $scope.today = $.datepicker.formatDate('yyyy-mm-dd', new Date());
     $http.defaults.headers.post["Content-Type"] = "application/x-www-form-urlencoded";
     $scope.borrowernumber = [% borrowernumber %];
     $scope.authorised_values = authorised_values;
@@ -48,6 +53,85 @@ checkoutApp.controller( 'CheckoutController', function ( $scope, $http ) {
         $('#yui-main > .yui-b').show();
         $('.loading-overlay').hide();
     });
+
+    $scope.checkouts_dt_columns = [
+        // Today vs previous checkouts
+        {
+        },
+
+        // Due date
+        {
+            sType: 'title-string'
+        },
+        
+        // Title
+        {
+            sType: 'anti-the'
+        },
+
+        // Itemtype
+        {
+        },
+
+        // Issue date
+        {
+            sType: 'title-string'
+        },
+
+        // Issuing branch
+        {
+        },
+
+        // Call number
+        {
+        },
+
+        // Charge
+        {
+        },
+
+        // Price
+        {
+        },
+
+        // Renew checkbox
+        {
+            "bSortable": false,
+        },
+
+        // Check in checkbox
+        {
+            "bSortable": false,
+        },
+    ];
+
+    $scope.checkouts_dt_options = {
+        bAutoWidth: false,
+        bPaginate: false,
+        bProcessing: true,
+        fnInitComplete: function(oSettings) {
+            $('#issuest').dataTable().rowGrouping( {
+                iGroupingOrderByColumnIndex: 0,
+                sGroupingColumnSortDirection: "desc"
+            } );
+
+            // Disable rowGrouping plugin after first use
+            // so any sorting on the table doesn't use it
+            var oSettings = $('#issuest').dataTable().fnSettings();
+
+            for (f = 0; f < oSettings.aoDrawCallback.length; f++) {
+                if (oSettings.aoDrawCallback[f].sName == 'fnRowGrouping') {
+                    oSettings.aoDrawCallback.splice(f, 1);
+                    break;
+                }
+            }
+
+            oSettings.aaSortingFixed = null;
+        },
+        sDom: "rt",
+    };
+
+    $scope.checkouts = [];
 
     function get_checkouts() {
         $http.get( '/cgi-bin/koha/svc/patrons/' + $scope.borrowernumber + '/checkouts' ).success( function( data ) {
@@ -94,7 +178,7 @@ checkoutApp.controller( 'CheckoutController', function ( $scope, $http ) {
 } );
 
 $(document).ready( function() {
-    $('#patronlists').tabs( [% IF ( UseTablesortForCirc ) %]{
+    $('#patronlists').tabs( {
         // Correct table sizing for tables hidden in tabs
         // http://www.datatables.net/examples/api/tabs_and_scrolling.html
         "show": function( event, ui ) {
@@ -103,7 +187,7 @@ $(document).ready( function() {
                 oTable.fnAdjustColumnSizing();
             }
         }
-    }[% END %] );
+    } );
     $("#duedatespec").datetimepicker({
         onClose: function(dateText, inst) { $("#barcode").focus(); },
         hour: 23,
@@ -113,6 +197,7 @@ $(document).ready( function() {
         hour: 23,
         minute: 59
     });
+    $("#issuest tfoot [colspan]").attr( "colspan", 7 );
 } );
 </script>
 </head>
@@ -599,8 +684,9 @@ $(document).ready( function() {
     <input type="hidden" name="cardnumber" value="[% cardnumber %]" />
     <input type="hidden" name="borrowernumber" value="[% borrowernumber %]" />
     <input type="hidden" name="branch" value="[% branch %]" />
-        <table id="issuest">
+    <table id="issuest" datatable="ng" dt-options="checkouts_dt_options" dt-columns="checkouts_dt_columns">
     <thead><tr>
+        <th scope="col">&nbsp;</th>
         <th scope="col" class="title-string">Due date</th>
         <th scope="col" class="anti-the">Title</th>
         <th scope="col">Item type</th>
@@ -618,17 +704,18 @@ $(document).ready( function() {
 [% INCLUDE 'checkouts-table-footer.inc' %]
 	<tbody>
 
-    <tr ng-repeat="checkout in checkouts" class="{{ $odd ? 'highlight' : '' }}">
-        [% IF ( todayissue.od ) %]<td class="od">[% ELSE %]<td>[% END %]
-            <span title="{{ checkout.date_due }}">{{ checkout.date_due }}</span>
+    <tr dt-rows ng-repeat="checkout in checkouts" class="{{ $odd ? 'highlight' : '' }}">
+        <td>{{ ( today == checkout.issuedate ) ? TODAYS_CHECKOUTS : PREVIOUS_CHECKOUTS }}</td>
+        <td>
+            <span title="{{ checkout.date_due }}">{{ checkout.date_due_formatted }}</span>
         </td>
         <td><a href="/cgi-bin/koha/catalogue/detail.pl?biblionumber={{ checkout.biblionumber }}&amp;type=intra"><strong>{{ checkout.title }}</strong></a><span ng-show="checkout.author">, by {{ checkout.author }}</span><span class="circ-hlt" ng-show="checkout.itemnotes"> - {{ checkout.itemnotes }}</span> <a href="/cgi-bin/koha/catalogue/moredetail.pl?biblionumber={{ checkout.biblionumber }}&amp;itemnumber={{ checkout.itemnumber }}#item{{ checkout.itemnumber }}">{{ checkout.barcode }}</a></td>
         <td>[% UNLESS ( noItemTypeImages ) %] [% IF ( todayissue.itemtype_image ) %]<img src="{{ checkout.itemtype_image }}" alt="" />[% END %][% END %]{{ checkout.itemtype }}</td>
-        <td><span title="{{ checkout.displaydate_sort }}">{{ checkout.issuedate }}</span></td>
-        <td>{{ checkout.issuingbranchname }}</td>
+        <td><span title="{{ checkout.issuedate }}">{{ checkout.issuedate_formatted }}</span></td>
+        <td>{{ authorised_values.branches[ checkout.branchcode ] }}</td>
         <td>{{ checkout.itemcallnumber }}</td>
-            <td>{{ checkout.charge }}</td>
-            <td>{{ checkout.replacementprice }}</td>
+        <td>{{ ( checkout.charge || 0 ).toFixed(2) }}</td>
+        <td>{{ ( checkout.replacementprice || 0 ).toFixed(2) }}</td>
         <td><span style="padding: 0 1em;">{{ checkout.renewals || 0 }}</span>
         <td><input type="checkbox" class="radio" name="barcodes[]"  value="{{ checkout.barcode }}" />
             <input type="checkbox" name="all_barcodes[]" value="{{ checkout.barcode }}" checked="checked" style="display: none;" />
