@@ -52,6 +52,7 @@ checkoutApp.controller( 'CheckoutController', function ( $scope, $http ) {
 
     $http.get( '/cgi-bin/koha/svc/patrons/' + $scope.borrowernumber + '/patronInfo' ).success( function( data ) {
         $scope.borrower = data.patronInfo;
+        $.each( $scope.borrower.flags, function( flag, info ) { if( info.noissues ) $scope.noissues = true; } );
         $('#yui-main > .yui-b').show();
         $('.loading-overlay').hide();
     });
@@ -145,10 +146,10 @@ checkoutApp.controller( 'CheckoutController', function ( $scope, $http ) {
 
     $scope.checkout = function(barcode, confirmed) {
         var barcode = barcode || $scope.barcode;
-        var params = { barcode: barcode, duedate: $scope.duedatespec };
+        var params = { barcode: barcode, duedate: $scope.duedatespec || "" };
         if ( confirmed ) {
             params.confirmed = 1;
-            params.cancelreserve = $scope.cancelreserve;
+            params.cancelreserve = $scope.cancelreserve || "";
         }
         $http.post( '/cgi-bin/koha/svc/patrons/' + $scope.borrowernumber + '/checkouts', $.param( params ) ).success(function( data ) {
                 $scope.last_barcode = barcode;
@@ -157,7 +158,7 @@ checkoutApp.controller( 'CheckoutController', function ( $scope, $http ) {
                 if ( data.errors || data.questions ) {
                     $scope.last_item = data.item;
                     $scope.errors = data.errors;
-                    $scope.questions = data.questions;
+                    $scope.questions = data.errors ? null : data.questions;
                     $scope.cancelreserve = data.questions.RESERVE_WAITING ? "revert" : null;
                 }else {
                     $scope.last_item = null;
@@ -488,13 +489,7 @@ $(document).ready( function() {
 <!-- BARCODE ENTRY -->
 
 <div class="yui-g" ng-show="borrower">
-[% UNLESS ( noissues ) %]
-[% IF ( flagged ) %]
-<div class="yui-u first">
-[% ELSE %]
-<div>
-
-[% END %]
+<div ng-hide="noissues" ng-class="( borrower.flags | isNotEmpty ) ? 'yui-u first' : ''">
 
 <form method="post" id="mainform" name="mainform" autocomplete="off" ng-submit="checkout()">
 <fieldset id="circ_circulation_issue">
@@ -518,53 +513,35 @@ $(document).ready( function() {
         <input type="button" class="action" id="cleardate" value="Clear" name="cleardate" onclick="this.checked = false; this.form.duedatespec.value = ''; this.form.stickyduedate.checked = false; this.form.barcode.focus(); return false;" />
 </div>[% END %]
 </fieldset>
-</form></div>[% END %]<!-- /unless noissues -->
+</form></div>
 
-[% IF ( noissues ) %]<div>[% ELSE %]<div class="yui-u">[% END %]
+<div ng-show="borrower.flags | isNotEmpty" ng-class="noissues ? '' : 'yui-u'">
 
-    [% IF ( flagged ) %]
-		[% IF ( noissues ) %]
-		<h4>Checking out to [% INCLUDE 'patron-title.inc' %]</h4>
-        <div id="circmessages" class="circmessage warning">
-		[% ELSE %]
-        <div id="circmessages" class="circmessage attention">
-		[% END %]
+        <h4 ng-show="noissues">Checking out to {{ borrower.surname }}, {{ borrower.firstname }} ({{ borrower.cardnumber }})</h4>
+        <div id="circmessages" ng-class="noissues ? 'circmessage warning': 'circmessage attention'">
 
-		<h3>[% IF ( noissues ) %]
-		        Cannot check out!
-		[% ELSE %]Attention:[% END %]</h3>
+        <h3 ng-show="noissues">Cannot check out!</h3>
+        <h3 ng-hide="noissues">Attention:</h3>
 		<ul>
 
-			[% IF ( warndeparture ) %]
-			<li><span class="circ-hlt">Expiration:</span> Patron's card will expire soon.
-			Patron's card expires on [% expiry %] <a href="/cgi-bin/koha/members/setstatus.pl?borrowernumber=[% borrowernumber %]&amp;cardnumber=[% cardnumber %]&amp;destination=circ&amp;reregistration=y">Renew</a> or <a href="/cgi-bin/koha/members/memberentry.pl?op=modify&amp;destination=circ&amp;borrowernumber=[% borrowernumber %]&amp;categorycode=[% categorycode %]">Edit Details</a>
+			<li ng-show="borrower.flags.WARNDEPARTURE"><span class="circ-hlt">Expiration:</span> Patron's card will expire soon.
+			Patron's card expires on {{ borrower.expiry }} <a href="/cgi-bin/koha/members/setstatus.pl?borrowernumber={{ borrower.borrowernumber }}&amp;cardnumber={{ borrower.cardnumber }}&amp;destination=circ&amp;reregistration=y">Renew</a> or <a href="/cgi-bin/koha/members/memberentry.pl?op=modify&amp;destination=circ&amp;borrowernumber={{ borrower.borrowernumber }}&amp;categorycode={{ borrower.categorycode }}">Edit Details</a>
 
 			</li>
-			[% END %]
+            <li ng-show="borrower.flags.RETURNBEFOREEXPIRY"><span class="circ-hlt">Set due date to expiry:</span> You have the ReturnBeforeExpiry system preference enabled this means if the
+            expiry date is before the date due, the date due will be set to the expiry date
+            </li>
 
-			[% IF ( returnbeforeexpiry ) %]
-			 <li><span class="circ-hlt">Set due date to expiry:</span> You have the ReturnBeforeExpiry system preference enabled this means if the
-			 expiry date is before the date due, the date due will be set to the expiry date
-			 </li>
-			[% END %]
-
-			[% IF ( expired ) %]
-			<li><span class="circ-hlt">Expiration:</span> Patron's card has expired.
-			[% IF ( expiry ) %]Patron's card expired on [% expiry %][% END %] <a href="/cgi-bin/koha/members/setstatus.pl?borrowernumber=[% borrowernumber %]&amp;cardnumber=[% cardnumber %]&amp;destination=circ&amp;reregistration=y">Renew</a> or <a href="/cgi-bin/koha/members/memberentry.pl?op=modify&amp;destination=circ&amp;borrowernumber=[% borrowernumber %]&amp;categorycode=[% categorycode %]">Edit Details</a>
+			<li ng-show="borrower.flags.EXPIRED"><span class="circ-hlt">Expiration:</span> Patron's card has expired.
+			[% IF ( expiry ) %]Patron's card expired on {{ borrower.expiry }}[% END %] <a href="/cgi-bin/koha/members/setstatus.pl?borrowernumber={{ borrower.borrowernumber }}&amp;cardnumber={{ borrower.cardnumber }}&amp;destination=circ&amp;reregistration=y">Renew</a> or <a href="/cgi-bin/koha/members/memberentry.pl?op=modify&amp;destination=circ&amp;borrowernumber={{ borrower.borrowernumber }}&amp;categorycode={{ borrower.categorycode }}">Edit Details</a>
 
 			</li>
-			[% END %]
 
-            [% IF ( gna ) %]
-			<li class="blocker"><span class="circ-hlt">Address:</span> Patron's address in doubt</li>
-			[% END %]
+			<li class="blocker" ng-show="borrower.flags.GNA"><span class="circ-hlt">Address:</span> Patron's address in doubt</li>
 
-            [% IF ( lost ) %]
-			<li class="blocker"><span class="circ-hlt">Lost: </span>Patron's card is lost</li>
-			[% END %]
+			<li class="blocker" ng-show="borrower.flags.LOST"><span class="circ-hlt">Lost: </span>Patron's card is lost</li>
 
-            [% IF ( userdebarred ) %]
-               <li class="blocker">
+               <li class="blocker" ng-show="borrower.flags.USERDEBARRED">
                    <span class="circ-hlt"> Restricted:</span> Patron's account is restricted
 
                    [% IF ( userdebarreddate ) %]
@@ -578,25 +555,19 @@ $(document).ready( function() {
                    <br/>
                    <a class="btn btn-small" href="#reldebarments" onclick="$('#debarments-tab-link').click()"><i class="icon-ban-circle"></i> View restrictions</a>
                </li>
-            [% END %]
 
-		[% IF ( odues ) %]<li>[% IF ( nonreturns ) %]<span class="circ-hlt">Overdues:</span> Patron has <span class="circ-hlt">ITEMS OVERDUE</span>. See highlighted items <a href="#checkouts">below</a>[% END %]</li>
-            [% END %]
+            <li ng-show="borrower.flags.ODUES"><span class="circ-hlt">Overdues:</span> Patron has <span class="circ-hlt">ITEMS OVERDUE</span>. See highlighted items <a href="#checkouts">below</a></li>
 
-		[% IF ( charges ) %]
-			    <li>
-            <span class="circ-hlt">Fees &amp; Charges:</span> Patron has  <a href="/cgi-bin/koha/members/boraccount.pl?borrowernumber=[% borrowernumber %]">Outstanding fees &amp; charges[% IF ( chargesamount ) %] of [% chargesamount %][% END %]</a>.
-                [% IF ( charges_is_blocker ) %]
+			    <li ng-show="borrower.flags.CHARGES">
+            <span class="circ-hlt">Fees &amp; Charges:</span> Patron has  <a href="/cgi-bin/koha/members/boraccount.pl?borrowernumber={{ borrower.borrowernumber }}">Outstanding fees &amp; charges<span ng-show="borrower.flags.CHARGES.amount"> of {{ borrower.flags.CHARGES.amount }}</span></a>.
+                <span ng-show="borrower.flags.CHARGES.charges_is_blocker">
                     Checkouts are <span class="circ-hlt">BLOCKED</span> because fine balance is <span class="circ-hlt">OVER THE LIMIT</span>.
-                [% END %]
-            <a href="/cgi-bin/koha/members/pay.pl?borrowernumber=[% borrowernumber %]">Make payment</a></li>
-			[% END %]
+            </span>
+            <a href="/cgi-bin/koha/members/pay.pl?borrowernumber={{ borrower.borrowernumber }}">Make payment</a></li>
 
-		[% IF ( credits ) %]
-			<li>
+			<li ng-show="borrower.flags.CREDITS">
                 <span class="circ-hlt">Credits:</span> Patron has a credit[% IF ( creditsamount ) %] of [% creditsamount %][% END %]
             </li>
-			[% END %]
 
 
 
@@ -654,9 +625,6 @@ $(document).ready( function() {
 
 		</ul>
 	</div>
-
-     <!-- /If flagged -->[% END %]
-
 
 
 </div>
