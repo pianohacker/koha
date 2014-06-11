@@ -158,7 +158,7 @@ checkoutApp.controller( 'CheckoutController', function ( $scope, $http ) {
                 if ( data.errors || data.questions ) {
                     $scope.last_item = data.item;
                     $scope.errors = data.errors;
-                    $scope.questions = data.errors ? null : data.questions;
+                    $scope.questions = $.isEmptyObject(data.errors) ? data.questions : null;
                     $scope.cancelreserve = data.questions.RESERVE_WAITING ? "revert" : null;
                 }else {
                     $scope.last_item = null;
