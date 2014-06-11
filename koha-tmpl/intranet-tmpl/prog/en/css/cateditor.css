@@ -90,6 +90,10 @@ body {
     font-weight: bold;
 }
 
+.cm-end-space {
+    background-color: #DDDDBB;
+}
+
 #editor .modified-line-gutter {
     width: 10px;
 }
@@ -202,7 +206,7 @@ body {
 }
 
 .modal-body {
-    height: 400px;
+    max-height: none;
     padding: 0;
 }
 
@@ -279,6 +283,14 @@ body {
 }
 
 /*> Search results */
+
+#search-serversinfo li {
+    list-style-type: none;
+}
+
+#search-serversinfo .search-toggle-server {
+    margin-right: 5px;
+}
 
 #searchresults table {
     width: 100%;

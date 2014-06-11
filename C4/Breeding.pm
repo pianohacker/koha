@@ -27,8 +27,6 @@ use C4::Charset;
 use MARC::File::USMARC;
 use C4::ImportBatch;
 use C4::AuthoritiesMarc; #GuessAuthTypeCode, FindDuplicateAuthority
-use Koha::Database;
-use Time::HiRes qw( clock_gettime CLOCK_MONOTONIC );
 
 use vars qw($VERSION @ISA @EXPORT @EXPORT_OK %EXPORT_TAGS);
 
@@ -37,7 +35,7 @@ BEGIN {
     $VERSION = 3.07.00.049;
 	require Exporter;
 	@ISA = qw(Exporter);
-    @EXPORT = qw(&BreedingSearch &Z3950Search &Z3950SearchAuth &RunZ3950);
+    @EXPORT = qw(&BreedingSearch &Z3950Search &Z3950SearchAuth);
 }
 
 =head1 NAME
@@ -330,10 +328,8 @@ sub _add_rowdata {
     my ($row, $record)=@_;
     my %fetch= (
         title => 'biblio.title',
-        seriestitle => 'biblio.seriestitle',
         author => 'biblio.author',
         isbn =>'biblioitems.isbn',
-        issn =>'biblioitems.issn',
         lccn =>'biblioitems.lccn', #LC control number (not call number)
         edition =>'biblioitems.editionstatement',
         date => 'biblio.copyrightdate', #MARC21
@@ -648,106 +644,6 @@ sub Z3950SearchAuth {
         servers => \@servers,
         errconn       => \@errconn
     );
-}
-
-sub RunZ3950 {
-    my ( $server_ids, $query, $options ) = @_;
-
-    $options = {
-        offset => 0,
-        fetch => 20,
-        on_error => sub {},
-        on_hit => sub {},
-        %{ $options || {} }
-    };
-
-    my $schema = Koha::Database->new->schema;
-    my $stats = {
-        num_fetched => {
-            map { $_ => 0 } @$server_ids
-        },
-        num_hits => {
-            map { $_ => 0 } @$server_ids
-        },
-        total_fetched => 0,
-        total_hits => 0,
-    };
-    my $start = clock_gettime( CLOCK_MONOTONIC );
-    my @servers;
-
-    foreach my $server ( $schema->resultset('Z3950server')->search( { id => $server_ids } )->all ) {
-        my $zoptions = ZOOM::Options->new();
-        $zoptions->option( 'async', 1 );
-        $zoptions->option( 'elementSetName', 'F' );
-        $zoptions->option( 'databaseName',   $server->db );
-        $zoptions->option( 'user', $server->userid ) if $server->userid;
-        $zoptions->option( 'password', $server->password ) if $server->password;
-        $zoptions->option( 'preferredRecordSyntax', $server->syntax );
-        $zoptions->option( 'timeout', $server->timeout ) if $server->timeout;
-
-        my $connection = ZOOM::Connection->create($zoptions);
-        $connection->connect( $server->host, $server->port );
-
-        push @servers, {
-            connection => $connection,
-            id => $server->id,
-            host => $server->host,
-            name => $server->name,
-            encoding => ( $server->encoding ? $server->encoding : "iso-5426" ),
-            results => $connection->search_pqf( $query ), # Starts the search
-        };
-    }
-
-    my $servers_left = scalar @servers;
-    my $total_raw_size = 0;
-
-    while ( $servers_left ) {
-        my $i;
-
-        # Read pending events from servers until one finishes
-        while ( ( $i = ZOOM::event( [ map { $_->{connection} } @servers ] ) ) != 0 ) {
-            last if $servers[ $i - 1 ]->{connection}->last_event() == ZOOM::Event::ZEND;
-        }
-
-        $servers_left--;
-        my $server = $servers[ --$i ];
-        my $exception = $server->{connection}->exception(); #ignores errmsg, addinfo, diagset
-
-        if ($exception) {
-            $options->{on_error}->( $server, $exception );
-        } else {
-            my $num_results = $stats->{num_hits}->{ $server->{id} } = $server->{results}->size;
-            my $num_fetched = $stats->{num_fetched}->{ $server->{id} } = ( $options->{offset} + $options->{fetch} ) < $num_results ? $options->{fetch} : $num_results;
-
-            $stats->{total_hits} += $num_results;
-            $stats->{total_fetched} += $num_fetched;
-
-            next if ( !$num_results );
-
-            my $hits = $server->{results}->records( $options->{offset}, $num_fetched, 1 );
-
-            if ( !@$hits ) {
-                $options->{on_error}->( $server, $server->{connection}->exception() ) if ( $server->{connection}->exception() );
-                next;
-            }
-
-            foreach my $j ( 0..$#$hits ) {
-                $total_raw_size += length $hits->[$j]->raw();
-                my ($marcrecord) = MarcToUTF8Record( $hits->[$j]->raw(), C4::Context->preference('marcflavour'), $server->{encoding} ); #ignores charset return values
-                my $metadata = {};
-                _add_rowdata( $metadata, $marcrecord );
-                $options->{on_hit}->( $server, {
-                    index => $options->{offset} + $j,
-                    record => $marcrecord,
-                    metadata => $metadata,
-                } );
-            }
-        }
-    }
-
-    $stats->{time} = clock_gettime( CLOCK_MONOTONIC ) - $start;
-
-    return $stats;
 }
 
 1;

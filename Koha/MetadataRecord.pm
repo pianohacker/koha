@@ -34,6 +34,7 @@ and authority) records in Koha.
 
 use strict;
 use warnings;
+
 use C4::Context;
 use Koha::Util::MARC;
 
@@ -53,6 +54,31 @@ sub createMergeHash {
     my ($self, $tagslib) = @_;
     if ($self->schema =~ m/marc/) {
         return Koha::Util::MARC::createMergeHash($self->record, $tagslib);
+    }
+}
+
+sub getKohaField {
+    my ($self, $kohafield) = @_;
+
+    if ($self->schema =~ m/marc/) {
+        my $relations = C4::Context->marcfromkohafield->{''};
+        my $tagfield = $relations->{$kohafield};
+
+        return '' if ref($tagfield) ne 'ARRAY';
+
+        my ($tag, $subfield) = @$tagfield;
+        my @kohafield;
+        foreach my $field ( $self->record->field($tag) ) {
+            if ( $field->tag() < 10 ) {
+                push @kohafield, $field->data();
+            } else {
+                foreach my $contents ( $field->subfield($subfield) ) {
+                    push @kohafield, $contents;
+                }
+            }
+        }
+
+        return join ' | ', @kohafield;
     }
 }
 

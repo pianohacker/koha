@@ -39,6 +39,11 @@ define( [ 'marc-record' ], function( MARC ) {
             return q;
         },
         Run: function( servers, q, options ) {
+            options = $.extend( {
+                offset: 0,
+                page_size: 20,
+            }, _options, options );
+
             Search.includedServers = [];
             _records = {};
             _last = {
@@ -47,25 +52,24 @@ define( [ 'marc-record' ], function( MARC ) {
                 options: options,
             };
 
-            options = $.extend( {
-                offset: 0,
-                page_size: 20,
-            }, _options, options );
-
             $.each( servers, function ( id, info ) {
                 if ( info.checked ) Search.includedServers.push( id );
             } );
 
             $.get(
-                '/cgi-bin/koha/svc/z3950',
+                '/cgi-bin/koha/svc/cataloguing/metasearch',
                 {
                     q: q,
                     servers: Search.includedServers.join( ',' ),
                     offset: options.offset,
-                    page_size: options.page_size
+                    page_size: options.page_size,
+                    sort_direction: options.sort_direction,
+                    sort_key: options.sort_key,
+                    resultset: options.resultset,
                 }
             )
                 .done( function( data ) {
+                    _last.options.resultset = data.resultset;
                     $.each( data.hits, function( undef, hit ) {
                         var record = new MARC.Record();
                         record.loadMARCXML( hit.record );
@@ -80,9 +84,10 @@ define( [ 'marc-record' ], function( MARC ) {
 
             return true;
         },
-        Fetch: function( offset ) {
+        Fetch: function( options ) {
             if ( !_last ) return;
-            Search.Run( _last.servers, _last.q, $.extend( {}, _last.options, { offset: offset } ) );
+            $.extend( _last.options, options );
+            Search.Run( _last.servers, _last.q, _last.options );
         }
     };
 

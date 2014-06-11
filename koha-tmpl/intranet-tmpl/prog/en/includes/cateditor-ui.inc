@@ -10,6 +10,7 @@ require.config( {
             themelang: '[% themelang %]',
         },
     },
+    waitSeconds: 30,
 } );
 </script>
 
@@ -22,13 +23,25 @@ require.config( {
 <script>
 require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'preferences', 'resources', 'text-marc', 'widget' ], function( KohaBackend, Search, Macros, MARCEditor, MARC, Preferences, Resources, TextMARC, Widget ) {
     var z3950Servers = {
-        [% FOREACH server = z3950_servers %]
-            [% server.id %]: {
-                'name': '[% server.name %]',
-                'kohasyntax': '[% server.syntax == 'USMARC' ? 'MARC21' : server.syntax %]',
-                'checked': [% server.checked ? 'true' : 'false' %],
+        'koha:biblioserver': {
+            name: _("Local catalog"),
+            recordtype: 'biblio',
+            checked: false,
+        },
+        [%- FOREACH batch = editable_batches -%]
+            'batch:[% batch.import_batch_id %]': {
+                name: _("Batch: ") + '[% batch.file_name %]',
+                recordtype: 'biblio',
+                checked: false,
             },
-        [% END %]
+        [%- END -%]
+        [%- FOREACH server = z3950_servers -%]
+            [% server.id %]: {
+                name: '[% server.name %]',
+                recordtype: '[% server.recordtype %]',
+                checked: [% server.checked ? 'true' : 'false' %],
+            },
+        [%- END -%]
     };
 
     // The columns that should show up in a search, in order, and keyed by the corresponding <metadata> tag in the XSL and Pazpar2 config
@@ -214,6 +227,14 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
         },
     };
 
+    var editable_batches = {
+        [%- FOREACH batch = editable_batches -%]
+            [% batch.import_batch_id %]: {
+                'name': '[% batch.file_name %]',
+            },
+        [%- END -%]
+    };
+
     function setSource(parts) {
         state.backend = parts[0];
         state.recordID = parts[1];
@@ -300,23 +321,26 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
 
     // Search functions
     function showAdvancedSearch() {
+        $('#advanced-search-servers').empty();
+        $.each( z3950Servers, function( server_id, server ) {
+            $('#advanced-search-servers').append( '<li data-server-id="' + server_id + '"><input class="search-toggle-server" type="checkbox"' + ( server.checked ? ' checked="checked">' : '>' ) + server.name + '</li>' );
+        } );
         $('#advanced-search-ui').modal('show');
     }
 
     function startAdvancedSearch() {
-        var search = '';
+        var terms = [];
 
-        $('#advanced-search-ui input').each( function() {
-            if (!this.value) return;
-            if (search) search += ' and ';
-            search += $(this).data('qualifier') + this.value;
+        $('#advanced-search-ui .search-box').each( function() {
+            if ( !this.value ) return;
+
+            terms.push( [ $(this).data('qualifier'), this.value ] );
         } );
 
-        if (!search) return;
+        if ( !terms.length ) return;
 
-        $('#advanced-search-ui').modal('hide');
-
-        if ( Search.Run( z3950Servers, search, 20 ) ) {
+        if ( Search.Run( z3950Servers, Search.JoinTerms(terms) ) ) {
+            $('#advanced-search-ui').modal('hide');
             $("#search-overlay").show();
             showResultsBox();
         }
@@ -330,6 +354,19 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
         $('#search-results-ui').modal('show');
     }
 
+    function showSearchSorting( sort_key, sort_direction ) {
+        var $th = $('#searchresults thead tr th[data-sort-label="' + sort_key + '"]');
+        $th.parent().find( 'th[data-sort-label]' ).attr( 'class', 'sorting' );
+
+        if ( sort_direction == 'asc' ) {
+            direction = 'asc';
+            $th.attr( 'class', 'sorting_asc' );
+        } else {
+            direction = 'desc';
+            $th.attr( 'class', 'sorting_desc' );
+        }
+    }
+
     function showSearchResults( editor, data ) {
         backends.search.records = {};
 
@@ -337,12 +374,18 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
         $('#searchresults tbody').empty();
         $('#search-serversinfo').empty();
 
-        $.each( data.num_fetched, function( server_id, num_fetched ) {
-            if ( num_fetched < data.num_hits[server_id] ) {
+        $.each( z3950Servers, function( server_id, server ) {
+            var num_fetched = data.num_fetched[server_id];
+
+            if ( data.errors[server_id] ) {
+                num_fetched = data.errors[server_id];
+            } else if ( num_fetched == null ) {
+                num_fetched = '-';
+            } else if ( num_fetched < data.num_hits[server_id] ) {
                 num_fetched += '+';
             }
 
-            $('#search-serversinfo').append( '<li>' + z3950Servers[server_id].name + ' (' + num_fetched + ')' + '</li>' );
+            $('#search-serversinfo').append( '<li data-server-id="' + server_id + '"><input class="search-toggle-server" type="checkbox"' + ( server.checked ? ' checked="checked">' : '>' ) + server.name + ' (' + num_fetched + ')' + '</li>' );
         } );
 
         var seenColumns = {};
@@ -357,9 +400,11 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
 
         $.each( z3950Labels, function( undef, label ) {
             if ( seenColumns[ label[0] ] ) {
-                $('#searchresults thead tr').append( '<th>' + label[1] + '</th>' );
+                $('#searchresults thead tr').append( '<th class="sorting" data-sort-label="' + label[0] + '">' + label[1] + '</th>' );
             }
         } );
+
+        showSearchSorting( data.sort_key, data.sort_direction );
 
         $('#searchresults thead tr').append('<th>' + _("Tools") + '</th>');
 
@@ -627,9 +672,24 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
                 resizeTimer = null;
 
                 var pos = $('#editor .CodeMirror').position();
-                $('#editor .CodeMirror').height( $(window).height() - pos.top - 24 );
+                $('#editor .CodeMirror').height( $(window).height() - pos.top - 24 - $('#changelanguage').height() ); // 24 is hardcoded value but works well
+
+                $('.modal-body').each( function() {
+                    $(this).height( $(window).height() * .8 - $(this).prevAll('.modal-header').height() );
+                } );
             }, 100);
         } ).resize();
+
+        $.each( editable_batches, function( batch_id, batch ) {
+            backends[ 'batch-' + batch_id ] = {
+                titleForRecord: _("Editing record from batch: ") + batch.name,
+                saveLabel: _("Save to batch: ") + batch.name,
+                get: function( id, callback ) {
+                },
+                save: function( id, record, callback ) {
+                },
+            };
+        } );
 
         var saveableBackends = [];
         $.each( backends, function( id, backend ) {
@@ -808,9 +868,35 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
 
         $( document ).on( 'click', 'a.search-nav', function() {
             $("#search-overlay").show();
-            Search.Fetch( $( this ).data( 'offset' ) );
+            Search.Fetch( { offset: $( this ).data( 'offset' ) } );
             return false;
         });
+
+        $( document ).on( 'click', 'th[data-sort-label]', function() {
+            $("#search-overlay").show();
+            var direction;
+
+            if ( $( this ).hasClass( 'sorting_asc' ) ) {
+                direction = 'desc';
+            } else {
+                direction = 'asc';
+            }
+
+            showSearchSorting( $( this ).data( 'sort-label' ), direction );
+
+            Search.Fetch( { sort_key: $( this ).data( 'sort-label' ), sort_direction: direction } );
+            return false;
+        });
+
+        $( document ).on( 'change', 'input.search-toggle-server', function() {
+            var server = z3950Servers[ $( this ).parent().data('server-id') ];
+            server.checked = !server.checked;
+
+            if ( $('#search-results-ui').is( ':visible' ) ) {
+                $("#search-overlay").show();
+                Search.Fetch();
+            }
+        } );
 
         // Key bindings
         bindGlobalKeys();

@@ -3,7 +3,6 @@ define( [ 'marc-record', 'koha-backend', 'preferences', 'text-marc', 'widget' ],
 
     function editorCursorActivity( cm ) {
         var editor = cm.marceditor;
-        if ( editor.textMode ) return;
 
         $('#status-tag-info').empty();
         $('#status-subfield-info').empty();
@@ -14,6 +13,13 @@ define( [ 'marc-record', 'koha-backend', 'preferences', 'text-marc', 'widget' ],
 
         var taginfo = KohaBackend.GetTagInfo( '', info.tagNumber );
         $('#status-tag-info').html( '<strong>' + info.tagNumber + ':</strong> ' );
+
+        // Set overwrite mode for tag numbers/indicators and contents of fixed fields
+        if ( info.tagNumber < '010' || cm.getCursor().ch < 8 ) {
+            cm.toggleOverwrite(true);
+        } else {
+            cm.toggleOverwrite(false);
+        }
 
         if ( taginfo ) {
             $('#status-tag-info').append( taginfo.lib );
@@ -62,15 +68,15 @@ define( [ 'marc-record', 'koha-backend', 'preferences', 'text-marc', 'widget' ],
             }
 
             var startLine, endLine;
-            if ( change.text.length == 2 && from.line == to.line && from.ch == to.ch) {
+            if ( change.text.length == 2 && from.line == to.line && from.ch == to.ch ) {
                 if ( from.ch == 0 ) {
                     startLine = endLine = from.line;
                 } else if ( from.ch == cm.getLine(from.line).length ){
                     startLine = endLine = from.line + 1;
                 }
             } else {
-                startLine = (from.ch == cm.getLine(from.line).length && from.line < to.line) ? Math.min(cm.lastLine(), from.line + 1) : from.line;
-                endLine = ((to.ch == 0 && from.line < to.line) ? Math.max(to.line - 1, 0) : to.line) + change.text.length - 1;
+                startLine = ( from.ch == cm.getLine( from.line ).length && from.line < to.line ) ? Math.min( cm.lastLine(), from.line + 1 ) : from.line;
+                endLine = ( ( to.ch == 0 && from.line < to.line ) ? Math.max( to.line - 1, 0 ) : to.line ) + change.text.length - 1;
             }
 
             for ( var line = startLine; line <= endLine; line++ ) {

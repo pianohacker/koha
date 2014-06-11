@@ -57,6 +57,7 @@ our ( $query, $cookie );
 
 sub _output {
     my ( $response, $status ) = @_;
+    binmode STDOUT, ':encoding(UTF-8)';
 
     if ( $query->param( 'callback' ) ) {
         output_with_http_headers $query, $cookie, $query->param( 'callback' ) . '(' . $response->output . ');', 'js';

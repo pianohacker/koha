@@ -1,9 +1,10 @@
 [% INCLUDE 'doc-head-open.inc' %]
 <title>Koha &rsaquo; Cataloging &rsaquo; Editor</title>
 [% INCLUDE 'doc-head-close.inc' %]
-<link type="text/css" rel="stylesheet" href="[% themelang %]/css/cateditor.css" />
-<link type="text/css" rel="stylesheet" href="/intranet-tmpl/lib/codemirror/codemirror.css" />
-<link rel="stylesheet" type="text/css" href="[% themelang %]/css/humanmsg.css" />
+<link rel="stylesheet" href="[% themelang %]/css/cateditor.css" />
+<link rel="stylesheet" href="[% themelang %]/css/datatables.css" />
+<link rel="stylesheet" href="/intranet-tmpl/lib/codemirror/codemirror.css" />
+<link rel="stylesheet" href="[% themelang %]/css/humanmsg.css" />
 <script src="[% interface %]/lib/jquery/plugins/humanmsg.js" type="text/javascript"></script>
 [% IF ( bidi ) %]
    <link rel="stylesheet" type="text/css" href="[% themelang %]/css/right-to-left.css" />
@@ -99,60 +100,69 @@
 </div>
 
 <form id="advanced-search" class="modal-body">
-    <div id="toolbar" class="btn-toolbar">
-        <button class="btn btn-small" type="submit"><i class="icon-search"></i> <span>Search</span></button>
-        <button class="btn btn-small" type="reset"><i class="icon-remove"></i> <span>Clear</span></button>
+    <div class="span3">
+        <div id="search-facets">
+            <ul>
+                <li>Servers:<ul id="advanced-search-servers"></ul></li>
+            </ul>
+        </div>
     </div>
-    <ul id="advanced-search-fields">
-        <li>
-            <label for="advanced-search-by-author">Author:</label>
-            <input class="search-box" data-qualifier="author" id="advanced-search-by-author" />
-        </li>
-        <li>
-            <label for="advanced-search-by-control-number">Control number:</label>
-            <input class="search-box" data-qualifier="local_number" id="advanced-search-by-control-number" />
-        </li>
-        <li>
-            <label for="advanced-search-by-dewey">Dewey number:</label>
-            <input class="search-box" data-qualifier="cn_dewey" id="advanced-search-by-dewey" />
-        </li>
-        <li>
-            <label for="advanced-search-by-isbn">ISBN:</label>
-            <input class="search-box" data-qualifier="isbn" id="advanced-search-by-isbn" />
-        </li>
-        <li>
-            <label for="advanced-search-by-issn">ISSN:</label>
-            <input class="search-box" data-qualifier="issn" id="advanced-search-by-issn" />
-        </li>
-        <li>
-            <label for="advanced-search-by-lccn">LCCN:</label>
-            <input class="search-box" data-qualifier="lccn" id="advanced-search-by-lccn" />
-        </li>
-        <li>
-            <label for="advanced-search-by-lc-number">LC call number:</label>
-            <input class="search-box" data-qualifier="cn_lc" id="advanced-search-by-lc-number" />
-        </li>
-        <li>
-            <label for="advanced-search-by-publisher-number">Publisher number:</label>
-            <input class="search-box" data-qualifier="music_identifier" id="advanced-search-by-publisher-number" />
-        </li>
-        <li>
-            <label for="advanced-search-by-standard-number">Standard number:</label>
-            <input class="search-box" data-qualifier="standard_identifier" id="advanced-search-by-standard-number" />
-        </li>
-        <li>
-            <label for="advanced-search-by-subject">Subject:</label>
-            <input class="search-box" data-qualifier="subject" id="advanced-search-by-subject" />
-        </li>
-        <li>
-            <label for="advanced-search-by-publication-date">Publication date:</label>
-            <input class="search-box" data-qualifier="date" id="advanced-search-by-publication-date" />
-        </li>
-        <li>
-            <label for="advanced-search-by-title">Title:</label>
-            <input class="search-box" data-qualifier="title" id="advanced-search-by-title" />
-        </li>
-    </ul>
+    <div class="span9">
+        <div id="toolbar" class="btn-toolbar">
+            <button class="btn btn-small" type="submit"><i class="icon-search"></i> <span>Search</span></button>
+            <button class="btn btn-small" type="reset"><i class="icon-remove"></i> <span>Clear</span></button>
+        </div>
+        <ul id="advanced-search-fields">
+            <li>
+                <label for="advanced-search-by-author">Author:</label>
+                <input class="search-box" data-qualifier="author" id="advanced-search-by-author" />
+            </li>
+            <li>
+                <label for="advanced-search-by-control-number">Control number:</label>
+                <input class="search-box" data-qualifier="local_number" id="advanced-search-by-control-number" />
+            </li>
+            <li>
+                <label for="advanced-search-by-dewey">Dewey number:</label>
+                <input class="search-box" data-qualifier="cn_dewey" id="advanced-search-by-dewey" />
+            </li>
+            <li>
+                <label for="advanced-search-by-isbn">ISBN:</label>
+                <input class="search-box" data-qualifier="isbn" id="advanced-search-by-isbn" />
+            </li>
+            <li>
+                <label for="advanced-search-by-issn">ISSN:</label>
+                <input class="search-box" data-qualifier="issn" id="advanced-search-by-issn" />
+            </li>
+            <li>
+                <label for="advanced-search-by-lccn">LCCN:</label>
+                <input class="search-box" data-qualifier="lccn" id="advanced-search-by-lccn" />
+            </li>
+            <li>
+                <label for="advanced-search-by-lc-number">LC call number:</label>
+                <input class="search-box" data-qualifier="cn_lc" id="advanced-search-by-lc-number" />
+            </li>
+            <li>
+                <label for="advanced-search-by-publisher-number">Publisher number:</label>
+                <input class="search-box" data-qualifier="music_identifier" id="advanced-search-by-publisher-number" />
+            </li>
+            <li>
+                <label for="advanced-search-by-standard-number">Standard number:</label>
+                <input class="search-box" data-qualifier="standard_identifier" id="advanced-search-by-standard-number" />
+            </li>
+            <li>
+                <label for="advanced-search-by-subject">Subject:</label>
+                <input class="search-box" data-qualifier="subject" id="advanced-search-by-subject" />
+            </li>
+            <li>
+                <label for="advanced-search-by-publication-date">Publication date:</label>
+                <input class="search-box" data-qualifier="date" id="advanced-search-by-publication-date" />
+            </li>
+            <li>
+                <label for="advanced-search-by-title">Title:</label>
+                <input class="search-box" data-qualifier="title" id="advanced-search-by-title" />
+            </li>
+        </ul>
+    </div>
 </form>
 
 </div>
@@ -190,10 +200,9 @@
                 <div class="pagination pagination-small">
                 </div>
             </div>
-
-            <div id="search-overlay"><span>Loading...</span><div class="progress progress-striped active"><div class="bar" style="width: 100%"></div></div></div>
         </div>
     </div>
+    <div id="search-overlay"><span>Loading...</span><div class="progress progress-striped active"><div class="bar" style="width: 100%"></div></div></div>
 </div>
 
 </div>

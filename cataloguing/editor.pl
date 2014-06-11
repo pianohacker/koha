@@ -27,6 +27,8 @@ use C4::Auth;
 use C4::Biblio;
 use C4::Context;
 use C4::Output;
+use DBIx::Class::ResultClass::HashRefInflator;
+use Koha::Database;
 
 my $input = CGI->new;
 
@@ -39,6 +41,17 @@ my ( $template, $loggedinuser, $cookie ) = get_template_and_user(
         flagsrequired   => { editcatalogue => 'edit_catalogue' },
     }
 );
+
+my $schema = Koha::Database->new->schema;
+
+# Available import batches
+$template->{VARS}->{editable_batches} = [ $schema->resultset('ImportBatch')->search(
+    {
+        batch_type => [ 'batch', 'webservice' ],
+        import_status => 'staged',
+    },
+    { result_class => 'DBIx::Class::ResultClass::HashRefInflator' },
+) ];
 
 # Needed information for cataloging plugins
 $template->{VARS}->{DefaultLanguageField008} = pack( 'A3', C4::Context->preference('DefaultLanguageField008') || 'eng' );

@@ -233,6 +233,9 @@ define( [ 'resources' ], function( Resources ) {
                     var next = ( i < info.subfields.length - 1 ) ? info.subfields[i + 1].ch : end;
                     subfields.push( { code: info.subfields[i].code, from: info.subfields[i].ch + 3, to: next } );
                 }
+                // If not a fixed field, and we didn't find any subfields, we need to throw in the
+                // '@' subfield so we can properly remove it
+                if ( subfields.length == 0 ) subfields.push( { code: '@', from: 4, to: end } );
             }
 
             $.each( subfields, function ( undef, subfield ) {
