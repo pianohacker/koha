@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 
-# Copyright 2007 LibLime
+# Copyright (C) 2014 ByWater Solutions
 #
 # This file is part of Koha.
 #
@@ -18,36 +18,7 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-use strict;
-use warnings;
+use Modern::Perl;
 
-use CGI;
-use C4::Auth qw/check_api_auth/;
-use XML::Simple;
-
-my $query = new CGI;
-
-# The authentication strategy for the biblios web 
-# services is as follows.
-# 
-# 1. biblios POSTs to the authenticate API with URL-encoded
-# form parameters 'userid' and 'password'.  If the credentials
-# belong to a valid user with the 'editcatalogue' privilege,
-# a session cookie is returned and a Koha session created.  Otherwise, an 
-# appropriate error is returned.
-# 2. For subsequent calls to the biblios APIs, the user agent
-# should submit the same session cookie.  If the cookie is
-# not supplied or does not correspond to a valid session, the API
-# will redirect to this authentication API.
-# 3. The session cookie should not be (directly) sent back to the user's
-# web browser, but instead should be stored and submitted by biblios.
-
-
-my ($status, $cookie, $sessionID) = check_api_auth($query, { editcatalogue => 'edit_catalogue'} );
-
-if ($status eq "ok") {
-    print $query->header(-type => 'text/xml', cookie => $cookie);
-} else {
-    print $query->header(-type => 'text/xml');
-}
-print XMLout({ status => $status }, NoAttr => 1, RootName => 'response', XMLDecl => 1);
+use Koha::Service::Authentication;
+Koha::Service::Authentication->new->run;
