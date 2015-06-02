@@ -774,7 +774,7 @@ sub checkauth {
             $sessiontype = $session->param('sessiontype') || '';
         }
         if ( ( $query->param('koha_login_context') && ( $q_userid ne $s_userid ) )
-            || ( $cas && $query->param('ticket') && !C4::Context->userenv->{'id'} ) || ( $shib && $shib_login && !$logout ) ) {
+            || ( $cas && $query->param('ticket') && !C4::Context->userenv->{'id'} ) || ( $shib && $shib_login && !C4::Context->userenv->{'id'} ) ) {
 
             #if a user enters an id ne to the id in the current session, we need to log them in...
             #first we need to clear the anonymous session...
@@ -804,9 +804,7 @@ sub checkauth {
             }
 
             # If we are in a shibboleth session (shibboleth is enabled, a shibboleth match attribute is set and matches koha matchpoint)
-            if ( $shib and $shib_login and $shibSuccess and $type eq 'opac' ) {
-
-                # (Note: $type eq 'opac' condition should be removed when shibboleth authentication for intranet will be implemented)
+            if ( $shib and $shib_login and $shibSuccess ) {
                 logout_shib($query);
             }
         }
