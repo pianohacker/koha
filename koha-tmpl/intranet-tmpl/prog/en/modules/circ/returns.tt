@@ -205,6 +205,9 @@ $(document).ready(function () {
 		<h4><strong>Hold at</strong> [% destbranchname %]</h4>
         [% END %]
         <form method="post" action="returns.pl" class="confirm">
+            <input type="hidden" name="cancel_reserve" value="0" />
+            <input type="submit" value="Cancel reserve" class="print" onclick="this.form.print_slip.value = 1; this.form.submit();" />
+
             <input type="submit" class="approve" value="Confirm" />
 
             <input type="hidden" name="print_slip" value="0" />
