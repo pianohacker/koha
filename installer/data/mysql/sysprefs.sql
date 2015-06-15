@@ -117,6 +117,7 @@ INSERT INTO systempreferences ( `variable`, `value`, `options`, `explanation`, `
 ('dontmerge','1',NULL,'If ON, modifying an authority record will not update all associated bibliographic records immediately, ask your system administrator to enable the merge_authorities.pl cron job','YesNo'),
 ('EasyAnalyticalRecords','0','','If on, display in the catalogue screens tools to easily setup analytical record relationships','YesNo'),
 ('emailLibrarianWhenHoldIsPlaced','0',NULL,'If ON, emails the librarian whenever a hold is placed','YesNo'),
+('EnableAdvancedCatalogingEditor','0','','Enable the Rancor advanced cataloging editor','YesNo'),
 ('EnableBorrowerFiles','0',NULL,'If enabled, allows librarians to upload and attach arbitrary files to a borrower record.','YesNo'),
 ('EnableOpacSearchHistory','1','YesNo','Enable or disable opac search history',''),
 ('EnableSearchHistory','0','','Enable or disable search history','YesNo'),
