@@ -188,6 +188,7 @@ if (
     undef $exemptfine;
 }
 my $dropboxmode = $query->param('dropboxmode');
+my $forgivemanualholdsexpire = $query->param('forgivemanualholdsexpire');
 my $dotransfer  = $query->param('dotransfer');
 my $canceltransfer = $query->param('canceltransfer');
 my $dest = $query->param('dest');
@@ -608,6 +609,7 @@ $template->param(
     exemptfine     => $exemptfine,
     dropboxmode    => $dropboxmode,
     dropboxdate    => output_pref($dropboxdate),
+    forgivemanualholdsexpire => $forgivemanualholdsexpire,
     overduecharges => $overduecharges,
     soundon        => C4::Context->preference("SoundOn"),
     BlockReturnOfWithdrawnItems => C4::Context->preference("BlockReturnOfWithdrawnItems"),
