@@ -1124,7 +1124,7 @@ sub AutoUnsuspendReserves {
 
 =head2 CancelReserve
 
-  CancelReserve({ reserve_id => $reserve_id, [ biblionumber => $biblionumber, borrowernumber => $borrrowernumber, itemnumber => $itemnumber, [ charge_cancel_fee => 1 ] ] });
+  CancelReserve({ reserve_id => $reserve_id, [ biblionumber => $biblionumber, borrowernumber => $borrrowernumber, itemnumber => $itemnumber, ] [ charge_cancel_fee => 1 ] });
 
 Cancels a reserve. If C<charge_cancel_fee> is passed and the C<ExpireReservesMaxPickUpDelayCharge> syspref is set, charge that fee to the patron's account.
 
@@ -1134,7 +1134,9 @@ sub CancelReserve {
     my ( $params ) = @_;
 
     my $reserve_id = $params->{'reserve_id'};
-    $reserve_id = GetReserveId( $params ) unless ( $reserve_id );
+    # Filter out only the desired keys; this will insert undefined values for elements missing in
+    # \%params, but GetReserveId filters them out anyway.
+    $reserve_id = GetReserveId( { %$params{ 'biblionumber', 'borrowernumber', 'itemnumber' } } ) unless ( $reserve_id );
 
     return unless ( $reserve_id );
 

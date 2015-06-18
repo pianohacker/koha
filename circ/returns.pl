@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/perl -d
 
 # Copyright 2000-2002 Katipo Communications
 #           2006 SAN-OP
@@ -29,6 +29,9 @@ script to execute returns of books
 
 use strict;
 use warnings;
+
+use Carp 'verbose';
+$SIG{ __DIE__ } = sub { Carp::confess( @_ ) };
 
 use CGI qw ( -utf8 );
 use DateTime;
@@ -84,6 +87,7 @@ my $printers = GetPrinters();
 my $userenv = C4::Context->userenv;
 my $userenv_branch = $userenv->{'branch'} // '';
 my $printer = $userenv->{'branchprinter'} // '';
+my $forgivemanualholdsexpire = $query->param('forgivemanualholdsexpire');
 
 my $overduecharges = (C4::Context->preference('finesMode') && C4::Context->preference('finesMode') ne 'off');
 #
@@ -144,12 +148,18 @@ if ( $query->param('resbarcode') ) {
     my $resbarcode     = $query->param('resbarcode');
     my $diffBranchReturned = $query->param('diffBranch');
     my $iteminfo   = GetBiblioFromItemNumber($item);
+    my $cancel_reserve = $query->param('cancel_reserve');
     # fix up item type for display
     $iteminfo->{'itemtype'} = C4::Context->preference('item-level_itypes') ? $iteminfo->{'itype'} : $iteminfo->{'itemtype'};
-    my $diffBranchSend = ($userenv_branch ne $diffBranchReturned) ? $diffBranchReturned : undef;
-# diffBranchSend tells ModReserveAffect whether document is expected in this library or not,
-# i.e., whether to apply waiting status
-    ModReserveAffect( $item, $borrowernumber, $diffBranchSend);
+
+    if ( $cancel_reserve ) {
+        CancelReserve({ borrowernumber => $borrowernumber, itemnumber => $item, charge_cancel_fee => !$forgivemanualholdsexpire });
+    } else {
+        my $diffBranchSend = ($userenv_branch ne $diffBranchReturned) ? $diffBranchReturned : undef;
+        # diffBranchSend tells ModReserveAffect whether document is expected in this library or not,
+        # i.e., whether to apply waiting status
+        ModReserveAffect( $item, $borrowernumber, $diffBranchSend);
+    }
 #   check if we have other reserves for this document, if we have a return send the message of transfer
     my ( $messages, $nextreservinfo ) = GetOtherReserves($item);
 
@@ -188,7 +198,6 @@ if (
     undef $exemptfine;
 }
 my $dropboxmode = $query->param('dropboxmode');
-my $forgivemanualholdsexpire = $query->param('forgivemanualholdsexpire');
 my $dotransfer  = $query->param('dotransfer');
 my $canceltransfer = $query->param('canceltransfer');
 my $dest = $query->param('dest');
