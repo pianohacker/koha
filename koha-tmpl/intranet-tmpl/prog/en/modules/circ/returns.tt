@@ -81,10 +81,10 @@ $(document).ready(function () {
     $("#forgivemanualholdsexpire").change(function () {
         if (this.checked == true) {
             $("#barcode").addClass("alert");
-            $("#dontchargeholdexpirationfees").show();
+            $("#forgivemanualholdsexpire-alert").show();
         } else {
             $("#barcode").removeClass("alert");
-            $("#dontchargeholdexpirationfees").hide();
+            $("#forgivemanualholdsexpire-alert").hide();
         }
         $("#barcode").focus();
     });
@@ -234,6 +234,7 @@ $(document).ready(function () {
                 <input type="hidden" name="diffBranch" value="[% destbranch %]" />
                 <input type="hidden" name="exemptfine" value="[% exemptfine %]" />
                 <input type="hidden" name="dropboxmode" value="[% dropboxmode %]" />
+                <input type="hidden" name="forgivemanualholdsexpire" value="[% forgivemanualholdsexpire %]" />
 
                 <input type="hidden" name="return_date_override" value="[% return_date_override %]" />
                 <input type="hidden" name="return_date_override_remember" value="[% return_date_override_remember %]" />
@@ -279,6 +280,7 @@ $(document).ready(function () {
             <input type="hidden" name="diffBranch" value="[% destbranch %]" />
             <input type="hidden" name="exemptfine" value="[% exemptfine %]" />
             <input type="hidden" name="dropboxmode" value="[% dropboxmode %]" />
+            <input type="hidden" name="forgivemanualholdsexpire" value="[% forgivemanualholdsexpire %]" />
             <input type="hidden" name="barcode" value="0" />
 
             <input type="hidden" name="return_date_override" value="[% return_date_override %]" />
@@ -314,6 +316,7 @@ $(document).ready(function () {
 	<input type="hidden" name="transferitem" value="[% itemnumber %]" />
         <input type="hidden" name="exemptfine" value="[% exemptfine %]" />
         <input type="hidden" name="dropboxmode" value="[% dropboxmode %]" />
+        <input type="hidden" name="forgivemanualholdsexpire" value="[% forgivemanualholdsexpire %]" />
 	[% FOREACH inputloo IN inputloop %]
 	<input type="hidden" name="ri-[% inputloo.counter %]" value="[% inputloo.barcode %]" />
 	<input type="hidden" name="dd-[% inputloo.counter %]" value="[% inputloo.duedate %]" />
@@ -405,6 +408,7 @@ $(document).ready(function () {
             <input type="hidden" name="diffBranch" value="[% destbranch %]" />
             <input type="hidden" name="exemptfine" value="[% exemptfine %]" />
             <input type="hidden" name="dropboxmode" value="[% dropboxmode %]" />
+            <input type="hidden" name="forgivemanualholdsexpire" value="[% forgivemanualholdsexpire %]" />
             <input type="hidden" name="return_date_override" value="[% return_date_override %]" />
             <input type="hidden" name="return_date_override_remember" value="[% return_date_override_remember %]" />
         </form>
@@ -495,7 +499,7 @@ $(document).ready(function () {
     <div id="exemptfines" class="dialog message" style="display:none;">
         <p>Fines for returned items are forgiven.</p>
     </div>
-    <div id="dontchargeholdexpirationfees" class="dialog message" style="display:none;">
+    <div id="forgivemanualholdsexpire-alert" class="dialog message" style="display:none;">
         <p>Fines are not charged for manually cancelled holds.</p>
     </div>
     <div id="dropboxmode" class="dialog message" style="display:none;">

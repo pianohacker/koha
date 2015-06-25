@@ -1,4 +1,4 @@
-#!/usr/bin/perl -d
+#!/usr/bin/perl
 
 # Copyright 2000-2002 Katipo Communications
 #           2006 SAN-OP

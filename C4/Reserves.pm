@@ -1171,7 +1171,7 @@ sub CancelReserve {
 
         # now fix the priority on the others....
         _FixPriority({ biblionumber => $reserve->{biblionumber} });
-        
+
         # and, if desired, charge a cancel fee
         my $charge = C4::Context->preference("ExpireReservesMaxPickUpDelayCharge");
         if ( $charge && $params->{'charge_cancel_fee'} ) {
