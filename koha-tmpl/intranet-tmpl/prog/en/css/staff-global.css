@@ -702,6 +702,10 @@ fieldset.action, div.action {
   width: auto;
 }
 
+fieldset.rows li[aria-disabled="true"] {
+    color: #999;
+}
+
 div.rows+div.rows {
     margin-top : .6em;
 }

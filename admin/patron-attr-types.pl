@@ -119,6 +119,9 @@ sub error_add_attribute_type_form {
     if ($input->param('opac_display')) {
         $template->param(opac_display_checked => 1);
     }
+    if ($input->param('opac_editable')) {
+        $template->param(opac_editable_checked => 1);
+    }
     if ($input->param('staff_searchable')) {
         $template->param(staff_searchable_checked => 1);
     }
@@ -163,6 +166,8 @@ sub add_update_attribute_type {
 
     my $opac_display = $input->param('opac_display');
     $attr_type->opac_display($opac_display);
+    my $opac_editable = $input->param('opac_editable');
+    $attr_type->opac_editable($opac_editable);
     my $staff_searchable = $input->param('staff_searchable');
     $attr_type->staff_searchable($staff_searchable);
     my $authorised_value_category = $input->param('authorised_value_category');
@@ -247,6 +252,9 @@ sub edit_attribute_type_form {
     }
     if ($attr_type->opac_display()) {
         $template->param(opac_display_checked => 1);
+    }
+    if ($attr_type->opac_editable()) {
+        $template->param(opac_editable_checked => 1);
     }
     if ($attr_type->staff_searchable()) {
         $template->param(staff_searchable_checked => 1);
