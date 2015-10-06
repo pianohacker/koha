@@ -762,6 +762,11 @@ our $PERL_DEPS = {
         'required' => '0',
         'min_ver'  => '0.614',
     },
+    'UUID' => {
+        'usage'    => 'Professional cataloging interface',
+        'required' => '1',
+        'min_ver'  => '0.05',
+    },
 };
 
 1;
