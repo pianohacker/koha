@@ -245,7 +245,9 @@ define( [ '/cgi-bin/koha/svc/cataloguing/framework?frameworkcode=&callback=defin
             } );
         },
 
-        ValidateRecord: function( frameworkcode, record ) {
+        ValidateRecord: function( frameworkcode, record, options ) {
+            options = options || {};
+
             var errors = [];
 
             var mandatoryTags = KohaBackend.GetTagsBy( '', 'mandatory', '1' );
@@ -254,7 +256,7 @@ define( [ '/cgi-bin/koha/svc/cataloguing/framework?frameworkcode=&callback=defin
             var nonRepeatableSubfields = KohaBackend.GetSubfieldsBy( '', 'repeatable', '0' );
 
             $.each( mandatoryTags, function( tag ) {
-                if ( !record.hasField( tag ) ) errors.push( { type: 'missingTag', tag: tag } );
+                if ( !record.hasField( tag ) && !options.override_warnings ) errors.push( { type: 'missingTag', tag: tag } );
             } );
 
             var seenTags = {};
@@ -267,7 +269,7 @@ define( [ '/cgi-bin/koha/svc/cataloguing/framework?frameworkcode=&callback=defin
                 }
 
                 if ( seenTags[ field.tagnumber() ] && nonRepeatableTags[ field.tagnumber() ] ) {
-                    errors.push( { type: 'unrepeatableTag', line: field.sourceLine, tag: field.tagnumber() } );
+                    if ( !options.override_warnings ) errors.push( { type: 'unrepeatableTag', line: field.sourceLine, tag: field.tagnumber() } );
                     return;
                 }
 
@@ -277,7 +279,7 @@ define( [ '/cgi-bin/koha/svc/cataloguing/framework?frameworkcode=&callback=defin
 
                 $.each( field.subfields(), function( undef, subfield ) {
                     if ( seenSubfields[ subfield[0] ] != null && ( nonRepeatableSubfields[ field.tagnumber() ] || {} )[ subfield[0] ] ) {
-                        errors.push( { type: 'unrepeatableSubfield', subfield: subfield[0], line: field.sourceLine } );
+                        if ( !options.override_warnings ) errors.push( { type: 'unrepeatableSubfield', subfield: subfield[0], line: field.sourceLine } );
                     } else {
                         seenSubfields[ subfield[0] ] = subfield[1];
                     }
@@ -285,7 +287,7 @@ define( [ '/cgi-bin/koha/svc/cataloguing/framework?frameworkcode=&callback=defin
 
                 $.each( mandatorySubfields[ field.tagnumber() ] || {}, function( subfield ) {
                     if ( !seenSubfields[ subfield ] ) {
-                        errors.push( { type: 'missingSubfield', subfield: subfield[0], line: field.sourceLine } );
+                        if ( !options.override_warnings ) errors.push( { type: 'missingSubfield', subfield: subfield[0], line: field.sourceLine } );
                     }
                 } );
             } );

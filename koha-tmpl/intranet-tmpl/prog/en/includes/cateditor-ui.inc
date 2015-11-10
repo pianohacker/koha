@@ -359,7 +359,7 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
         $( 'title', document.head ).html( _("Koha &rsaquo; Cataloging &rsaquo; ") + backend.titleForRecord.format( parts[1] ) );
     }
 
-    function saveRecord( recid, editor, callback ) {
+    function saveRecord( recid, editor, callback, options ) {
         var parts = recid.split('/');
         if ( parts.length != 2 ) return false;
 
@@ -374,7 +374,7 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
             return;
         }
 
-        var errors = KohaBackend.ValidateRecord( '', record );
+        var errors = KohaBackend.ValidateRecord( '', record, options );
         if ( errors.length ) {
             state.saving = false;
             callback( { error: 'invalid', errors: errors } );
@@ -407,7 +407,7 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
             }
 
             if (callback) callback( data );
-        } );
+        }, options );
     }
 
     function loadRecord( recid, editor, callback ) {
@@ -1117,6 +1117,8 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
                     $( '#save-record' ).find('i').attr( 'class', 'icon-hdd' ).end().find('span').text( _("Save") );
                 }
             }
+
+            var options = { override_warnings: $(this).is('#save-with-override') }
 
             $.each( enabledTargets, function() {
                 saveRecord( this.id, editor, finishCb, options );

@@ -31,7 +31,13 @@
     <input id="import-records-input" type="file" style="display: none">
     <div id="toolbar" class="btn-toolbar">
         <button class="btn btn-small" id="new-record" title="Open fresh record"><i class="fa fa-plus"></i> <span>New record</span></button>
-        <button class="btn btn-small" id="save-record" title="Save current record (Ctrl-S)"><i class="fa fa-hdd-o"></i> <span>Save</span></button>
+        <div class="btn-group">
+            <button class="btn btn-small" id="save-record" title="Save current record (Ctrl-S)"><i class="fa fa-hdd-o"></i> <span>Save</span></button>
+            <button class="btn btn-small dropdown-toggle" data-toggle="dropdown"><span class="caret"></span></button>
+            <ul id="save-dropdown" class="dropdown-menu">
+                <li><a id="save-with-override" href="#">Save overriding warnings</a></li>
+            </ul>
+        </div>
         <button class="btn btn-small" id="import-records" title="Import an ISO2709 or MARCXML record"><i class="fa fa-download"></i> <span>Import record...</span></button>
         <button class="btn btn-small" id="open-macros" title="Run and edit macros"><i class="fa fa-play"></i> <span>Macros...</span></button>
         <div class="btn-group">
