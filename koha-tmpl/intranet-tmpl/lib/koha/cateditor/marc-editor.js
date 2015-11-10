@@ -112,6 +112,11 @@ define( [ 'marc-record', 'koha-backend', 'preferences', 'text-marc', 'widget' ],
                     pos.line = cur.line;
                 } );
 
+                // Allow to tab to start of empty field
+                if ( info.subfields.length == 0 ) {
+                    positions.push( { line: cur.line, ch: 8 } );
+                }
+
                 return positions;
             } else {
                 var positions = [ { ch: 0 }, { ch: 4, prefill: '_' }, { ch: 6, prefill: '_' } ];
