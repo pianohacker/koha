@@ -31,14 +31,7 @@
     <input id="import-records-input" type="file" style="display: none">
     <div id="toolbar" class="btn-toolbar">
         <button class="btn btn-small" id="new-record" title="Open fresh record"><i class="fa fa-plus"></i> <span>New record</span></button>
-        <div class="btn-group">
-            <button class="btn btn-small" id="save-record" title="Save current record (Ctrl-S)"><i class="fa fa-hdd-o"></i> <span>Save</span></button>
-            <button class="btn btn-small dropdown-toggle" data-toggle="dropdown">
-            <span class="caret"></span>
-            </button>
-            <ul class="dropdown-menu" id="save-dropdown">
-            </ul>
-        </div>
+        <button class="btn btn-small" id="save-record" title="Save current record (Ctrl-S)"><i class="fa fa-hdd-o"></i> <span>Save</span></button>
         <button class="btn btn-small" id="import-records" title="Import an ISO2709 or MARCXML record"><i class="fa fa-download"></i> <span>Import record...</span></button>
         <button class="btn btn-small" id="open-macros" title="Run and edit macros"><i class="fa fa-play"></i> <span>Macros...</span></button>
         <div class="btn-group">
@@ -46,6 +39,7 @@
             <ul id="prefs-menu" class="dropdown-menu">
                 <li><a id="switch-editor" href="#">Switch to basic editor</a></li>
                 <li><a id="set-field-widgets" href="#"></a></li>
+                <li><a id="open-batches" href="#">Import batches...</a></li>
                 <li class="divider"></li>
                 <li><a class="set-fontSize" style="font-size: .92em" href="#">Small text</a></li>
                 <li><a class="set-fontSize" style="font-size: 1em" href="#">Normal text</a></li>
@@ -92,12 +86,19 @@
     </fieldset>
 </form>
 
+<h3>Save to:</h3>
+<form id="save-targets">
+    <fieldset class="brief">
+    <ol></ol>
+    </fieldset>
+</form>
+
 </div>
 
 </div>
 </div>
 
-<div id="advanced-search-ui" class="modal hide fade" tabindex="-1" role="dialog" aria-labelledby="advanced-search-title" aria-hidden="true">
+<div id="advanced-search-ui" class="ui-modal modal hide fade" tabindex="-1" role="dialog" aria-labelledby="advanced-search-title" aria-hidden="true">
 
 <div class="modal-header">
     <button type="button" class="closebtn" data-dismiss="modal" aria-hidden="true">×</button>
@@ -172,7 +173,7 @@
 
 </div>
 
-<div id="search-results-ui" class="modal hide fade" tabindex="-1" role="dialog" aria-labelledby="search-results-title" aria-hidden="true">
+<div id="search-results-ui" class="ui-modal modal hide fade" tabindex="-1" role="dialog" aria-labelledby="search-results-title" aria-hidden="true">
 
 <div class="modal-header">
     <button type="button" class="closebtn" data-dismiss="modal" aria-hidden="true">×</button>
@@ -213,7 +214,7 @@
 
 </div>
 
-<div id="macro-ui" class="modal hide fade" tabindex="-1" role="dialog" aria-labelledby="macro-title" aria-hidden="true">
+<div id="macro-ui" class="ui-modal modal hide fade" tabindex="-1" role="dialog" aria-labelledby="macro-title" aria-hidden="true">
 
 <div class="modal-header">
     <button type="button" class="closebtn" data-dismiss="modal" aria-hidden="true">×</button>
@@ -229,6 +230,27 @@
             <label for="macro-format">Format: </label> <select id="macro-format"></select>
             <div id="macro-save-message"></div>
         </div>
+    </div>
+</div>
+
+</div>
+
+<div id="batches-ui" class="ui-modal modal hide fade" tabindex="-1" role="dialog" aria-labelledby="batches-title" aria-hidden="true">
+
+<div class="modal-header">
+    <button type="button" class="closebtn" data-dismiss="modal" aria-hidden="true">×</button>
+    <h3 id="batches-title">Import batch settings</h3>
+</div>
+
+<div class="modal-body row-fluid">
+    <div class="span9">
+        <div id="toolbar" class="btn-toolbar">
+            <button class="btn btn-small" type="submit" id="create-batch"><i class="icon-plus"></i> <span>Create new batch...</span></button>
+            <button class="btn btn-small" type="submit" id="manage-batches"><i class="icon-list"></i> <span>Manage import batches...</span></button>
+        </div>
+        <ul id="batches-list"></ul>
+    </div>
+    <div class="span3">
     </div>
 </div>
 

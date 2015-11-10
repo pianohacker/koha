@@ -130,6 +130,58 @@ define( [ '/cgi-bin/koha/svc/cataloguing/framework?frameworkcode=&callback=defin
             } );
         },
 
+        GetBatchRecord: function( batch_id, id, callback ) {
+            $.get(
+                '/cgi-bin/koha/svc/cataloguing/import_batches/' + batch_id + '/' + id
+            ).done( function( data ) {
+                var record = new MARC.Record();
+                record.loadMARCXML( data.record );
+                callback(record);
+            } ).fail( function( data ) {
+                callback( { error: data } );
+            } );
+        },
+
+        CreateBatch: function( batch_name, callback ) {
+            $.ajax( {
+                type: 'POST',
+                url: '/cgi-bin/koha/svc/cataloguing/import_batches/',
+                data: { batch_name: batch_name },
+            } ).done( function( data ) {
+                callback( data );
+            } ).fail( function( data ) {
+                callback( { error: data } );
+            } );
+        },
+
+        CreateBatchRecord: function( record, batch_id, callback, options ) {
+            $.ajax( {
+                type: 'POST',
+                url: '/cgi-bin/koha/svc/cataloguing/import_batches/' + batch_id + '/',
+                data: { record: record.toXML(), allow_control_number_conflict: options.allow_control_number_conflict ? 1 : undefined },
+            } ).done( function( data ) {
+                callback( data );
+            } ).fail( function( data ) {
+                callback( { error: $.parseJSON( data.responseText ) || data.responseText } );
+            } );
+        },
+
+        SaveBatchRecord: function( batch_id, id, record, callback, options ) {
+            $.ajax( {
+                type: 'POST',
+                url: '/cgi-bin/koha/svc/cataloguing/import_batches/' + batch_id + '/' + id,
+                data: { record: record.toXML(), allow_control_number_conflict: options.allow_control_number_conflict ? 1 : undefined },
+            } ).done( function( data ) {
+                callback( data );
+            } ).fail( function( data ) {
+                callback( { data: { error: data } } );
+            } );
+        },
+
+        StartBatchExport: function( batch_id, options ) {
+            window.open( '/cgi-bin/koha/svc/cataloguing/import_batches/' + batch_id + '?download=1&' + $.param( options ) );
+        },
+
         GetTagsBy: function( frameworkcode, field, value ) {
             var result = {};
 

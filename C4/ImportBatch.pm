@@ -27,6 +27,8 @@ use C4::Items;
 use C4::Charset;
 use C4::AuthoritiesMarc;
 use C4::MarcModificationTemplates;
+use DateTime;
+use DateTime::Format::Strptime;
 use Koha::Plugins::Handler;
 use Koha::Logger;
 
@@ -1493,15 +1495,40 @@ sub SetImportRecordMatches {
 
 # internal functions
 
+sub _get_import_record_timestamp {
+    my ( $marc_record ) = @_;
+
+    my $upload_timestamp = DateTime->now();
+
+    # Attempt to parse the 005 timestamp. This is a bit weird because we have to parse the
+    # tenth-of-a-second ourselves.
+    my $f005 = $marc_record->field('005');
+    if ( $f005 && $f005->data =~ /(\d{8}\d{6})\.(\d)/ ) {
+        my $parser = DateTime::Format::Strptime->new( pattern => '%Y%m%d%H%M%S' );
+        my $parsed_timestamp = $parser->parse_datetime($1);
+
+        # We still check for success because we only did enough validation above to extract the
+        # tenth-of-a-second; the timestamp could still be some nonsense like the 50th of Jantober.
+        if ( $parsed_timestamp ) {
+            $parsed_timestamp->set_nanosecond( $2 * 100_000_000 );
+            $upload_timestamp = $parsed_timestamp;
+        }
+    }
+
+    return $upload_timestamp;
+}
+
 sub _create_import_record {
     my ($batch_id, $record_sequence, $marc_record, $record_type, $encoding, $z3950random, $marc_type) = @_;
 
+    my $upload_timestamp = _get_import_record_timestamp($marc_record);
+
     my $dbh = C4::Context->dbh;
     my $sth = $dbh->prepare("INSERT INTO import_records (import_batch_id, record_sequence, marc, marcxml, 
-                                                         record_type, encoding, z3950random)
-                                    VALUES (?, ?, ?, ?, ?, ?, ?)");
+                                                         record_type, encoding, z3950random, upload_timestamp)
+                                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
     $sth->execute($batch_id, $record_sequence, $marc_record->as_usmarc(), $marc_record->as_xml($marc_type),
-                  $record_type, $encoding, $z3950random);
+                  $record_type, $encoding, $z3950random, $upload_timestamp);
     my $import_record_id = $dbh->{'mysql_insertid'};
     $sth->finish();
     return $import_record_id;
@@ -1510,10 +1537,12 @@ sub _create_import_record {
 sub _update_import_record_marc {
     my ($import_record_id, $marc_record, $marc_type) = @_;
 
+    my $upload_timestamp = _get_import_record_timestamp($marc_record);
+
     my $dbh = C4::Context->dbh;
-    my $sth = $dbh->prepare("UPDATE import_records SET marc = ?, marcxml = ?
+    my $sth = $dbh->prepare("UPDATE import_records SET marc = ?, marcxml = ?, upload_timestamp = ?
                              WHERE  import_record_id = ?");
-    $sth->execute($marc_record->as_usmarc(), $marc_record->as_xml($marc_type), $import_record_id);
+    $sth->execute($marc_record->as_usmarc(), $marc_record->as_xml($marc_type), $upload_timestamp, $import_record_id);
     $sth->finish();
 }
 
@@ -1534,12 +1563,16 @@ sub _add_auth_fields {
 sub _add_biblio_fields {
     my ($import_record_id, $marc_record) = @_;
 
+    my $controlnumber;
+    if ($marc_record->field('001')) {
+        $controlnumber = $marc_record->field('001')->data();
+    }
     my ($title, $author, $isbn, $issn) = _parse_biblio_fields($marc_record);
     my $dbh = C4::Context->dbh;
-    # FIXME no controlnumber, originalsource
+    # FIXME no originalsource
     $isbn = C4::Koha::GetNormalizedISBN($isbn);
-    my $sth = $dbh->prepare("INSERT INTO import_biblios (import_record_id, title, author, isbn, issn) VALUES (?, ?, ?, ?, ?)");
-    $sth->execute($import_record_id, $title, $author, $isbn, $issn);
+    my $sth = $dbh->prepare("INSERT INTO import_biblios (import_record_id, title, author, isbn, issn, control_number) VALUES (?, ?, ?, ?, ?, ?)");
+    $sth->execute($import_record_id, $title, $author, $isbn, $issn, $controlnumber);
     $sth->finish();
                 
 }

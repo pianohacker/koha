@@ -48,7 +48,7 @@ my $schema = Koha::Database->new->schema;
 $template->{VARS}->{editable_batches} = [ $schema->resultset('ImportBatch')->search(
     {
         batch_type => [ 'batch', 'webservice' ],
-        import_status => 'staged',
+        import_status => [ 'staged', 'staging' ],
     },
     { result_class => 'DBIx::Class::ResultClass::HashRefInflator' },
 ) ];

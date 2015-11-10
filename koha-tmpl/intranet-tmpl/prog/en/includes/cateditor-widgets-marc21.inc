@@ -84,7 +84,7 @@
  * single subfield, '@'.
  */
 
-require( [ 'widget' ], function( Widget ) {
+require( [ 'koha-backend', 'widget' ], function( KohaBackend, Widget ) {
     Widget.Register( '000@', {
         makeTemplate: function() {
             return '     nam a22     7a 4500';

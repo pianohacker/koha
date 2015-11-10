@@ -29,10 +29,12 @@ define( function() {
 
             Preferences.user = $.extend( {
                 // Preference defaults
+                enabledBatches: {},
                 fieldWidgets: true,
                 font: 'monospace',
                 fontSize: '1em',
                 macros: {},
+                selected_save_targets: {},
                 selected_search_targets: {},
             }, saved_prefs );
         },

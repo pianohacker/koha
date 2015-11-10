@@ -29,6 +29,13 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
             recordtype: 'biblio',
             checked: false,
         },
+        [%- FOREACH batch = editable_batches -%]
+            'batch:[% batch.import_batch_id %]': {
+                name: _("Batch: ") + '[% batch.file_name %]',
+                recordtype: 'biblio',
+                checked: false,
+            },
+        [%- END -%]
         [%- FOREACH server = z3950_servers -%]
             [% server.id %]: {
                 name: '[% server.servername %]',
@@ -54,8 +61,8 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
 
     var state = {
         backend: '',
-        saveBackend: 'catalog',
-        recordID: undefined
+        recordID: undefined,
+        saveTargets: {},
     };
 
     var editor;
@@ -210,16 +217,29 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
             },
         },
         'catalog': {
-            titleForRecord: _("Editing catalog record #{ID}"),
+            titleForRecord: _("Editing catalog record #%s"),
             links: [
-                { title: _("view"), href: "/cgi-bin/koha/catalogue/detail.pl?biblionumber={ID}" },
-                { title: _("edit items"), href: "/cgi-bin/koha/cataloguing/additem.pl?biblionumber={ID}" },
+                { title: _("view"), href: "/cgi-bin/koha/catalogue/detail.pl?biblionumber=%s" },
+                { title: _("edit items"), href: "/cgi-bin/koha/cataloguing/additem.pl?biblionumber=%s" },
             ],
-            saveLabel: _("Save to catalog"),
+            saveLabel: _("New catalog record"),
+            saveExistingLabel: _("Catalog record #%s"),
             get: function( id, callback ) {
                 if ( !id ) return false;
 
-                KohaBackend.GetRecord( id, callback );
+                KohaBackend.GetRecord( id, function( data ) {
+                    if ( !data.error ) {
+                        setSaveTargetChecked( 'catalog/', false );
+                        addSaveTarget( {
+                            label: backends.catalog.saveExistingLabel.format( id ),
+                            id: 'catalog/' + id,
+                            description: '',
+                            checked: true
+                        } );
+                    }
+
+                    callback(data);
+                } );
             },
             save: function( id, record, done ) {
                 function finishCb( data ) {
@@ -234,7 +254,7 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
             }
         },
         'iso2709': {
-            saveLabel: _("Save as ISO2709 (.mrc) file"),
+            saveLabel: _("New ISO2709 (.mrc) file"),
             save: function( id, record, done ) {
                 saveAs( new Blob( [record.toISO2709()], { 'type': 'application/octet-stream;charset=utf-8' } ), 'record.mrc' );
 
@@ -242,7 +262,7 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
             }
         },
         'marcxml': {
-            saveLabel: _("Save as MARCXML (.xml) file"),
+            saveLabel: _("New MARCXML (.xml) file"),
             save: function( id, record, done ) {
                 saveAs( new Blob( [record.toXML()], { 'type': 'application/octet-stream;charset=utf-8' } ), 'record.xml' );
 
@@ -264,6 +284,63 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
         },
     };
 
+    var editable_batches = {
+        [%- FOREACH batch = editable_batches -%]
+            [% batch.import_batch_id %]: {
+                'name': '[% batch.file_name %]',
+            },
+        [%- END -%]
+    };
+
+    function addSaveTarget( target ) {
+        state.saveTargets[target.id] = target;
+        if (target.enabled == null) target.enabled = true;
+
+        // Have to check that Preferences has been initialized
+        var saved_value = Preferences.user && Preferences.user.selected_save_targets[target.id];
+        if ( saved_value != null ) target.checked = saved_value;
+
+        var target_list = $.map( state.saveTargets, function( target ) {
+            return target;
+        } );
+
+        target_list.sort( function( a, b ) {
+            return a.label.localeCompare(b.label);
+        } );
+
+        $('#save-targets ol').empty();
+
+        $.each( target_list, function( i, target ) {
+            var $new_target = $(
+                '<li><input type="checkbox" class="save-toggle-target" data-target-id="' + target.id + '" id="save-target-' + i + '"' + ( target.checked ? ' checked="checked"' : '' ) + '> <label for="save-target-' + i + '">' + target.label + '</label></li>'
+            );
+
+            $new_target.find('input').change( function() {
+                target.checked = this.checked;
+            } );
+
+            $('#save-targets ol').append($new_target);
+
+            if (!target.enabled) $new_target.hide();
+        } );
+    }
+
+    function setSaveTargetChecked( target_id, checked ) {
+        if ( state.saveTargets[target_id] == null ) return;
+
+        state.saveTargets[target_id].checked = checked;
+        $( '#save-targets input[data-target-id="' + target_id + '"]' )[0].checked = checked;
+    }
+
+    function setSaveTargetEnabled( target_id, enabled ) {
+        if ( !enabled ) {
+            setSaveTargetChecked( target_id, false );
+        }
+
+        state.saveTargets[target_id].enabled = enabled;
+        $( '#save-targets input[data-target-id="' + target_id + '"]' ).closest('li').toggle(enabled);
+    }
+
     function setSource(parts) {
         state.backend = parts[0];
         state.recordID = parts[1];
@@ -274,13 +351,12 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
 
         document.location.hash = '#' + parts[0] + '/' + parts[1];
 
-        $('#title').text( backend.titleForRecord.replace( '{ID}', parts[1] ) );
+        $('#title').text( backend.titleForRecord.format( parts[1] ) );
 
         $.each( backend.links || [], function( i, link ) {
-            $('#title').append(' <a target="_blank" href="' + link.href.replace( '{ID}', parts[1] ) + '">(' + link.title + ')</a>' );
+            $('#title').append(' <a target="_blank" href="' + link.href.format( parts[1] ) + '">(' + link.title + ')</a>' );
         } );
-        $( 'title', document.head ).html( _("Koha &rsaquo; Cataloging &rsaquo; ") + backend.titleForRecord.replace( '{ID}', parts[1] ) );
-        $('#save-record span').text( backends[ state.saveBackend ].saveLabel );
+        $( 'title', document.head ).html( _("Koha &rsaquo; Cataloging &rsaquo; ") + backend.titleForRecord.format( parts[1] ) );
     }
 
     function saveRecord( recid, editor, callback ) {
@@ -316,6 +392,16 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
 
             if (data.newId) {
                 setSource(data.newId);
+
+                var backend = backends[ parts[0] ];
+
+                setSaveTargetChecked( recid, false );
+                addSaveTarget( {
+                    label: backend.saveExistingLabel.format( data.newId[1] ),
+                    id: data.newId.join('/'),
+                    description: '',
+                    checked: true
+                } );
             } else {
                 setSource( [ state.backend, state.recordID ] );
             }
@@ -574,6 +660,11 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
         var value = Preferences.user[pref];
 
         switch (pref) {
+            case 'enabledBatches':
+                $.each( editable_batches, function( batch_id, batch ) {
+                    $( '#batches-list li[data-batch-id=' + batch_id + '] input' )[0].checked = Preferences.user.enabledBatches[batch_id];
+                    setSaveTargetEnabled( 'batch:' + batch_id + '/', Preferences.user.enabledBatches[batch_id] || false );
+                } );
             case 'fieldWidgets':
                 $( '#set-field-widgets' ).text( value ? _("Show fields verbatim") : _("Show helpers for fixed and coded fields") );
                 break;
@@ -595,6 +686,20 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
                     if ( saved_val != null ) server.checked = saved_val;
                 } );
                 break;
+            case 'selected_save_targets':
+                $.each( state.saveTargets, function( target_id, target ) {
+                    var saved_val = Preferences.user.selected_save_targets[target_id];
+
+                    if ( saved_val != null ) setSaveTargetChecked( target_id, saved_val );
+                } );
+                break;
+            case 'selected_search_targets':
+                $.each( z3950Servers, function( server_id, server ) {
+                    var saved_val = Preferences.user.selected_search_targets[server_id];
+
+                    if ( saved_val != null ) server.checked = saved_val;
+                } );
+                break;
         }
     }
 
@@ -608,7 +713,21 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
             } );
         }
 
+        function _addLiveHandler( sel, event, handler ) {
+            $( document ).on( event, sel, function (e) {
+                e.preventDefault();
+                handler.call( this, e, Preferences.user[pref] );
+                Preferences.Save( [% USER_INFO.0.borrowernumber %] );
+                showPreference(pref);
+            } );
+        }
+
         switch (pref) {
+            case 'enabledBatches':
+                _addLiveHandler( '#batches-list input', 'change', function() {
+                    Preferences.user.enabledBatches[ $( this ).closest('li').data('batch-id') ] = this.checked;
+                } );
+                break;
             case 'fieldWidgets':
                 _addHandler( '#set-field-widgets', 'click', function( e, oldValue ) {
                     editor.setUseWidgets( Preferences.user.fieldWidgets = !Preferences.user.fieldWidgets );
@@ -622,6 +741,13 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
             case 'fontSize':
                 _addHandler( '#prefs-menu .set-fontSize', 'click', function( e, oldValue ) {
                     Preferences.user.fontSize = $( e.target ).css( 'font-size' );
+                } );
+                break;
+            case 'selected_save_targets':
+                $( document ).on( 'change', 'input.save-toggle-target', function() {
+                    var target_id = $( this ).data('target-id');
+                    Preferences.user.selected_save_targets[target_id] = this.checked;
+                    Preferences.Save( [% USER_INFO.0.borrowernumber %] );
                 } );
                 break;
             case 'selected_search_targets':
@@ -717,6 +843,85 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
         showSavedMacros();
     }
 
+    function addImportBatch(batch) {
+        var backend_id = 'batch:' + batch.batch_id;
+        backends[backend_id] = {
+            titleForRecord: _("Editing record from batch: ") + batch.name,
+            saveLabel: _("Batch: ") + batch.name,
+            saveExistingLabel: batch.name + ": #%s",
+            get: function( id, callback ) {
+                KohaBackend.GetBatchRecord( batch.batch_id, id, function( data ) {
+                    if ( !data.error ) {
+                        setSaveTargetChecked( backend_id + '/', false );
+                        addSaveTarget( {
+                            label: batch.name + ": #" + id,
+                            id: backend_id + '/' + id,
+                            description: '',
+                            checked: true
+                        } );
+                    }
+
+                    callback(data);
+                } );
+            },
+            save: function( id, record, done, options ) {
+                function finishCb( data ) {
+                    done( {
+                        error: data.message || data.error,
+                        newRecord: data.updated_record,
+                        newId: data.import_record_id && [ backend_id, data.import_record_id ]
+                    } );
+                }
+
+                if ( id ) {
+                    KohaBackend.SaveBatchRecord( batch.batch_id, id, record, finishCb, { allow_control_number_conflict: options.override_warnings } );
+                } else {
+                    KohaBackend.CreateBatchRecord( record, batch.batch_id, finishCb, { allow_control_number_conflict: options.override_warnings } );
+                }
+            },
+        };
+
+        // Build batch UI
+        var $batch_entry = $( '<li data-batch-id="' + batch.batch_id + '"><input type="checkbox" />' + batch.name + '</li>' );
+
+        var $batch_buttons = $('<span class="batch-buttons"></span>').appendTo($batch_entry);
+        var $export_button = $( '<button>' + _("Export...") + '</button>' ).appendTo($batch_buttons).click( function() {
+            $('#batches-list .batch-export').hide();
+            $export_screen.show();
+        } );
+
+        var $export_screen = $(
+            '<form class="batch-export form-horizontal" style="display: none">'
+            + '<div class="control-group">'
+            + '<label class="control-label">' + _("Control number range:") + '</label>'
+            + '<div class="controls"><input class="batch-control-number-start" type="text"> - <input class="batch-control-number-end" type="text"></div>'
+            + '</div>'
+            + '<label class="control-label">' + _("Timestamp range (YYYYMMDD or YYYMMDDHHMMSS):") + '</label>'
+            + '<div class="controls"><input class="batch-timestamp-start" type="text"> - <input class="batch-timestamp-end" type="text"></div>'
+            + '</div>'
+            + '<div class="control-group">'
+            + '<div class="controls"><button class="batch-export-start">' + _("Start export") + '</div>'
+            + '</form>'
+        ).appendTo($batch_entry);
+
+        $export_screen.find('.batch-export-start').click( function() {
+            function getFormVal(name) {
+                return $export_screen.find( '.batch-' + name ).val();
+            }
+
+            var options = {
+                start_control_number: getFormVal('control-number-start'),
+                end_control_number: getFormVal('control-number-end'),
+                start_timestamp: getFormVal('timestamp-start'),
+                end_timestamp: getFormVal('timestamp-end'),
+            };
+
+            KohaBackend.StartBatchExport( batch.batch_id, options );
+        } );
+
+        $('#batches-list').append( $batch_entry );
+    }
+
     $(document).ready( function() {
         // Editor setup
         editor = new MARCEditor( {
@@ -767,7 +972,7 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
                 } );
             }, 100);
 
-            $("#advanced-search-ui, #search-results-ui, #macro-ui").css( {
+            $(".ui-modal").css( {
                 marginLeft: function() {
                     return -($(this).width() / 2);
                 }
@@ -812,9 +1017,17 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
         $.each( backends, function( id, backend ) {
             if ( backend.save ) saveableBackends.push( [ backend.saveLabel, id ] );
         } );
-        saveableBackends.sort();
-        $.each( saveableBackends, function( undef, backend ) {
-            $( '#save-dropdown' ).append( '<li><a href="#" data-backend="' + backend[1] + '">' + backend[0] + '</a></li>' );
+
+        var batch_list = [];
+
+        $.each( editable_batches, function( batch_id, batch ) {
+            batch_list.push( $.extend( { batch_id: batch_id }, batch ) );
+        } );
+        batch_list.sort( function( a, b ) {
+            return a.name.localeCompare(b.name);
+        } );
+        $.each( batch_list, function() {
+            addImportBatch( this );
         } );
 
         var macro_format_list = $.map( Macros.formats, function( format, name ) {
@@ -829,15 +1042,37 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
 
         // Click bindings
         $( '#save-record, #save-dropdown a' ).click( function() {
+            var enabledTargets = [];
+            var targetNames = [];
+            $.each( state.saveTargets, function() {
+                if ( this.checked ) {
+                    enabledTargets.push(this);
+                    targetNames.push(this.label);
+                }
+            } );
+            if ( enabledTargets.length == 0 ) {
+                humanMsg.displayAlert( _("Please select a save target"), { className: 'humanError' } );
+                return false;
+            }
+
             $( '#save-record' ).find('i').attr( 'class', 'icon-loading' ).siblings( 'span' ).text( _("Saving...") );
 
+            var targets_left = enabledTargets.length;
+            var errors = false;
+
             function finishCb(result) {
-                if ( result.error == 'syntax' ) {
-                    humanMsg.displayAlert( _("Incorrect syntax, cannot save"), { className: 'humanError' } );
-                } else if ( result.error == 'invalid' ) {
-                    humanMsg.displayAlert( _("Record structure invalid, cannot save"), { className: 'humanError' } );
-                } else if ( !result.error ) {
-                    humanMsg.displayAlert( _("Record saved "), { className: 'humanSuccess' } );
+                targets_left--;
+                if ( result.error ) {
+                    if ( result.error == 'syntax' ) {
+                        humanMsg.displayAlert( _("Incorrect syntax, cannot save"), { className: 'humanError' } );
+                    } else if ( result.error == 'invalid' ) {
+                        humanMsg.displayAlert( _("Record structure invalid, cannot save"), { className: 'humanError' } );
+                    } else if ( result.error.type == 'control_number_match' ) {
+                        humanMsg.displayAlert( _("Control number conflict, cannot save"), { className: 'humanError' } );
+                    } else {
+                        humanMsg.displayAlert( _("Unknown error, record not saved to one or more targets"), { className: 'humanError' } );
+                    }
+                    errors = true;
                 }
 
                 $.each( result.errors || [], function( undef, error ) {
@@ -873,20 +1108,19 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
                     }
                 } );
 
-                $( '#save-record' ).find('i').attr( 'class', 'icon-hdd' );
 
-                if ( result.error ) {
-                    // Reset backend info
-                    setSource( [ state.backend, state.recordID ] );
+                if ( targets_left == 0 ) {
+                    if ( !errors ) {
+                        humanMsg.displayMsg( "<h3>" + _("Record saved to:</h3>") + "</h3>" + '<ul><li>' + targetNames.join('</li><li>') + '</li></ul>', { className: 'humanSuccess' } );
+                    }
+
+                    $( '#save-record' ).find('i').attr( 'class', 'icon-hdd' ).end().find('span').text( _("Save") );
                 }
             }
 
-            var backend = $( this ).data( 'backend' ) || ( state.saveBackend );
-            if ( state.backend == backend ) {
-                saveRecord( backend + '/' + state.recordID, editor, finishCb );
-            } else {
-                saveRecord( backend + '/', editor, finishCb );
-            }
+            $.each( enabledTargets, function() {
+                saveRecord( this.id, editor, finishCb, options );
+            } );
 
             return false;
         } );
@@ -1026,11 +1260,48 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
             }
         } );
 
+        $('#open-batches').click( function() {
+            $('#batches-ui').modal();
+
+            return false;
+        } );
+
+        $('#create-batch').click( function() {
+            var batch_name = prompt( _("Name of new import batch:") );
+            if (batch_name == null) return false;
+
+            KohaBackend.CreateBatch( batch_name, function( data ) {
+                if ( data.error ) {
+                    humanMsg.displayAlert( _("Could not create import batch"), { className: 'humanError' } );
+                } else {
+                    humanMsg.displayAlert( _("Import batch created"), { className: 'humanSuccess' } );
+
+                    addImportBatch( editable_batches[data.batch_id] = { batch_id: data.batch_id, name: batch_name } );
+
+                    var backend_id = 'batch:' + data.batch_id;
+                    addSaveTarget( {
+                        label: backends[backend_id].saveLabel,
+                        id: backend_id + '/',
+                        description: '',
+                        enabled: false,
+                    } );
+                }
+            } );
+
+            return false;
+        } );
+
+        $('#manage-batches').click( function() {
+            window.open('/cgi-bin/koha/tools/manage-marc-import.pl');
+
+            return false;
+        } );
+
         // Key bindings
         bindGlobalKeys();
 
         // Setup UI
-        $("#advanced-search-ui, #search-results-ui, #macro-ui").each( function() {
+        $(".ui-modal").each( function() {
             $(this).modal({ show: false });
         } );
 
@@ -1071,6 +1342,16 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
 
             openRecord( 'new/', editor );
             return false;
+        } );
+
+        $.each( backends, function( name ) {
+            if ( !this.save ) return; // Not a saving backend
+
+            addSaveTarget( {
+                label: this.saveLabel,
+                id: name + '/',
+                description: '',
+            } );
         } );
 
         // Start editor

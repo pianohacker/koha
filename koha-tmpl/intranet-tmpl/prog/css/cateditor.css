@@ -59,6 +59,33 @@ body {
     font-size: 12px;
 }
 
+#save-targets input {
+    display: inline-block;
+    margin: 1px;
+    vertical-align: middle;
+}
+
+#save-targets input:checked + label {
+    color: #000;
+}
+
+#save-targets label {
+    color: #666;
+    display: inline-block;
+    margin-left: 0.3em;
+    padding: 0.3em 0;
+    vertical-align: middle;
+    width: 10em;
+}
+
+#save-targets li {
+    overflow: hidden;
+}
+
+#shortcuts-container {
+    font-size: 12px;
+}
+
 /*> MARC editor */
 #editor .CodeMirror {
     line-height: 1.2;
@@ -206,7 +233,7 @@ body {
 
 /*> Search */
 
-#advanced-search-ui, #search-results-ui, #macro-ui {
+.ui-modal {
     padding: 5px;
     width: 90%;
 }
@@ -444,4 +471,18 @@ body {
 /* Hotpatch from latest CodeMirror: Fix gutter positioning */
 .CodeMirror-gutter-wrapper {
     position: absolute;
+}
+
+/* >Batches */
+#batches-list > li {
+    border: 2px solid #F0F0F0;
+    border-radius: 6px;
+    display: block;
+    line-height: 3em;
+    font-size: 115%;
+}
+
+#batches-list > li input {
+    display: inline-block;
+    margin: 0 1em;
 }
