@@ -85,6 +85,12 @@ sub download_batch {
         };
     }
 
+    my $import_record_ids = $query->param( 'import_record_id' );
+
+    if ( $import_record_ids ) {
+        $extra_conditions{'import_record.import_record_id'} = { -in => [ split /\|/, $import_record_ids ] };
+    }
+
     my $records = $schema->resultset('ImportBiblio')->search(
         {
             'import_record.import_batch_id' => $batch_id,
