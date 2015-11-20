@@ -63,6 +63,7 @@ $(document).ready(function(){
           "sAjaxSource": 'batch_records_ajax.pl',
           "sPaginationType": "full_numbers",
           "sDom": '<"top pager"iflp>rt<"bottom pager"flp><"clear">',
+          "aaSorting": [ [ 1, 'asc' ] ],
           "aoColumns": [
               {
                   "bSortable": false,
