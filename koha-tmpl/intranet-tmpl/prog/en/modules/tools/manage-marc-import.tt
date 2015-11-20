@@ -220,12 +220,6 @@ $(document).ready(function(){
 [% END %]
 </h1>
 
-[% IF import_batch_id %]
-    <div id="toolbar" class="btn-toolbar">
-        <!--<button class="btn btn-small" id="import-additional" title="Import extra records into this batch"><i class="icon-plus"></i> <span>Import additional records</span></button>-->
-        <button class="btn btn-small" id="export-selected" title="Import extra records into this batch"><i class="icon-hdd"></i> <span>Export selected records</span></button>
-    </div>
-[% END %]
 [% IF ( label_batch_msg ) %]
 [% IF ( alert ) %]
 <div class="alert">
@@ -531,6 +525,11 @@ Page
 [% END %]
 
 [% IF import_batch_id %]
+    <div id="toolbar" class="btn-toolbar">
+        <!--<button class="btn btn-small" id="import-additional" title="Import extra records into this batch"><i class="icon-plus"></i> <span>Import additional records</span></button>-->
+        <button class="btn btn-small" id="export-selected" title="Import extra records into this batch"><i class="fa fa-hdd-o"></i> <span>Export selected records</span></button>
+    </div>
+
     <table id="records-table">
         <thead>
             <tr>
