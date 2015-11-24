@@ -172,6 +172,10 @@ $(document).ready(function(){
           window.open( '/cgi-bin/koha/svc/cataloguing/import_batches/' + [% import_batch_id %] + '?download=1&' + $.param( options ) );
           return false;
       });
+      $('#import-additional').click( function() {
+          window.open( '/cgi-bin/koha/tools/stage-marc-import.pl?existing_batch_id=' + [% import_batch_id %] );
+          return false;
+      });
     [% END %]
     $("body").on("click",".previewMARC", function(e){
         e.preventDefault();
@@ -527,7 +531,7 @@ Page
 
 [% IF import_batch_id %]
     <div id="toolbar" class="btn-toolbar">
-        <!--<button class="btn btn-small" id="import-additional" title="Import extra records into this batch"><i class="icon-plus"></i> <span>Import additional records</span></button>-->
+        <button class="btn btn-small" id="import-additional" title="Import extra records into this batch"><i class="icon-plus"></i> <span>Import additional records</span></button>
         <button class="btn btn-small" id="export-selected" title="Import extra records into this batch"><i class="fa fa-hdd-o"></i> <span>Export selected records</span></button>
     </div>
 

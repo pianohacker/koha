@@ -380,21 +380,29 @@ sub BatchStageMarcRecords {
     # of job
     my $progress_interval = 0;
     my $progress_callback = undef;
-    if ($#_ == 1) {
+    if ($#_ >= 1) {
         $progress_interval = shift;
         $progress_callback = shift;
         $progress_interval = 0 unless $progress_interval =~ /^\d+$/ and $progress_interval > 0;
         $progress_interval = 0 unless 'CODE' eq ref $progress_callback;
-    } 
+    }
+    my $existing_batch_id = shift;
     
-    my $batch_id = AddImportBatch( {
-            overlay_action => 'create_new',
-            import_status => 'staging',
-            batch_type => 'batch',
-            file_name => $file_name,
-            comments => $comments,
-            record_type => $record_type,
-        } );
+    my $batch_id;
+
+    if ( $existing_batch_id ) {
+        $batch_id = $existing_batch_id;
+    } else {
+        $batch_id = AddImportBatch( {
+                overlay_action => 'create_new',
+                import_status => 'staging',
+                batch_type => 'batch',
+                file_name => $file_name,
+                comments => $comments,
+                record_type => $record_type,
+            } );
+    }
+
     if ($parse_items) {
         SetImportBatchItemAction($batch_id, 'always_add');
     } else {

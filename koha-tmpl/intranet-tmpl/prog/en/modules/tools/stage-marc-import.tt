@@ -133,6 +133,7 @@ function cbUpload( status, fileid ) {
     [% END %]
 </ul>
 [% ELSE %]
+[% IF ( existing_batch_id ) %]<div class="dialog alert"><h3>Importing records into existing batch</h3><p>Records will be added to the existing batch "[% existing_batch.file_name %]" (#[% existing_batch_id %]).</p></div>[% END %]
 <ul>
     <li>Select a MARC file to stage in the import reservoir.  It will be parsed, and each valid record staged for later import into the catalog.</li>
     <li>You can enter a name for this import. It may be useful, when creating a record, to remember where the suggested MARC data comes from!</li>
@@ -168,6 +169,7 @@ function cbUpload( status, fileid ) {
         <input type="hidden" name="uploadedfileid" id="uploadedfileid" value="" />
         <input type="hidden" name="runinbackground" id="runinbackground" value="" />
         <input type="hidden" name="completedJobID" id="completedJobID" value="" />
+        <input type="hidden" name="existing_batch_id" id="existing_batch_id" value="[% existing_batch_id %]" />
 	<ol><li>
 		<label for="comments">Comments about this file: </label>
 		<input type="text" id="comments" name="comments" />
