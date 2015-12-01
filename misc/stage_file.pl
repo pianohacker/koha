@@ -103,16 +103,24 @@ sub process_batch {
 
     print "... staging MARC records -- please wait\n";
     #FIXME: We should really allow the use of marc modification frameworks and to_marc plugins here if possible
-    my ($batch_id, $num_valid_records, $num_items, @import_errors) =
-        BatchStageMarcRecords($record_type, $encoding, $marc_records, $input_file, undef, undef, $batch_comment, '', $add_items, 0,
-                              100, \&print_progress_and_commit);
+    my (@import_errors) =
+    my $stage_results = BatchStageMarcRecords( {
+        record_type => $record_type,
+        encoding => $encoding,
+        marc_records => $marc_records,
+        file_name => $input_file,
+        comments => $batch_comment,
+        parse_items => $add_items,
+        progress_interval => 100,
+        progress_callback => \&print_progress_and_commit
+    } );
     print "... finished staging MARC records\n";
 
     my $num_with_matches = 0;
     if ($match) {
         my $matcher = C4::Matcher->fetch($match) ;
         if (defined $matcher) {
-            SetImportBatchMatcher($batch_id, $match);
+            SetImportBatchMatcher($stage_results->{batch_id}, $match);
         } elsif ($record_type eq 'biblio')  {
             $matcher = C4::Matcher->new($record_type);
             $matcher->add_simple_matchpoint('isbn', 1000, '020', 'a', -1, 0, '');
@@ -120,15 +128,15 @@ sub process_batch {
                                             '245', 'a', -1, 0, '');
         }
         # set default record overlay behavior
-        SetImportBatchOverlayAction($batch_id, ($no_replace) ? 'ignore' : 'replace');
-        SetImportBatchNoMatchAction($batch_id, ($no_create) ? 'ignore' : 'create_new');
-        SetImportBatchItemAction($batch_id, $item_action);
+        SetImportBatchOverlayAction($stage_results->{batch_id}, ($no_replace) ? 'ignore' : 'replace');
+        SetImportBatchNoMatchAction($stage_results->{batch_id}, ($no_create) ? 'ignore' : 'create_new');
+        SetImportBatchItemAction($stage_results->{batch_id}, $item_action);
         print "... looking for matches with records already in database\n";
-        $num_with_matches = BatchFindDuplicates($batch_id, $matcher, 10, 100, \&print_progress_and_commit);
+        $num_with_matches = BatchFindDuplicates($stage_results->{batch_id}, $matcher, 10, 100, \&print_progress_and_commit);
         print "... finished looking for matches\n";
     }
 
-    my $num_invalid_records = scalar(@import_errors);
+    my $num_invalid_records = scalar( @{ $stage_results->{invalid_records} } );
     print <<_SUMMARY_;
 
 MARC record staging report
@@ -136,7 +144,7 @@ MARC record staging report
 Input file:                 $input_file
 Record type:                $record_type
 Number of input records:    $num_input_records
-Number of valid records:    $num_valid_records
+Number of valid records:    $stage_results->{num_valid}
 Number of invalid records:  $num_invalid_records
 _SUMMARY_
     if ($match) {
@@ -146,14 +154,14 @@ _SUMMARY_
     }
     if ($record_type eq 'biblio') {
         if ($add_items) {
-            print "Number of items parsed:  $num_items\n";
+            print "Number of items parsed:  $stage_results->{num_items}\n";
         } else {
             print "No items parsed (--add-items option not supplied)\n";
         }
     }
 
     print "\n";
-    print "Batch number assigned:  $batch_id\n";
+    print "Batch number assigned:  $stage_results->{batch_id}\n";
     print "\n";
 }
 

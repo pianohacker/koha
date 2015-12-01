@@ -115,6 +115,16 @@ function cbUpload( status, fileid ) {
 	<li>[% total %]  records in file</li>
 	<li>[% import_errors %] records not staged because of MARC error</li>
 	<li>[% staged %] records staged</li>
+    [% IF control_number_handling %]
+	<li>
+        [% num_matched_control_number %] records with matching control number
+        [% IF control_number_handling == 'preserve' %]
+        (preserved)
+        [% ELSIF control_number_handling == 'overwrite' %]
+        (overwritten)
+        [% END %]
+    </li>
+    [% END %]
     [% IF ( checked_matches ) %]
 	<li>[% matched %] records with at least one match in catalog per matching rule 
         &quot;[% matcher_code %]&quot;</li>
@@ -246,6 +256,26 @@ function cbUpload( status, fileid ) {
       <li><label for="nomatch_action">Action if no match is found: </label>
            [% INCLUDE 'tools-nomatch-action.inc' %]
       </li>
+    </ol>
+  </fieldset>
+  <fieldset class="rows" id="record-update">
+    <legend>Automatically update records?</legend>
+    <ol>
+        [% IF existing_batch_id %]
+            <li><label for="control_number_handling">How to process 001:</label>
+            <select name="control_number_handling" id="control_number_handling">
+               <option value="">Ignore</option>
+               <option value="overwrite">Overwrite existing records with same 001</option>
+               <option value="preserve">Preserve existing records with same 001</option>
+            </select>
+            </li>
+        [% END %]
+        <li><label for="timestamp_update">How to process 005:</label>
+        <select name="timestamp_update" id="timestamp_update">
+           <option value="">Do not update 005</option>
+           <option value="now">Set 005 to current date and time</option>
+        </select>
+        </li>
     </ol>
   </fieldset>
   <fieldset class="rows" id="items">

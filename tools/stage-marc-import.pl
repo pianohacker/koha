@@ -60,6 +60,8 @@ my $encoding                   = $input->param('encoding');
 my $to_marc_plugin             = $input->param('to_marc_plugin');
 my $marc_modification_template = $input->param('marc_modification_template_id');
 my $existing_batch_id          = $input->param('existing_batch_id');
+my $control_number_handling    = $input->param('control_number_handling');
+my $timestamp_update           = $input->param('timestamp_update');
 
 my ( $template, $loggedinuser, $cookie ) = get_template_and_user(
     {
@@ -135,16 +137,21 @@ if ($completedJobID) {
     $dbh = C4::Context->dbh({new => 1});
     $dbh->{AutoCommit} = 0;
     # FIXME branch code
-    my ( $batch_id, $num_valid, $num_items, @import_errors ) =
-      BatchStageMarcRecords(
-        $record_type,    $encoding,
-        $marcrecord,     $filename,
-        $to_marc_plugin, $marc_modification_template,
-        $comments,       '',
-        $parse_items,    0,
-        50, staging_progress_callback( $job, $dbh ),
-        $existing_batch_id
-      );
+    my $stage_results = BatchStageMarcRecords( {
+        record_type => $record_type,
+        encoding => $encoding,
+        marc_records => $marcrecord,
+        file_name => $filename,
+        to_marc_plugin => $to_marc_plugin,
+        marc_modification_template => $marc_modification_template,
+        comments => $comments,
+        parse_items => $parse_items,
+        progress_interval => 50,
+        progress_callback => staging_progress_callback( $job, $dbh ),
+        existing_batch_id => $existing_batch_id,
+        control_number_handling => $control_number_handling,
+        timestamp_update => $timestamp_update,
+    } );
 
     my $num_with_matches = 0;
     my $checked_matches = 0;
@@ -156,12 +163,12 @@ if ($completedJobID) {
             $checked_matches = 1;
             $matcher_code = $matcher->code();
             $num_with_matches =
-              BatchFindDuplicates( $batch_id, $matcher, 10, 50,
+              BatchFindDuplicates( $stage_results->{batch_id}, $matcher, 10, 50,
                 matching_progress_callback( $job, $dbh ) );
-            SetImportBatchMatcher($batch_id, $matcher_id);
-            SetImportBatchOverlayAction($batch_id, $overlay_action);
-            SetImportBatchNoMatchAction($batch_id, $nomatch_action);
-            SetImportBatchItemAction($batch_id, $item_action);
+            SetImportBatchMatcher( $stage_results->{batch_id}, $matcher_id );
+            SetImportBatchOverlayAction( $stage_results->{batch_id}, $overlay_action );
+            SetImportBatchNoMatchAction( $stage_results->{batch_id}, $nomatch_action );
+            SetImportBatchItemAction( $stage_results->{batch_id}, $item_action );
             $dbh->commit();
         } else {
             $matcher_failed = 1;
@@ -171,29 +178,22 @@ if ($completedJobID) {
     }
 
     my $results = {
-        staged          => $num_valid,
+        staged          => $stage_results->{num_valid},
         matched         => $num_with_matches,
-        num_items       => $num_items,
-        import_errors   => scalar(@import_errors),
-        total           => $num_valid + scalar(@import_errors),
+        num_items       => $stage_results->{num_items},
+        import_errors   => scalar( @{ $stage_results->{invalid_records} } ),
+        total           => $stage_results->{num_valid} + scalar( @{ $stage_results->{invalid_records} } ),
         checked_matches => $checked_matches,
         matcher_failed  => $matcher_failed,
         matcher_code    => $matcher_code,
-        import_batch_id => $batch_id
+        import_batch_id => $stage_results->{batch_id},
+        control_number_handling => $control_number_handling,
+        num_matched_control_number => $stage_results->{num_matched_control_number},
     };
     if ($runinbackground) {
         $job->finish($results);
     } else {
-	    $template->param(staged => $num_valid,
- 	                     matched => $num_with_matches,
-                         num_items => $num_items,
-                         import_errors => scalar(@import_errors),
-                         total => $num_valid + scalar(@import_errors),
-                         checked_matches => $checked_matches,
-                         matcher_failed => $matcher_failed,
-                         matcher_code => $matcher_code,
-                         import_batch_id => $batch_id
-                        );
+	    $template->param( %$results );
     }
 
 } else {

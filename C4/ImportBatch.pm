@@ -29,6 +29,7 @@ use C4::AuthoritiesMarc;
 use C4::MarcModificationTemplates;
 use DateTime;
 use DateTime::Format::Strptime;
+use Koha::Database;
 use Koha::Plugins::Handler;
 use Koha::Logger;
 
@@ -49,6 +50,7 @@ BEGIN {
     AddItemsToImportBiblio
     ModAuthorityInBatch
     ModBiblioInBatch
+    CheckRecordControlNumberInBatch
 
     BatchStageMarcRecords
     BatchFindDuplicates
@@ -312,6 +314,41 @@ sub ModBiblioInBatch {
 
 }
 
+=head2 CheckRecordControlNumberInBatch
+
+  CheckRecordControlNumberInBatch( $marc_record, $batch_id[, $import_record_id] );
+
+Check to see if the given record's control number is already in use in the given batch. If provided,
+will check only for conflicts in records besides the given C<$import_batch_id>.
+
+If a record with the given control number in the given batch exists, will return its C<import_record_id>.
+
+=cut
+
+sub CheckRecordControlNumberInBatch {
+    my ( $marc_record, $batch_id, $import_record_id ) = @_;
+
+    return unless ( $marc_record->field('001') );
+
+    my %extra_conditions;
+
+    $extra_conditions{'import_record.import_record_id'} = { '!=', $import_record_id } if ( $import_record_id );
+
+    my $control_number = $marc_record->field('001')->data;
+
+    my $schema = Koha::Database->new()->schema();
+    return $schema->resultset('ImportBiblio')->search(
+        {
+            control_number => $control_number,
+            'import_record.import_batch_id' => $batch_id,
+            %extra_conditions
+        },
+        {
+            join => 'import_record',
+        }
+    )->get_column('import_record.import_batch_id')->first();
+}
+
 =head2 AddAuthToBatch
 
   my $import_record_id = AddAuthToBatch($batch_id, $record_sequence,
@@ -352,79 +389,84 @@ sub ModAuthInBatch {
 
 =head2 BatchStageMarcRecords
 
-( $batch_id, $num_records, $num_items, @invalid_records ) =
-  BatchStageMarcRecords(
-    $encoding,                   $marc_records,
-    $file_name,                  $to_marc_plugin,
-    $marc_modification_template, $comments,
-    $branch_code,                $parse_items,
-    $leave_as_staging,           $progress_interval,
-    $progress_callback
-  );
+{
+    batch_id => $batch_id,
+    num_records => $num_records,
+    num_items => $num_items,
+    invalid_records => \@invalid_records
+} = BatchStageMarcRecords( {
+    record_type => $record_type,
+    encoding => $encoding,
+    marc_records => $marc_records,
+    file_name => $file_name,
+    comments => $comments,
+    [ control_number_handling => 'preserve' | 'overwrite' ],
+    [ existing_batch_id => $existing_batch_id, ]
+    [ leave_as_staging => 1 ]
+    [ marc_modification_template => $marc_modification_template, ]
+    [ parse_items => 1 ]
+    [ progress_interval => $progress_interval,
+    progress_callback => \&progress_callback, ]
+    [ timestamp_update => 'now' ],
+    [ to_marc_plugin => $to_marc_plugin, ]
+} );
+
+Any optional parameters are assumed to be no / off if omitted. If C<progress_interval> is specified, C<progress_callback> must be as well.
 
 =cut
 
 sub BatchStageMarcRecords {
-    my $record_type = shift;
-    my $encoding = shift;
-    my $marc_records = shift;
-    my $file_name = shift;
-    my $to_marc_plugin = shift;
-    my $marc_modification_template = shift;
-    my $comments = shift;
-    my $branch_code = shift;
-    my $parse_items = shift;
-    my $leave_as_staging = shift;
+    my $params = shift;
 
     # optional callback to monitor status 
     # of job
     my $progress_interval = 0;
     my $progress_callback = undef;
-    if ($#_ >= 1) {
-        $progress_interval = shift;
-        $progress_callback = shift;
+    if ( $params->{progress_interval} ) {
+        $progress_interval = $params->{progress_interval};
+        $progress_callback = $params->{progress_callback};
         $progress_interval = 0 unless $progress_interval =~ /^\d+$/ and $progress_interval > 0;
         $progress_interval = 0 unless 'CODE' eq ref $progress_callback;
     }
-    my $existing_batch_id = shift;
     
     my $batch_id;
 
-    if ( $existing_batch_id ) {
-        $batch_id = $existing_batch_id;
+    if ( $params->{existing_batch_id} ) {
+        $batch_id = $params->{existing_batch_id};
     } else {
         $batch_id = AddImportBatch( {
                 overlay_action => 'create_new',
                 import_status => 'staging',
                 batch_type => 'batch',
-                file_name => $file_name,
-                comments => $comments,
-                record_type => $record_type,
+                file_name => $params->{file_name},
+                comments => $params->{comments},
+                record_type => $params->{record_type},
             } );
     }
 
-    if ($parse_items) {
+    if ($params->{parse_items}) {
         SetImportBatchItemAction($batch_id, 'always_add');
     } else {
         SetImportBatchItemAction($batch_id, 'ignore');
     }
 
-    $marc_records = Koha::Plugins::Handler->run(
+    $params->{marc_records} = Koha::Plugins::Handler->run(
         {
-            class  => $to_marc_plugin,
+            class  => $params->{to_marc_plugin},
             method => 'to_marc',
-            params => { data => $marc_records }
+            params => { data => $params->{marc_records} }
         }
-    ) if $to_marc_plugin;
+    ) if $params->{to_marc_plugin};
 
     my $marc_type = C4::Context->preference('marcflavour');
-    $marc_type .= 'AUTH' if ($marc_type eq 'UNIMARC' && $record_type eq 'auth');
+    $marc_type .= 'AUTH' if ($marc_type eq 'UNIMARC' && $params->{record_type} eq 'auth');
     my @invalid_records = ();
     my $num_valid = 0;
     my $num_items = 0;
+    my $num_matched_control_number = 0;
     # FIXME - for now, we're dealing only with bibs
     my $rec_num = 0;
-    foreach my $marc_blob (split(/\x1D/, $marc_records)) {
+    foreach my $marc_blob (split(/\x1D/, $params->{marc_records})) {
         $marc_blob =~ s/^\s+//g;
         $marc_blob =~ s/\s+$//g;
         next unless $marc_blob;
@@ -433,11 +475,11 @@ sub BatchStageMarcRecords {
             &$progress_callback($rec_num);
         }
         my ($marc_record, $charset_guessed, $char_errors) =
-            MarcToUTF8Record($marc_blob, $marc_type, $encoding);
+            MarcToUTF8Record($marc_blob, $marc_type, $params->{encoding});
 
-        $encoding = $charset_guessed unless $encoding;
+        $params->{encoding} = $charset_guessed unless $params->{encoding};
 
-        ModifyRecordWithTemplate( $marc_modification_template, $marc_record ) if ( $marc_modification_template );
+        ModifyRecordWithTemplate( $params->{marc_modification_template}, $marc_record ) if ( $params->{marc_modification_template} );
 
         my $import_record_id;
         if (scalar($marc_record->fields()) == 0) {
@@ -446,25 +488,55 @@ sub BatchStageMarcRecords {
 
             # Normalize the record so it doesn't have separated diacritics
             SetUTF8Flag($marc_record);
-
             $num_valid++;
-            if ($record_type eq 'biblio') {
-                $import_record_id = AddBiblioToBatch($batch_id, $rec_num, $marc_record, $encoding, int(rand(99999)), 0);
-                if ($parse_items) {
+
+            C4::Biblio::UpdateMarcTimestamp( $marc_record ) if ( $params->{timestamp_update} eq 'now' );
+            my $existing_import_record_id;
+
+            if ( $params->{control_number_handling} ) {
+                $existing_import_record_id = CheckRecordControlNumberInBatch( $marc_record, $batch_id );
+
+                if ( $existing_import_record_id ) {
+                    $num_matched_control_number++;
+
+                    next if ( $params->{control_number_handling} eq 'preserve' );
+                }
+            }
+
+            if ($params->{record_type} eq 'biblio') {
+                if ( $existing_import_record_id ) {
+                    $import_record_id = $existing_import_record_id;
+                    ModBiblioInBatch( $import_record_id, $marc_record );
+                } else {
+                    $import_record_id = AddBiblioToBatch($batch_id, $rec_num, $marc_record, $params->{encoding}, int(rand(99999)), 0);
+                }
+
+                if ($params->{parse_items}) {
                     my @import_items_ids = AddItemsToImportBiblio($batch_id, $import_record_id, $marc_record, 0);
                     $num_items += scalar(@import_items_ids);
                 }
-            } elsif ($record_type eq 'auth') {
-                $import_record_id = AddAuthToBatch($batch_id, $rec_num, $marc_record, $encoding, int(rand(99999)), 0, $marc_type);
+            } elsif ($params->{record_type} eq 'auth') {
+                if ( $existing_import_record_id ) {
+                    $import_record_id = $existing_import_record_id;
+                    ModAuthInBatch( $import_record_id, $marc_record );
+                } else {
+                    $import_record_id = AddAuthToBatch($batch_id, $rec_num, $marc_record, $params->{encoding}, int(rand(99999)), 0, $marc_type);
+                }
             }
         }
     }
-    unless ($leave_as_staging) {
+    unless ($params->{leave_as_staging}) {
         SetImportBatchStatus($batch_id, 'staged');
     }
     # FIXME branch_code, number of bibs, number of items
     _update_batch_record_counts($batch_id);
-    return ($batch_id, $num_valid, $num_items, @invalid_records);
+    return {
+        batch_id => $batch_id,
+        num_items => $num_items,
+        num_valid => $num_valid,
+        num_matched_control_number => $num_matched_control_number,
+        invalid_records => \@invalid_records
+    };
 }
 
 =head2 AddItemsToImportBiblio
@@ -483,6 +555,7 @@ sub AddItemsToImportBiblio {
     my @import_items_ids = ();
    
     my $dbh = C4::Context->dbh; 
+    $dbh->do( "DELETE FROM import_items WHERE import_record_id = ?", undef, $import_record_id );
     my ($item_tag,$item_subfield) = &GetMarcFromKohaField("items.itemnumber",'');
     foreach my $item_field ($marc_record->field($item_tag)) {
         my $item_marc = MARC::Record->new();

@@ -132,30 +132,6 @@ sub get_record {
     C4::Service->return_success( $response );
 }
 
-sub _control_number_already_used {
-    my ( $marc_record, $batch_id, $import_record_id ) = @_;
-
-    return unless ( $marc_record->field('001') );
-
-    my %extra_conditions;
-
-    $extra_conditions{'import_record.import_record_id'} = { '!=', $import_record_id } if ( $import_record_id );
-
-    my $control_number = $marc_record->field('001')->data;
-
-    my $schema = Koha::Database->new()->schema();
-    return $schema->resultset('ImportBiblio')->count(
-        {
-            control_number => $control_number,
-            'import_record.import_batch_id' => $batch_id,
-            %extra_conditions
-        },
-        {
-            join => 'import_record',
-        }
-    );
-}
-
 sub create_record {
     my ( $batch_id ) = @_;
 
@@ -165,7 +141,7 @@ sub create_record {
         C4::Service->return_error( 'failed', $@ );
     }
 
-    if ( !$query->param('allow_control_number_conflict') && _control_number_already_used( $marc_record, $batch_id ) ) {
+    if ( !$query->param('allow_control_number_conflict') && CheckRecordControlNumberInBatch( $marc_record, $batch_id ) ) {
         C4::Service->return_error( 'control_number_match', '' );
     }
 
@@ -184,7 +160,7 @@ sub update_record {
         C4::Service->return_error( 'failed', $@ );
     }
 
-    if ( !$query->param('allow_control_number_conflict') &&  _control_number_already_used( $marc_record, $batch_id, $import_record_id ) ) {
+    if ( !$query->param('allow_control_number_conflict') && CheckRecordControlNumberInBatch( $marc_record, $batch_id, $import_record_id ) ) {
         C4::Service->return_error( 'control_number_match', '' );
     }
 

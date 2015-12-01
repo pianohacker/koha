@@ -3445,9 +3445,9 @@ sub _koha_delete_biblioitems {
 
 =head1 UNEXPORTED FUNCTIONS
 
-=head2 Update005Time
+=head2 UpdateMarcTimestamp
 
-  &Update005Time( $record );
+  &UpdateMarcTimestamp( $record );
 
 Updates the 005 timestamp of the given record to the current time.
 
@@ -3462,7 +3462,13 @@ sub UpdateMarcTimestamp {
         my @a = (localtime) [5,4,3,2,1,0]; $a[0]+=1900; $a[1]++;
         # YY MM DD HH MM SS (update year and month)
         my $f005 = $record->field('005');
-        $f005->update( sprintf( "%4d%02d%02d%02d%02d%04.1f",@a ) ) if $f005;
+
+        unless ($f005) {
+            $f005 = MARC::Field->new('005');
+            $record->insert_fields_ordered( $f005 );
+        }
+
+        $f005->update( sprintf( "%4d%02d%02d%02d%02d%04.1f",@a ) );
     }
 }
 
