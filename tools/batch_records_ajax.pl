@@ -41,8 +41,9 @@ use C4::ImportBatch;
 
 my $input = new CGI;
 
+# Nothing sane can be done if asked to sort by the checkbox column, so we use the ID.
 my @sort_columns =
-  qw/import_record_id title status overlay_status overlay_status/;
+  qw/import_record_id import_record_id title status overlay_status overlay_status/;
 
 my $import_batch_id   = $input->param('import_batch_id');
 my $offset            = $input->param('iDisplayStart');
