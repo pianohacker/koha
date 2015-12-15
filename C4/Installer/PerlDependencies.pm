@@ -722,6 +722,11 @@ our $PERL_DEPS = {
         'required' => '1',
         'min_ver'  => '1.20',
     },
+    'PPI' => {
+        'usage'    => 'I18N',
+        'required' => '0',
+        'min_ver'  => '1.215',
+    },
     'LWP::Protocol::https' => {
         'usage'    => 'OverDrive integration',
         'required' => '0',
