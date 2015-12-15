@@ -25,6 +25,7 @@ use C4::Context;
 use YAML::Syck qw( Dump LoadFile );
 use Locale::PO;
 use FindBin qw( $Bin );
+use File::Path qw( make_path );
 
 $YAML::Syck::ImplicitTyping = 1;
 
@@ -66,13 +67,15 @@ sub new {
     $self->{process}         = "$Bin/tmpl_process3.pl " . ($verbose ? '' : '-q');
     $self->{path_po}         = "$Bin/po";
     $self->{po}              = { '' => $default_pref_po_header };
-    $self->{domain}          = 'messages';
+    $self->{domain}          = 'Koha';
     $self->{cp}              = `which cp`;
     $self->{msgmerge}        = `which msgmerge`;
+    $self->{msgfmt}          = `which msgfmt`;
     $self->{xgettext}        = `which xgettext`;
     $self->{sed}             = `which sed`;
     chomp $self->{cp};
     chomp $self->{msgmerge};
+    chomp $self->{msgfmt};
     chomp $self->{xgettext};
     chomp $self->{sed};
 
@@ -471,19 +474,34 @@ sub create_tmpl {
 sub create_messages {
     my $self = shift;
 
-    print "Create messages ($self->{lang})\n" if $self->{verbose};
+    my ($language, $country) = split /-/, $self->{lang};
+    my $locale = $language;
+    if ($country) {
+        $locale .= '_' . $country;
+    }
+    my $podir = "$self->{path_po}/$locale/LC_MESSAGES";
+
+    make_path($podir);
+    say "Create messages ($locale)" if $self->{verbose};
     system
         "$self->{cp} $self->{domain}.pot " .
-        "$self->{path_po}/$self->{lang}-$self->{domain}.po";
+        "$podir/$self->{domain}.po";
 }
 
 sub update_messages {
     my $self = shift;
 
-    my $pofile = "$self->{path_po}/$self->{lang}-$self->{domain}.po";
-    print "Update messages ($self->{lang})\n" if $self->{verbose};
+    my ($language, $country) = split /-/, $self->{lang};
+    my $locale = $language;
+    if ($country) {
+        $locale .= '_' . $country;
+    }
+    my $podir = "$self->{path_po}/$locale/LC_MESSAGES";
+    my $pofile = "$podir/$self->{domain}.po";
+
+    say "Update messages ($locale)" if $self->{verbose};
     if ( not -f $pofile ) {
-        print "File $pofile does not exist\n" if $self->{verbose};
+        say "File $pofile does not exist" if $self->{verbose};
         $self->create_messages();
     }
     system "$self->{msgmerge} -U $pofile $self->{domain}.pot";
@@ -511,8 +529,11 @@ sub extract_messages {
         }
     }
 
-    my $xgettext_cmd = "$self->{xgettext} -L Perl --from-code=UTF-8 " .
-        "-o $Bin/$self->{domain}.pot -D $intranetdir";
+    my $xgettext_cmd = "$self->{xgettext} -L Perl --from-code=UTF-8 "
+        . "-k -k__ -k__x -k__n:1,2 -k__nx:1,2 -k__xn:1,2 -k__p:1c,2 "
+        . "-k__px:1c,2 -k__np:1c,2,3 -k__npx:1c,2,3 -kN__ -kN__n:1,2 "
+        . "-kN__p:1c,2 -kN__np:1c,2,3 "
+        . "-o $Bin/$self->{domain}.pot -D $intranetdir";
     $xgettext_cmd .= " $_" foreach (@files_to_scan);
 
     if (system($xgettext_cmd) != 0) {
@@ -527,10 +548,30 @@ sub extract_messages {
             die "system call failed: $replace_charset_cmd";
         }
     } else {
-        print "No messages found\n" if $self->{verbose};
+        say "No messages found" if $self->{verbose};
         return;
     }
     return 1;
+}
+
+sub install_messages {
+    my ($self) = @_;
+
+    my ($language, $country) = split /-/, $self->{lang};
+    my $locale = $language;
+    if ($country) {
+        $locale .= '_' . $country;
+    }
+    my $podir = "$self->{path_po}/$locale/LC_MESSAGES";
+    my $pofile = "$podir/$self->{domain}.po";
+    my $mofile = "$podir/$self->{domain}.mo";
+
+    say "Install messages ($locale)" if $self->{verbose};
+    if ( not -f $pofile ) {
+        say "File $pofile does not exist" if $self->{verbose};
+        $self->create_messages();
+    }
+    system "$self->{msgfmt} -o $mofile $pofile";
 }
 
 sub remove_pot {
@@ -544,6 +585,7 @@ sub install {
     return unless $self->{lang};
     $self->install_tmpl($files) unless $self->{pref_only};
     $self->install_prefs();
+    $self->install_messages();
 }
 
 

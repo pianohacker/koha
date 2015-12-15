@@ -18,41 +18,136 @@ package Koha::I18N;
 # along with Koha; if not, see <http://www.gnu.org/licenses>.
 
 use Modern::Perl;
-use base qw(Locale::Maketext Exporter);
 
 use CGI;
 use C4::Languages;
+use C4::Context;
 
-use Locale::Maketext::Lexicon {
-    'en' => ['Auto'],
-    '*' => [
-        Gettext =>
-            C4::Context->config('intranetdir')
-            . '/misc/translator/po/*-messages.po'
-    ],
-    '_AUTO' => 1,
-    '_style' => 'gettext',
-};
+use Encode;
+use Locale::Util qw(set_locale);
+use Locale::Messages qw(:locale_h :libintl_h nl_putenv);
 
-our @EXPORT = qw( gettext );
+use parent 'Exporter';
+our @EXPORT = qw(
+    __
+    __x
+    __n
+    __nx
+    __xn
+    __p
+    __px
+    __np
+    __npx
+    N__
+    N__n
+    N__p
+    N__np
+);
 
-my %language_handles;
+my $textdomain;
 
-sub get_language_handle {
-    my $cgi = new CGI;
-    my $language = C4::Languages::getlanguage;
+BEGIN {
+    $textdomain = 'Koha';
 
-    if (not exists $language_handles{$language}) {
-        $language_handles{$language} = __PACKAGE__->get_handle($language)
-            or die "No language handle for '$language'";
+    my $langtag = C4::Languages::getlanguage;
+    my @subtags = split /-/, $langtag;
+    my ($language, $region) = @subtags;
+    if ($region && length $region == 4) {
+        $region = $subtags[2];
+    }
+    my $locale = set_locale(LC_ALL, $language, $region, 'utf-8');
+    unless ($locale) {
+        set_locale(LC_MESSAGES, 'C');
+        Locale::Messages->select_package('gettext_pp');
+        $locale = $language;
+        if ($region) {
+            $locale .= '_' . $region;
+        }
+        nl_putenv("LANGUAGE=$locale");
+        nl_putenv("LANG=$locale");
+        nl_putenv('OUTPUT_CHARSET=utf-8');
     }
 
-    return $language_handles{$language};
+    my $directory = C4::Context->config('intranetdir') . '/misc/translator/po';
+    textdomain($textdomain);
+    bindtextdomain($textdomain, $directory);
 }
 
-sub gettext {
-    my $lh = get_language_handle;
-    $lh->maketext(@_);
+sub __ {
+    my ($msgid) = @_;
+    my $text = dgettext($textdomain, $msgid);
+    return __decode($text);
+}
+
+sub __x {
+    my ($msgid, %vars) = @_;
+    return __expand(__($msgid), %vars);
+}
+
+sub __n {
+    my ($msgid, $msgid_plural, $count) = @_;
+    my $text = dngettext($textdomain, $msgid, $msgid_plural, $count);
+    return __decode($text);
+}
+
+sub __nx {
+    my ($msgid, $msgid_plural, $count, %vars) = @_;
+    return __expand(__n($msgid, $msgid_plural, $count), %vars);
+}
+
+sub __xn {
+    return __nx(@_);
+}
+
+sub __p {
+    my ($msgctxt, $msgid) = @_;
+    my $text = dpgettext($textdomain, $msgctxt, $msgid);
+    return __decode($text);
+}
+
+sub __px {
+    my ($msgctxt, $msgid, %vars) = @_;
+    return __expand(__p($msgctxt, $msgid), %vars);
+}
+
+sub __np {
+    my ($msgctxt, $msgid, $msgid_plural, $count) = @_;
+    my $text = dnpgettext($textdomain, $msgctxt, $msgid, $msgid_plural, $count);
+    return __decode($text);
+}
+
+sub __npx {
+    my ($msgctxt, $msgid, $msgid_plural, $count, %vars) = @_;
+    return __expand(__np($msgctxt, $msgid, $msgid_plural, $count), %vars);
+}
+
+sub N__ {
+    return @_;
+}
+
+sub N__n {
+    return @_;
+}
+
+sub N__p {
+    return @_;
+}
+
+sub N__np {
+    return @_;
+}
+
+sub __expand {
+    my ($text, %vars) = @_;
+
+    my $re = join '|', map { quotemeta $_ } keys %vars;
+    $text =~ s/\{($re)\}/defined $vars{$1} ? $vars{$1} : "{$1}"/ge;
+
+    return $text;
+}
+
+sub __decode {
+    return Encode::decode_utf8(shift);
 }
 
 1;
