@@ -717,15 +717,10 @@ our $PERL_DEPS = {
         required   => 1,
         min_ver    => '2.125',
     },
-    'Locale::Maketext' => {
+    'Locale::Messages' => {
         'usage'    => 'Core',
         'required' => '1',
-        'min_ver'  => '1.19',
-    },
-    'Locale::Maketext::Lexicon' => {
-        'usage'    => 'Core',
-        'required' => '1',
-        'min_ver'  => '0.91',
+        'min_ver'  => '1.20',
     },
     'LWP::Protocol::https' => {
         'usage'    => 'OverDrive integration',
