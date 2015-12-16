@@ -21,7 +21,7 @@ use Modern::Perl;
 
 use C4::Biblio qw();
 use C4::Context;
-use C4::ImportBatch qw( AddBiblioToBatch AddImportBatch GetImportRecordMarcXML ModBiblioInBatch );
+use C4::ImportBatch qw( AddBiblioToBatch AddImportBatch GetImportRecordMarcXML ModBiblioInBatch CheckRecordControlNumberInBatch );
 use C4::Service;
 use DateTime;
 use DateTime::Format::Strptime;
