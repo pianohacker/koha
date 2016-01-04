@@ -77,11 +77,14 @@ sub new {
     $self->{cp}              = `which cp`;
     $self->{msgmerge}        = `which msgmerge`;
     $self->{msgfmt}          = `which msgfmt`;
+    $self->{msgcat}          = `which msgcat`;
     $self->{xgettext}        = `which xgettext`;
     $self->{sed}             = `which sed`;
+    $self->{po2json}         = "$Bin/po2json";
     chomp $self->{cp};
     chomp $self->{msgmerge};
     chomp $self->{msgfmt};
+    chomp $self->{msgcat};
     chomp $self->{xgettext};
     chomp $self->{sed};
 
@@ -610,15 +613,38 @@ sub extract_messages {
     $self->extract_messages_from_templates($tempdir, @tt_files);
     push @files_to_scan, @tt_files;
 
-    my $xgettext_cmd = "$self->{xgettext} -L Perl --from-code=UTF-8 "
-        . "-k -k__ -k__x -k__n:1,2 -k__nx:1,2 -k__xn:1,2 -k__p:1c,2 "
-        . "-k__px:1c,2 -k__np:1c,2,3 -k__npx:1c,2,3 -kN__ -kN__n:1,2 "
-        . "-kN__p:1c,2 -kN__np:1c,2,3 "
-        . "-o $Bin/$self->{domain}.pot -D $tempdir -D $intranetdir";
+    my $xgettext_common_args = "--force-po --from-code=UTF-8 "
+        . "-k -k__ -k__x -k__n:1,2 -k__nx:1,2 -k__xn:1,2 "
+        . "-k__p:1c,2 -k__px:1c,2 -k__np:1c,2,3 -k__npx:1c,2,3 "
+        . "-kN__ -kN__n:1,2 -kN__p:1c,2 -kN__np:1c,2,3";
+    my $xgettext_cmd = "$self->{xgettext} -L Perl $xgettext_common_args "
+        . "-o $Bin/$self->{domain}-perl.pot -D $tempdir -D $intranetdir";
     $xgettext_cmd .= " $_" foreach (@files_to_scan);
 
     if (system($xgettext_cmd) != 0) {
         die "system call failed: $xgettext_cmd";
+    }
+
+    my @js_files;
+    find(sub {
+        if ($File::Find::dir =~ m|/en/| && $_ =~ m/\.js$/) {
+            my $filename = $File::Find::name;
+            $filename =~ s|^$intranetdir/||;
+            push @js_files, $filename;
+        }
+    }, "$intranetdir/koha-tmpl");
+
+    $xgettext_cmd = "$self->{xgettext} -L JavaScript $xgettext_common_args "
+        . "-o $Bin/$self->{domain}-js.pot -D $intranetdir";
+    $xgettext_cmd .= " $_" foreach (@js_files);
+
+    if (system($xgettext_cmd) != 0) {
+        die "system call failed: $xgettext_cmd";
+    }
+
+    my $msgcat_cmd = "$self->{msgcat} -o $Bin/$self->{domain}.pot $Bin/$self->{domain}-perl.pot $Bin/$self->{domain}-js.pot";
+    if (system($msgcat_cmd) != 0) {
+        die "system call failed: $msgcat_cmd";
     }
 
     if ( -f "$Bin/$self->{domain}.pot" ) {
@@ -653,12 +679,29 @@ sub install_messages {
         $self->create_messages();
     }
     system "$self->{msgfmt} -o $mofile $pofile";
+
+    my $js_locale_data = 'var json_locale_data = {"Koha":' . `$self->{po2json} $pofile` . '};';
+    my $progdir = $self->{context}->config('intrahtdocs') . '/prog';
+    open my $fh, '>', "$progdir/$self->{lang}/js/locale_data.js";
+    print $fh $js_locale_data;
+    close $fh;
+
+    my $opachtdocs = $self->{context}->config('opachtdocs');
+    opendir(my $dh, $opachtdocs);
+    for my $theme ( grep { not /^\.|lib/ } readdir($dh) ) {
+        mkdir "$opachtdocs/$theme/$self->{lang}/js";
+        open my $fh, '>', "$opachtdocs/$theme/$self->{lang}/js/locale_data.js";
+        print $fh $js_locale_data;
+        close $fh;
+    }
 }
 
 sub remove_pot {
     my $self = shift;
 
     unlink "$Bin/$self->{domain}.pot";
+    unlink "$Bin/$self->{domain}-perl.pot";
+    unlink "$Bin/$self->{domain}-js.pot";
 }
 
 sub install {

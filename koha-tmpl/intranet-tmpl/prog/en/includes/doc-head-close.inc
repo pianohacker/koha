@@ -18,6 +18,14 @@
 [% INCLUDE intranetstylesheet.inc %]
 [% IF ( bidi ) %]<link rel="stylesheet" type="text/css" href="[% interface %]/[% theme %]/css/right-to-left.css" />[% END %]
 
+<script>
+var Koha = {};
+</script>
+
+<script src="[% themelang %]/js/locale_data.js"></script>
+<script src="[% interface %]/js/Gettext.js"></script>
+<script src="[% interface %]/js/i18n.js"></script>
+
 [% IF ( login ) %]
     <link rel="stylesheet" type="text/css" href="[% interface %]/[% theme %]/css/login.css" />
 [% END %]
