@@ -53,3 +53,11 @@
 <script type="text/javascript" src="[% interface %]/[% theme %]/lib/modernizr.min_[% KOHA_VERSION %].js"></script>
 <link rel="stylesheet" type="text/css" href="[% interface %]/[% theme %]/lib/font-awesome/css/font-awesome.min_[% KOHA_VERSION %].css" />
 [% PROCESS 'html_helpers.inc' %]
+
+<script>
+var Koha = {};
+</script>
+
+<script src="[% themelang %]/js/locale_data.js"></script>
+<script src="[% interface %]/[% theme %]/js/Gettext.js"></script>
+<script src="[% interface %]/[% theme %]/js/i18n.js"></script>
