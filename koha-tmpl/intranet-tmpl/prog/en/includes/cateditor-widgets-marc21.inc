@@ -120,7 +120,7 @@ require( [ 'koha-backend', 'widget' ], function( KohaBackend, Widget ) {
                 + '<span class="control-number-widget-contents"></span>'
                 + '<button class="control-number-widget-assign">' + _("Assign next") + '</button>'
                 + '<select class="control-number-widget-sequence"></select>'
-                + '<button class="control-number-widget-override">Override</button>'
+                + '<button class="control-number-widget-override">' + _("Override") + '</button>'
                 + '</span>'
             );
 
