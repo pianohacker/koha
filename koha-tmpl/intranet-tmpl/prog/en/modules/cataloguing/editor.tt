@@ -81,7 +81,7 @@
     <fieldset class="brief">
     <ol>
         <li><label for="search-by-keywords">Keywords:</label></li>
-        <li><input class="search-box" data-qualifier="term" id="search-by-keywords" placeholder="(Ctrl-Alt-K)" /></li>
+        <li><input class="search-box" data-qualifier="keyword" id="search-by-keywords" placeholder="(Ctrl-Alt-K)" /></li>
         <li><label for="search-by-author">Author:</label></li>
         <li><input class="search-box" data-qualifier="author" id="search-by-author" placeholder="(Ctrl-Alt-A)" /></li>
         <li><label for="search-by-isbn">ISBN:</label></li>
@@ -147,7 +147,7 @@
             </li>
             <li>
                 <label for="advanced-search-by-lc-number">LC call number:</label>
-                <input class="search-box" data-qualifier="cn_lc" id="advanced-search-by-lc-number" />
+                <input class="search-box" data-qualifier="cn-lc" id="advanced-search-by-lc-number" />
             </li>
             <li>
                 <label for="advanced-search-by-lccn">LCCN:</label>
@@ -155,19 +155,19 @@
             </li>
             <li>
                 <label for="advanced-search-by-control-number">Control number:</label>
-                <input class="search-box" data-qualifier="local_number" id="advanced-search-by-control-number" />
+                <input class="search-box" data-qualifier="local-number" id="advanced-search-by-control-number" />
             </li>
             <li>
                 <label for="advanced-search-by-dewey">Dewey number:</label>
-                <input class="search-box" data-qualifier="cn_dewey" id="advanced-search-by-dewey" />
+                <input class="search-box" data-qualifier="cn-dewey" id="advanced-search-by-dewey" />
             </li>
             <li>
                 <label for="advanced-search-by-standard-number">Standard number:</label>
-                <input class="search-box" data-qualifier="standard_identifier" id="advanced-search-by-standard-number" />
+                <input class="search-box" data-qualifier="standard-identifier" id="advanced-search-by-standard-number" />
             </li>
             <li>
                 <label for="advanced-search-by-publisher-number">Publisher number:</label>
-                <input class="search-box" data-qualifier="music_identifier" id="advanced-search-by-publisher-number" />
+                <input class="search-box" data-qualifier="music-identifier" id="advanced-search-by-publisher-number" />
             </li>
             <li>
                 <label for="advanced-search-by-publication-date">Publication date:</label>

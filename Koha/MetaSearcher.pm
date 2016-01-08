@@ -87,7 +87,7 @@ sub handle_hit {
 }
 
 sub search {
-    my ( $self, $server_ids, $query ) = @_;
+    my ( $self, $server_ids, $terms ) = @_;
 
     my $resultset_expiry = 300;
 
@@ -143,7 +143,7 @@ sub search {
             }
         }
 
-        $select->add( $self->_start_worker( $server, $query ) );
+        $select->add( $self->_start_worker( $server, $terms ) );
     }
 
     # Handle these while the servers are searching
@@ -183,8 +183,98 @@ sub search {
     return $stats;
 }
 
+our $_pqf_mapping = {
+    author => '1=1004',
+    'cn-dewey' => '1=13',
+    'cn-lc' => '1=16',
+    date => '1=30',
+    isbn => '1=7',
+    issn => '1=8',
+    keyword => '1=1016',
+    lccn => '1=9',
+    'local-number' => '1=12',
+    'music-identifier' => '1=51',
+    'standard-identifier' => '1=1007',
+    subject => '1=21',
+    title => '1=4',
+};
+
+our $_batch_db_mapping = {
+    author => 'import_biblios.author',
+    isbn => 'import_biblios.isbn',
+    issn => 'import_biblios.issn',
+    'local-number' => 'import_biblios.control_number',
+    title => 'import_biblios.title',
+};
+
+our $_batch_db_text_columns = {
+    author => 1,
+    keyword => 1,
+    title => 1,
+};
+
+sub _pqf_query_from_terms {
+    my ( $terms ) = @_;
+
+    my $query;
+
+    while ( my ( $index, $value ) = each %$terms ) {
+        $value =~ s/"/\\"/;
+
+        my $term = '@attr ' . $_pqf_mapping->{$index} . ' "' . $value . '"';
+
+        if ( $query ) {
+            $query = '@and ' . $query . ' ' . $term;
+        } else {
+            $query = $term;
+        }
+    }
+
+    return $query;
+}
+
+sub _db_query_get_match_conditions {
+    my ( $index, $value ) = @_;
+
+    if ( $value =~ /\*/ ) {
+        $value =~ s/\*/%/;
+        return { -like => $value };
+    } elsif ( $_batch_db_text_columns->{$index} ) {
+        return map +{ -regexp => '[[:<:]]' . $_ . '[[:>:]]' }, split( /\s+/, $value );
+    } else {
+        return $value;
+    }
+}
+
+sub _batch_db_query_from_terms {
+    my ( $import_batch_id, $terms ) = @_;
+
+    my @db_terms;
+
+    while ( my ( $index, $value ) = each %$terms ) {
+        if ( $index eq 'keyword' ) {
+            my @term;
+
+            while ( my ( $index, $db_column ) = each %$_batch_db_mapping ) {
+                push @term, { $db_column => [ _db_query_get_match_conditions( $index, $value ) ] };
+            }
+
+            push @db_terms, \@term;
+        } elsif ( $_batch_db_mapping->{$index} ) {
+            push @db_terms, $_batch_db_mapping->{$index} => [ -and => _db_query_get_match_conditions( $index, $value ) ];
+        }
+    }
+
+    return {
+        -and => [
+            import_batch_id => $import_batch_id,
+            @db_terms
+        ],
+    },
+}
+
 sub _start_worker {
-    my ( $self, $server, $query ) = @_;
+    my ( $self, $server, $terms ) = @_;
     pipe my $readfh, my $writefh;
 
     # Accessing the cache or Koha database after the fork is risky, so get any resources we need
@@ -208,6 +298,8 @@ sub _start_worker {
     my $connection;
     my ( $num_hits, $num_fetched, $hits, $results );
 
+    my $pqf_query = _pqf_query_from_terms( $terms );
+
     eval {
         if ( $server->{type} eq 'z3950' ) {
             my $zoptions = ZOOM::Options->new();
@@ -221,10 +313,10 @@ sub _start_worker {
             $connection = ZOOM::Connection->create($zoptions);
 
             $connection->connect( $server->{host}, $server->{port} );
-            $results = $connection->search_pqf( $query ); # Starts the search
+            $results = $connection->search_pqf( $pqf_query ); # Starts the search
         } elsif ( $server->{type} eq 'koha' ) {
             $connection = C4::Context->Zconn( $server->{extra} );
-            $results = $connection->search_pqf( $query ); # Starts the search
+            $results = $connection->search_pqf( $pqf_query ); # Starts the search
         } elsif ( $server->{type} eq 'batch' )  {
             $server->{encoding} = 'utf-8';
         }
@@ -238,23 +330,10 @@ sub _start_worker {
     }
 
     if ( $server->{type} eq 'batch' ) {
-        # TODO: actually handle PQF
-        $query =~ s/@\w+ (?:\d+=\d+ )?//g;
-        $query =~ s/"//g;
-
         my $schema = Koha::Database->new->schema;
-        $schema->storage->debug(1);
-        my $match_condition = [ map +{ -like => '%' . $_ . '%' }, split( /\s+/, $query ) ];
+
         $hits = [ $schema->resultset('ImportRecord')->search(
-            {
-                import_batch_id => $server->{extra},
-                -or => [
-                    { 'import_biblios.title' => $match_condition },
-                    { 'import_biblios.author' => $match_condition },
-                    { 'import_biblios.isbn' => $match_condition },
-                    { 'import_biblios.issn' => $match_condition },
-                ],
-            },
+            _batch_db_query_from_terms( $server->{extra}, $terms ),
             {
                 join => [ qw( import_biblios ) ],
                 rows => $self->{fetch},

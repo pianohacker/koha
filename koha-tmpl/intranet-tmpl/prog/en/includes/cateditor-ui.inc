@@ -146,17 +146,17 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
 
         $('#quicksearch .search-box').each( function() {
             shortcut.add( 'enter', $.proxy( function() {
-                var terms = [];
+                var terms = {};
 
                 $('#quicksearch .search-box').each( function() {
                     if ( !this.value ) return;
 
-                    terms.push( [ $(this).data('qualifier'), this.value ] );
+                    terms[ $(this).data('qualifier') ] = this.value;
                 } );
 
-                if ( !terms.length ) return;
+                if ( $.isEmptyObject(terms) ) return;
 
-                if ( Search.Run( z3950Servers, Search.JoinTerms(terms) ) ) {
+                if ( Search.Run( z3950Servers, terms ) ) {
                     $("#search-overlay").show();
                     showResultsBox();
                 }
@@ -446,17 +446,17 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
     }
 
     function startAdvancedSearch() {
-        var terms = [];
+        var terms = {};
 
         $('#advanced-search-ui .search-box').each( function() {
             if ( !this.value ) return;
 
-            terms.push( [ $(this).data('qualifier'), this.value ] );
+            terms[ $(this).data('qualifier') ] = this.value;
         } );
 
-        if ( !terms.length ) return;
+        if ( $.isEmptyObject(terms) ) return;
 
-        if ( Search.Run( z3950Servers, Search.JoinTerms(terms) ) ) {
+        if ( Search.Run( z3950Servers, terms ) ) {
             $('#advanced-search-ui').modal('hide');
             $("#search-overlay").show();
             showResultsBox();
