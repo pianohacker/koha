@@ -138,10 +138,17 @@ require( [ 'koha-backend', 'widget' ], function( KohaBackend, Widget ) {
             $( this.node )
                 .find('.control-number-widget-assign').click( function() {
                     var sequence = $( widget.node ).find('.control-number-widget-sequence').val();
+                    var button = this;
+                    $(this)
+                        .attr( 'disabled', true )
+                        .text( _("Assigning...") );
                     $.post(
                         '/cgi-bin/koha/svc/cataloguing/control_num_sequences/' + sequence
                     ).done( function( result ) {
                         if ( result.next_value ) widget.setControlNumber( result.next_value );
+                        $(button)
+                            .removeAttr('disabled')
+                            .text( _("Assign next") );
                     } );
                 } ).end()
                 .find('.control-number-widget-override').click( function() {
