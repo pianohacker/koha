@@ -529,19 +529,15 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
         $.each( data.hits, function( undef, hit ) {
             backends.search.records[ hit.server + ':' + hit.index ] = hit.record;
 
-            switch ( hit.server ) {
-                case 'koha:biblioserver':
-                    var bibnumField = hit.record.field( bibnumMap[0] );
+            hit.id = 'search/' + hit.server + ':' + hit.index;
+            if ( hit.server == 'koha:biblioserver' ) {
+                var bibnumField = hit.record.field( bibnumMap[0] );
 
-                    if ( bibnumField && bibnumField.hasSubfield( bibnumMap[1] ) ) {
-                        hit.id = 'catalog/' + bibnumField.subfield( bibnumMap[1] );
-                        break;
-                    }
-
-                    // Otherwise, fallthrough
-
-                default:
-                    hit.id = 'search/' + hit.server + ':' + hit.index;
+                if ( bibnumField && bibnumField.hasSubfield( bibnumMap[1] ) ) {
+                    hit.id = 'catalog/' + bibnumField.subfield( bibnumMap[1] );
+                }
+            } else if ( /^batch:/.test(hit.server) && hit.import_record_id ) {
+                hit.id = hit.server + '/' + hit.import_record_id;
             }
 
             var result = '<tr>';

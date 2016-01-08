@@ -56,9 +56,9 @@ sub new {
 }
 
 sub handle_hit {
-    my ( $self, $index, $server, $marcrecord ) = @_;
+    my ( $self, $index, $server, $hit ) = @_;
 
-    my $record = Koha::MetadataRecord->new( { schema => 'marc', record => $marcrecord } );
+    my $record = Koha::MetadataRecord->new( { schema => 'marc', record => $hit->{record} } );
 
     my %fetch = (
         title => 'biblio.title',
@@ -79,9 +79,9 @@ sub handle_hit {
     $metadata->{date} //= $metadata->{date2};
 
     push @{ $self->{results} }, {
+        %$hit,
         server => $server,
         index => $index,
-        record => $marcrecord,
         metadata => $metadata,
     };
 }
@@ -331,21 +331,25 @@ sub _start_worker {
 
     if ( $server->{type} eq 'batch' ) {
         my $schema = Koha::Database->new->schema;
+        $schema->storage->debug(1);
 
         $hits = [ $schema->resultset('ImportRecord')->search(
             _batch_db_query_from_terms( $server->{extra}, $terms ),
             {
-                join => [ qw( import_biblios ) ],
+                columns => [ 'import_record_id', { record => 'marc' } ],
+                join => [ 'import_biblios' ],
+                offset => $self->{offset},
+                result_class => 'DBIx::Class::ResultClass::HashRefInflator',
                 rows => $self->{fetch},
             }
-        )->get_column( 'marc' )->all ];
+        )->all ];
 
         $num_hits = $num_fetched = scalar @$hits;
     } else {
         $num_hits = $results->size;
         $num_fetched = ( $self->{offset} + $self->{fetch} ) < $num_hits ? $self->{fetch} : $num_hits;
 
-        $hits = [ map { $_->raw() } @{ $results->records( $self->{offset}, $num_fetched, 1 ) } ];
+        $hits = [ map +{ record => $_->raw() }, @{ $results->records( $self->{offset}, $num_fetched, 1 ) } ];
     }
 
     if ( !@$hits && $connection && $connection->exception() ) {
@@ -357,9 +361,9 @@ sub _start_worker {
     }
 
     if ( $server->{type} eq 'koha' ) {
-        $hits = [ map { C4::Search::new_record_from_zebra( $server->{extra}, $_ ) } @$hits ];
+        $hits = [ map +{ %$_, record => C4::Search::new_record_from_zebra( $server->{extra}, $_->{record} ) }, @$hits ];
     } else {
-        $hits = [ map { $self->_import_record( $_, $marcflavour, $server->{encoding} ? $server->{encoding} : "iso-5426" ) } @$hits ];
+        $hits = [ map +{ %$_, record => $self->_import_record( $_->{record}, $marcflavour, $server->{encoding} ? $server->{encoding} : "iso-5426" ) }, @$hits ];
     }
 
     store_fd {

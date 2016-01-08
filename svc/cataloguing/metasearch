@@ -63,10 +63,11 @@ my @hits;
 
 foreach my $hit ( $searcher->results( $offset, $page_size ) ) {
     push @hits, {
+        %$hit,
         server => $hit->{server}->{id},
         index => $hit->{index},
         record => $hit->{record}->as_xml_record(),
-        metadata => $hit->{metadata}
+        metadata => $hit->{metadata},
     };
 }
 
