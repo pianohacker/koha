@@ -188,7 +188,7 @@ sub GetBasket {
 =head3 NewBasket
 
   $basket = &NewBasket( $booksellerid, $authorizedby, $basketname, 
-      $basketnote, $basketbooksellernote, $basketcontractnumber, $deliveryplace, $billingplace );
+      $basketnote, $basketbooksellernote, $basketcontractnumber, $deliveryplace, $billingplace, $is_standing );
 
 Create a new basket in aqbasket table
 
@@ -207,7 +207,7 @@ The other parameters are optional, see ModBasketHeader for more info on them.
 sub NewBasket {
     my ( $booksellerid, $authorisedby, $basketname, $basketnote,
         $basketbooksellernote, $basketcontractnumber, $deliveryplace,
-        $billingplace ) = @_;
+        $billingplace, $is_standing ) = @_;
     my $dbh = C4::Context->dbh;
     my $query =
         'INSERT INTO aqbasket (creationdate,booksellerid,authorisedby) '
@@ -219,7 +219,7 @@ sub NewBasket {
     $basketnote           ||= q{};
     $basketbooksellernote ||= q{};
     ModBasketHeader( $basket, $basketname, $basketnote, $basketbooksellernote,
-        $basketcontractnumber, $booksellerid, $deliveryplace, $billingplace );
+        $basketcontractnumber, $booksellerid, $deliveryplace, $billingplace, $is_standing );
     return $basket;
 }
 
@@ -532,21 +532,23 @@ Modifies a basket's header.
 
 =item C<$billingplace> is the "billingplace" field in the aqbasket table.
 
+=item C<$is_standing> is the "is_standing" field in the aqbasket table.
+
 =back
 
 =cut
 
 sub ModBasketHeader {
-    my ($basketno, $basketname, $note, $booksellernote, $contractnumber, $booksellerid, $deliveryplace, $billingplace) = @_;
+    my ($basketno, $basketname, $note, $booksellernote, $contractnumber, $booksellerid, $deliveryplace, $billingplace, $is_standing) = @_;
     my $query = qq{
         UPDATE aqbasket
-        SET basketname=?, note=?, booksellernote=?, booksellerid=?, deliveryplace=?, billingplace=?
+        SET basketname=?, note=?, booksellernote=?, booksellerid=?, deliveryplace=?, billingplace=?, is_standing=?
         WHERE basketno=?
     };
 
     my $dbh = C4::Context->dbh;
     my $sth = $dbh->prepare($query);
-    $sth->execute($basketname, $note, $booksellernote, $booksellerid, $deliveryplace, $billingplace, $basketno);
+    $sth->execute($basketname, $note, $booksellernote, $booksellerid, $deliveryplace, $billingplace, $is_standing, $basketno);
 
     if ( $contractnumber ) {
         my $query2 ="UPDATE aqbasket SET contractnumber=? WHERE basketno=?";
@@ -1386,7 +1388,7 @@ sub ModReceiveOrder {
     }
 
     my $result_set = $dbh->selectall_arrayref(
-q{SELECT * FROM aqorders WHERE biblionumber=? AND aqorders.ordernumber=?},
+q{SELECT *, aqbasket.is_standing FROM aqorders LEFT JOIN aqbasket USING (basketno) WHERE biblionumber=? AND aqorders.ordernumber=?},
         { Slice => {} }, $biblionumber, $ordernumber
     );
 
@@ -1394,7 +1396,7 @@ q{SELECT * FROM aqorders WHERE biblionumber=? AND aqorders.ordernumber=?},
     my $order = $result_set->[0];
 
     my $new_ordernumber = $ordernumber;
-    if ( $order->{quantity} > $quantrec ) {
+    if ( $order->{is_standing} || $order->{quantity} > $quantrec ) {
         # Split order line in two parts: the first is the original order line
         # without received items (the quantity is decreased),
         # the second part is a new order line with quantity=quantityrec
@@ -1409,7 +1411,7 @@ q{SELECT * FROM aqorders WHERE biblionumber=? AND aqorders.ordernumber=?},
         my $sth = $dbh->prepare($query);
 
         $sth->execute(
-            $order->{quantity} - $quantrec,
+            ( $order->{quantity} < $quantrec ? 0 : ( $order->{quantity} - $quantrec ) ),
             ( defined $order_internalnote ? $order_internalnote : () ),
             ( defined $order_vendornote ? $order_vendornote : () ),
             $ordernumber
@@ -1685,10 +1687,20 @@ sub SearchOrders {
     };
 
     if ( $pending or $ordered ) {
-        $query .= q{ AND (quantity > quantityreceived OR quantityreceived is NULL)};
-    }
-    if ( $ordered ) {
-        $query .= q{ AND aqorders.orderstatus IN ( "ordered", "partial" )};
+        $query .= q{
+            AND (
+                ( aqbasket.is_standing AND aqorders.orderstatus IN ( "new", "ordered", "partial" ) )
+                OR (
+                    ( quantity > quantityreceived OR quantityreceived is NULL )
+        };
+
+        if ( $ordered ) {
+            $query .= q{ AND aqorders.orderstatus IN ( "ordered", "partial" )};
+        }
+        $query .= q{
+                )
+            )
+        };
     }
 
     my $userenv = C4::Context->userenv;
