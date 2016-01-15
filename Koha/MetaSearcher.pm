@@ -268,6 +268,7 @@ sub _batch_db_query_from_terms {
                 push @term, { $db_column => [ _db_query_get_match_conditions( $index, $value ) ] };
             }
 
+            # These are implicitly joined with OR because the arrayref doesn't start with -and
             push @db_terms, \@term;
         } elsif ( $_batch_db_mapping->{$index} ) {
             push @db_terms, $_batch_db_mapping->{$index} => [ -and => _db_query_get_match_conditions( $index, $value ) ];
