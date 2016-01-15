@@ -340,7 +340,6 @@ sub _start_worker {
 
     if ( $server->{type} eq 'batch' ) {
         my $schema = Koha::Database->new->schema;
-        $schema->storage->debug(1);
 
         $hits = [ $schema->resultset('ImportRecord')->search(
             _batch_db_query_from_terms( $server->{extra}, $terms ),
