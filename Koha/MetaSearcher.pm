@@ -272,6 +272,9 @@ sub _batch_db_query_from_terms {
             push @db_terms, \@term;
         } elsif ( $_batch_db_mapping->{$index} ) {
             push @db_terms, $_batch_db_mapping->{$index} => [ -and => _db_query_get_match_conditions( $index, $value ) ];
+        } else {
+            # No such index, we should fail
+            return undef;
         }
     }
 
@@ -333,37 +336,45 @@ sub _start_worker {
     };
     if ($@) {
         store_fd {
-            error => $connection ? $connection->exception() : $@,
+            error => $connection ? $connection->exception()->message() : $@,
             server => $server,
         }, $writefh;
         exit;
     }
 
+    my $error;
     if ( $server->{type} eq 'batch' ) {
         my $schema = Koha::Database->new->schema;
+        my $db_query = _batch_db_query_from_terms( $server->{extra}, $terms );
 
-        $hits = [ $schema->resultset('ImportRecord')->search(
-            _batch_db_query_from_terms( $server->{extra}, $terms ),
-            {
-                columns => [ 'import_record_id', { record => 'marc' } ],
-                join => [ 'import_biblios' ],
-                offset => $self->{offset},
-                result_class => 'DBIx::Class::ResultClass::HashRefInflator',
-                rows => $self->{fetch},
-            }
-        )->all ];
+        if ( $db_query ) {
+            $hits = [ $schema->resultset('ImportRecord')->search(
+                $db_query,
+                {
+                    columns => [ 'import_record_id', { record => 'marc' } ],
+                    join => [ 'import_biblios' ],
+                    offset => $self->{offset},
+                    result_class => 'DBIx::Class::ResultClass::HashRefInflator',
+                    rows => $self->{fetch},
+                }
+            )->all ];
 
-        $num_hits = $num_fetched = scalar @$hits;
+            $num_hits = $num_fetched = scalar @$hits;
+        } else {
+            $error = "Invalid search";
+        }
     } else {
         $num_hits = $results->size;
         $num_fetched = ( $self->{offset} + $self->{fetch} ) < $num_hits ? $self->{fetch} : $num_hits;
 
         $hits = [ map +{ record => $_->raw() }, @{ $results->records( $self->{offset}, $num_fetched, 1 ) } ];
+
+        $error = $connection->exception()->message() if ( !@$hits && $connection && $connection->exception() );
     }
 
-    if ( !@$hits && $connection && $connection->exception() ) {
+    if ( $error ) {
         store_fd {
-            error => $connection->exception(),
+            error => $error,
             server => $server,
         }, $writefh;
         exit;

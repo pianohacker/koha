@@ -48,7 +48,7 @@ my $searcher = Koha::MetaSearcher->new( {
     on_error => sub {
         my ( $server, $exception ) = @_;
 
-        $server_errors->{ $server->{id} } = $exception->message;
+        $server_errors->{ $server->{id} } = $exception;
     },
 } );
 
