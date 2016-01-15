@@ -1663,11 +1663,9 @@ sub _update_biblio_fields {
 
     my ($title, $author, $isbn, $issn) = _parse_biblio_fields($marc_record);
     my $dbh = C4::Context->dbh;
-    # FIXME no controlnumber, originalsource
+    # FIXME no originalsource
     # FIXME 2 - should regularize normalization of ISBN wherever it is done
-    $isbn =~ s/\(.*$//;
-    $isbn =~ tr/ -_//;
-    $isbn = uc $isbn;
+    $isbn = C4::Koha::GetNormalizedISBN($isbn);
     my $sth = $dbh->prepare("UPDATE import_biblios SET title = ?, author = ?, isbn = ?, issn = ?
                              WHERE  import_record_id = ?");
     $sth->execute($title, $author, $isbn, $issn, $import_record_id);

@@ -22,6 +22,7 @@ use Modern::Perl;
 use base 'Class::Accessor';
 
 use C4::Charset qw( MarcToUTF8Record );
+use C4::Koha qw(); # Purely for GetNormalizedISBN
 use C4::Search qw(); # Purely for new_record_from_zebra
 use DBIx::Class::ResultClass::HashRefInflator;
 use IO::Select;
@@ -239,8 +240,16 @@ sub _db_query_get_match_conditions {
     if ( $value =~ /\*/ ) {
         $value =~ s/\*/%/;
         return { -like => $value };
+    } elsif ( $index eq 'isbn' ) {
+        return C4::Koha::GetNormalizedISBN($value) || $value;
     } elsif ( $_batch_db_text_columns->{$index} ) {
-        return map +{ -regexp => '[[:<:]]' . $_ . '[[:>:]]' }, split( /\s+/, $value );
+        my $stripped_value = $value;
+        $stripped_value =~ s/[^\w ]//g;
+        $stripped_value =~ s/^ +| +$//g;
+
+        return $value if ( !$stripped_value );
+
+        return map +{ -regexp => '[[:<:]]' . $_ . '[[:>:]]' }, split( /\s+/, $stripped_value );
     } else {
         return $value;
     }
