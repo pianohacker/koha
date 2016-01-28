@@ -110,6 +110,7 @@ unless ( $results and @$results) {
 
 # prepare the form for receiving
 my $order = $results->[0];
+my $basket = Koha::Acquisition::Order->find($ordernumber)->basket;
 
 # Check if ACQ framework exists
 my $acq_fw = GetMarcStructure(1, 'ACQ');
@@ -117,7 +118,7 @@ unless($acq_fw) {
     $template->param('NoACQframework' => 1);
 }
 
-my $AcqCreateItem = C4::Context->preference('AcqCreateItem');
+my $AcqCreateItem = $basket->effective_create_items;
 if ($AcqCreateItem eq 'receiving') {
     $template->param(
         AcqCreateItemReceiving => 1,

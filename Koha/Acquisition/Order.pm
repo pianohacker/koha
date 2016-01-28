@@ -2,6 +2,7 @@ package Koha::Acquisition::Order;
 
 use Modern::Perl;
 
+use Koha::Acquisition::Baskets;
 use Koha::Database;
 use Koha::DateUtils qw( dt_from_string output_pref );
 
@@ -66,6 +67,11 @@ sub add_item {
     my $schema = Koha::Database->new->schema;
     my $rs = $schema->resultset('AqordersItem');
     $rs->create({ ordernumber => $self->{ordernumber}, itemnumber => $itemnumber });
+}
+
+sub basket {
+    my ( $self )  = @_;
+    return Koha::Acquisition::Baskets->find( $self->{basketno} );
 }
 
 # TODO Move code from ModItemOrder

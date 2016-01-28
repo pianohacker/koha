@@ -127,7 +127,7 @@ function check(form) {
 	    </td>
 	    <td>
 	        
-        [% IF Koha.Preference('AcqCreateItem') == 'ordering' %]
+        [% IF basket.effective_create_items == 'ordering' %]
             [% uncertainpriceorder.quantity %]
             <input type="hidden" name="qty[% uncertainpriceorder.ordernumber %]" value="[% uncertainpriceorder.quantity %]" />
         [% ELSE %]

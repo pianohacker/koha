@@ -43,6 +43,7 @@ use C4::Branch;         # GetBranches
 use C4::Members;
 
 use Koha::Number::Price;
+use Koha::Acquisition::Baskets;
 use Koha::Acquisition::Order;
 use Koha::Acquisition::Bookseller;
 
@@ -76,6 +77,7 @@ if ($cgiparams->{'import_batch_id'} && $op eq ""){
 if (! $cgiparams->{'basketno'}){
     die "Basketnumber required to order from iso2709 file import";
 }
+my $basket = Koha::Acquisition::Baskets->find( $cgiparams->{basketno} );
 
 #
 # 1st step = choose the file to import into acquisition
@@ -126,7 +128,7 @@ if ($op eq ""){
                      "allmatch" => $allmatch,
                      );
     import_biblios_list($template, $cgiparams->{'import_batch_id'});
-    if ( C4::Context->preference('AcqCreateItem') eq 'ordering' ) {
+    if ( $basket->effective_create_items eq 'ordering' ) {
         # prepare empty item form
         my $cell = PrepareItemrecordDisplay( '', '', '', 'ACQ' );
 
@@ -266,7 +268,7 @@ if ($op eq ""){
         # 4th, add items if applicable
         # parse the item sent by the form, and create an item just for the import_record_id we are dealing with
         # this is not optimised, but it's working !
-        if ( C4::Context->preference('AcqCreateItem') eq 'ordering' ) {
+        if ( $basket->effective_create_items eq 'ordering' ) {
             my @tags         = $input->param('tag');
             my @subfields    = $input->param('subfield');
             my @field_values = $input->param('field_value');

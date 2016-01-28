@@ -67,6 +67,7 @@ use C4::Output;
 use C4::Suggestions;
 use C4::Reserves qw/GetReservesFromBiblionumber/;
 
+use Koha::Acquisition::Baskets;
 use Koha::Acquisition::Bookseller;
 use Koha::DateUtils;
 
@@ -265,6 +266,7 @@ unless( defined $invoice->{closedate} ) {
         $line{left_holds_on_order}  = 1 if $line{left_holds}==1 && ($line{items} == 0 || $itemholds );
         $line{holds}                = $holds;
         $line{holds_on_order}       = $itemholds?$itemholds:$holds if $line{left_holds_on_order};
+        $line{basket}               = Koha::Acquisition::Baskets->find( $line{basketno} );
 
         my $budget_name = GetBudgetName( $line{budget_id} );
         $line{budget_name} = $budget_name;

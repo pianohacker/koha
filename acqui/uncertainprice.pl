@@ -54,6 +54,7 @@ use C4::Bookseller::Contact;
 use C4::Acquisition qw/SearchOrders GetOrder ModOrder/;
 use C4::Biblio qw/GetBiblioData/;
 
+use Koha::Acquisition::Baskets;
 use Koha::Acquisition::Bookseller;
 
 my $input=new CGI;
@@ -72,6 +73,8 @@ my $basketno     = $input->param('basketno');
 my $op = $input->param('op');
 my $owner = $input->param('owner') || 0 ; # flag to see only "my" orders, or everyone orders
 my $bookseller = Koha::Acquisition::Bookseller->fetch({ id => $booksellerid });
+
+$template->param( basket => Koha::Acquisition::Baskets->find($basketno) );
 
 #show all orders that have uncertain price for the bookseller
 my $pendingorders = SearchOrders({

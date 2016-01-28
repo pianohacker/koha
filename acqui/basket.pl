@@ -357,6 +357,7 @@ if ( $op eq 'delete_confirm' ) {
     }
 
     $template->param(
+        basket               => $basket,
         basketno             => $basketno,
         basket               => $basket,
         basketname           => $basket->{'basketname'},

@@ -129,6 +129,7 @@ if(!$basketno) {
 }
 
 our $basket = GetBasket($basketno);
+my $basketobj = Koha::Acquisition::Baskets->find( $basketno );
 $booksellerid = $basket->{booksellerid} unless $booksellerid;
 my $bookseller = Koha::Acquisition::Bookseller->fetch({ id => $booksellerid });
 
@@ -291,7 +292,7 @@ if ($close) {
 $template->param( sort1 => $data->{'sort1'} );
 $template->param( sort2 => $data->{'sort2'} );
 
-if (C4::Context->preference('AcqCreateItem') eq 'ordering' && !$ordernumber) {
+if ($basketobj->effective_create_items eq 'ordering' && !$ordernumber) {
     # Check if ACQ framework exists
     my $marc = GetMarcStructure(1, 'ACQ');
     unless($marc) {
@@ -404,7 +405,7 @@ $template->param(
     barcode_subfield => $barcode_subfield,
     import_batch_id  => $import_batch_id,
     subscriptionid   => $subscriptionid,
-    acqcreate        => C4::Context->preference("AcqCreateItem") eq "ordering" ? 1 : "",
+    acqcreate        => $basketobj->effective_create_items eq "ordering" ? 1 : "",
     users_ids        => join(':', @order_user_ids),
     users            => \@order_users,
     (uc(C4::Context->preference("marcflavour"))) => 1
