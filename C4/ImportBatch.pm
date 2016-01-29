@@ -1644,15 +1644,11 @@ sub _add_auth_fields {
 sub _add_biblio_fields {
     my ($import_record_id, $marc_record) = @_;
 
-    my $controlnumber;
-    if ($marc_record->field('001')) {
-        $controlnumber = $marc_record->field('001')->data();
-    }
-    my ($title, $author, $isbn, $issn) = _parse_biblio_fields($marc_record);
+    my ($title, $author, $isbn, $issn, $controlnumber, $lccn, $pubdate) = _parse_biblio_fields($marc_record);
     my $dbh = C4::Context->dbh;
     # FIXME no originalsource
     $isbn = C4::Koha::GetNormalizedISBN($isbn);
-    my $sth = $dbh->prepare("INSERT INTO import_biblios (import_record_id, title, author, isbn, issn, control_number) VALUES (?, ?, ?, ?, ?, ?)");
+    my $sth = $dbh->prepare("INSERT INTO import_biblios (import_record_id, title, author, isbn, issn, control_number, lccn, pubdate) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
     $sth->execute($import_record_id, $title, $author, $isbn, $issn, $controlnumber);
     $sth->finish();
                 
@@ -1661,14 +1657,14 @@ sub _add_biblio_fields {
 sub _update_biblio_fields {
     my ($import_record_id, $marc_record) = @_;
 
-    my ($title, $author, $isbn, $issn) = _parse_biblio_fields($marc_record);
+    my ($title, $author, $isbn, $issn, $controlnumber, $lccn, $pubdate) = _parse_biblio_fields($marc_record);
     my $dbh = C4::Context->dbh;
     # FIXME no originalsource
     # FIXME 2 - should regularize normalization of ISBN wherever it is done
     $isbn = C4::Koha::GetNormalizedISBN($isbn);
-    my $sth = $dbh->prepare("UPDATE import_biblios SET title = ?, author = ?, isbn = ?, issn = ?
+    my $sth = $dbh->prepare("UPDATE import_biblios SET title = ?, author = ?, isbn = ?, issn = ?, control_number = ?, lccn = ?, pubdate = ?
                              WHERE  import_record_id = ?");
-    $sth->execute($title, $author, $isbn, $issn, $import_record_id);
+    $sth->execute($title, $author, $isbn, $issn, $controlnumber, $lccn, $pubdate$import_record_id);
     $sth->finish();
 }
 
@@ -1677,7 +1673,15 @@ sub _parse_biblio_fields {
 
     my $dbh = C4::Context->dbh;
     my $bibliofields = TransformMarcToKoha($marc_record, '');
-    return ($bibliofields->{'title'}, $bibliofields->{'author'}, $bibliofields->{'isbn'}, $bibliofields->{'issn'});
+    my $controlnumber;
+    if ($marc_record->field('001')) {
+        $controlnumber = $marc_record->field('001')->data();
+    }
+    my $pubdate;
+    if ($marc_record->field('008')) {
+        $pubdate = substr( $marc_record->field('008')->data(), 7, 4 );
+    }
+    return ($bibliofields->{'title'}, $bibliofields->{'author'}, $bibliofields->{'isbn'}, $bibliofields->{'issn'}, $contralnumber, $bibliofields->{'lccn'}, $pubdate);
 
 }
 

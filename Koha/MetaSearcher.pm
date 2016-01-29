@@ -206,6 +206,8 @@ our $_batch_db_mapping = {
     issn => 'import_biblios.issn',
     'local-number' => 'import_biblios.control_number',
     title => 'import_biblios.title',
+    lccn => 'import_biblios.lccn',
+    date => 'import_biblios.pubdate',
 };
 
 our $_batch_db_text_columns = {
