@@ -37,6 +37,8 @@ use C4::Items;
 use C4::Suggestions;
 use Date::Calc qw/Add_Delta_Days/;
 
+use Koha::AdditionalField;
+
 =head1 NAME
 
 basket.pl
@@ -400,6 +402,11 @@ if ( $op eq 'delete_confirm' ) {
         unclosable           => @orders ? $basket->{is_standing} : 1,
         has_budgets          => $has_budgets,
         duplinbatch          => $duplinbatch,
+        available_additional_fields => Koha::AdditionalField->all( { tablename => 'aqbasket' } ),
+        additional_field_values => Koha::AdditionalField->fetch_all_values( {
+            tablename => 'aqbasket',
+            record_id => $basketno,
+        } )->{$basketno},
     );
 }
 

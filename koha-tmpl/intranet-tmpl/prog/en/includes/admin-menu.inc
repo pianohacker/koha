@@ -72,6 +72,7 @@
     <li><a href="/cgi-bin/koha/admin/didyoumean.pl">Did you mean?</a></li>
     <li><a href="/cgi-bin/koha/admin/columns_settings.pl">Columns settings</a></li>
     <li><a href="/cgi-bin/koha/admin/audio_alerts.pl">Audio alerts</a></li>
+    <li><a href="/cgi-bin/koha/admin/additional-fields.pl">Additional fields</a></li>
 </ul>
 </div>
 </div>

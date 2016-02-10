@@ -58,6 +58,7 @@ use C4::Acquisition;
 use C4::Debug;
 use C4::Branch;
 use C4::Koha;
+use Koha::AdditionalField;
 use Koha::DateUtils;
 
 my $input = new CGI;
@@ -95,6 +96,12 @@ my ( $template, $loggedinuser, $cookie ) = get_template_and_user(
     }
 );
 
+$template->param( available_additional_fields => scalar Koha::AdditionalField->all( { tablename => 'aqbasket', searchable => 1 } ) );
+my $additional_field_filters = Koha::AdditionalField->get_filters_from_query( {
+    tablename => 'aqbasket',
+    query => $input,
+} );
+
 my $order_loop;
 # If we're supplied any value then we do a search. Otherwise we don't.
 if ($do_search) {
@@ -114,6 +121,7 @@ if ($do_search) {
         ordernumber => $ordernumber,
         search_children_too => $search_children_too,
         created_by => \@created_by,
+        additional_fields => $additional_field_filters,
     );
 }
 
@@ -146,6 +154,7 @@ $template->param(
     budget_id               => $budget,
     bp_loop                 => $bp_loop,
     search_done             => $do_search,
+    additional_field_filters => Koha::AdditionalField->get_filters_as_values( $additional_field_filters ),
     debug                   => $debug || $input->param('debug') || 0,
     uc(C4::Context->preference("marcflavour")) => 1
 );

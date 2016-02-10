@@ -152,14 +152,7 @@ $template->param(branchloop => $branchloop,
     locations_loop=>$locations_loop,
 );
 
-
-my $additional_fields = Koha::AdditionalField->all( { tablename => 'subscription' } );
-for my $field ( @$additional_fields ) {
-    if ( $field->{authorised_value_category} ) {
-        $field->{authorised_value_choices} = GetAuthorisedValues( $field->{authorised_value_category} );
-    }
-}
-$template->param( additional_fields_for_subscription => $additional_fields );
+$template->param( additional_fields_for_subscription => scalar Koha::AdditionalField->all( { tablename => 'subscription' } ) );
 
 # prepare template variables common to all $op conditions:
 if ($op!~/^mod/) {
@@ -346,8 +339,12 @@ sub redirect_add_subscription {
         $skip_serialseq
     );
 
-    my $additional_fields = Koha::AdditionalField->all( { tablename => 'subscription' } );
-    insert_additional_fields( $additional_fields, $biblionumber, $subscriptionid );
+    Koha::AdditionalField->update_fields_from_query( {
+        tablename => 'subscription',
+        record_id => $subscriptionid,
+        query => $query,
+        marc_record => GetMarcBiblio( $biblionumber, 1 )
+    } );
 
     print $query->redirect("/cgi-bin/koha/serials/subscription-detail.pl?subscriptionid=$subscriptionid");
     return;
@@ -428,32 +425,13 @@ sub redirect_mod_subscription {
         $skip_serialseq
     );
 
-    my $additional_fields = Koha::AdditionalField->all( { tablename => 'subscription' } );
-    insert_additional_fields( $additional_fields, $biblionumber, $subscriptionid );
+    Koha::AdditionalField->update_fields_from_query( {
+        tablename => 'subscription',
+        record_id => $subscriptionid,
+        query => $query,
+        marc_record => GetMarcBiblio( $biblionumber, 1 )
+    } );
 
     print $query->redirect("/cgi-bin/koha/serials/subscription-detail.pl?subscriptionid=$subscriptionid");
     return;
-}
-
-sub insert_additional_fields {
-    my ( $additional_fields, $biblionumber, $subscriptionid ) = @_;
-    my $record = GetMarcBiblio( $biblionumber, 1 );
-    for my $field ( @$additional_fields ) {
-        my $af = Koha::AdditionalField->new({ id => $field->{id} })->fetch;
-        if ( $af->{marcfield} ) {
-            my ( $field, $subfield ) = split /\$/, $af->{marcfield};
-            $af->{values} = undef;
-            if ( $field and $subfield ) {
-                my $value = $record->subfield( $field, $subfield );
-                $af->{values} = {
-                    $subscriptionid => $value
-                };
-            }
-        } else {
-            $af->{values} = {
-                $subscriptionid => $query->param('additional_field_' . $field->{id})
-            } if defined $query->param('additional_field_' . $field->{id});
-        }
-        $af->insert_values;
-    }
 }

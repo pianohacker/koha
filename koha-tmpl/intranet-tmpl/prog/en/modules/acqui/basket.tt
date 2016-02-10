@@ -317,7 +317,7 @@
                     </li>
                 [% END %]
                 <li><span class="label">Is standing order basket:</span> [% IF is_standing %]Yes[% ELSE %]No[% END %]</li>
-
+                [% INCLUDE 'additional-fields-display.inc' available=available_additional_fields values=additional_field_values %]
 
                 </ol>
                 </div>
