@@ -1664,7 +1664,7 @@ sub _update_biblio_fields {
     $isbn = C4::Koha::GetNormalizedISBN($isbn);
     my $sth = $dbh->prepare("UPDATE import_biblios SET title = ?, author = ?, isbn = ?, issn = ?, control_number = ?, lccn = ?, pubdate = ?
                              WHERE  import_record_id = ?");
-    $sth->execute($title, $author, $isbn, $issn, $controlnumber, $lccn, $pubdate$import_record_id);
+    $sth->execute($title, $author, $isbn, $issn, $controlnumber, $lccn, $pubdate, $import_record_id);
     $sth->finish();
 }
 
@@ -1681,7 +1681,7 @@ sub _parse_biblio_fields {
     if ($marc_record->field('008')) {
         $pubdate = substr( $marc_record->field('008')->data(), 7, 4 );
     }
-    return ($bibliofields->{'title'}, $bibliofields->{'author'}, $bibliofields->{'isbn'}, $bibliofields->{'issn'}, $contralnumber, $bibliofields->{'lccn'}, $pubdate);
+    return ($bibliofields->{'title'}, $bibliofields->{'author'}, $bibliofields->{'isbn'}, $bibliofields->{'issn'}, $controlnumber, $bibliofields->{'lccn'}, $pubdate);
 
 }
 
