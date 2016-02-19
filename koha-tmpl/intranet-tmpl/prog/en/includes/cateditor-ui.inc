@@ -689,13 +689,6 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
                     if ( saved_val != null ) setSaveTargetChecked( target_id, saved_val );
                 } );
                 break;
-            case 'selected_search_targets':
-                $.each( z3950Servers, function( server_id, server ) {
-                    var saved_val = Preferences.user.selected_search_targets[server_id];
-
-                    if ( saved_val != null ) server.checked = saved_val;
-                } );
-                break;
         }
     }
 
