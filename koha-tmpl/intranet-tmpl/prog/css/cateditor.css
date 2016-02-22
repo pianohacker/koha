@@ -316,6 +316,10 @@ body {
     width: 14em;
 }
 
+#advanced-search-fields .marc-subfield-input {
+    width: 4ex;
+}
+
 .icon-loading {
     display: inline-block;
     height: 16px;

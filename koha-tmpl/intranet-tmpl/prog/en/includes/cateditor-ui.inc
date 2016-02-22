@@ -449,10 +449,18 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
         var terms = {};
 
         $('#advanced-search-ui .search-box').each( function() {
-            if ( !this.value ) return;
+            if ( !this.value || !$(this).data('qualifier') ) return;
 
             terms[ $(this).data('qualifier') ] = this.value;
         } );
+
+        var marc_subfield = $('#advanced-search-by-marc-subfield').val();
+        var marc_term = $('#advanced-search-by-marc').val();
+
+        // This mess (also used as a pattern="" in the form) allows 00X or XXXx).
+        if ( /^(00[0-9A-Za-z]|([1-9A-Za-z][0-9A-Za-z]{2}|0[1-9A-Za-z][0-9A-Za-z])[0-9A-Za-z])$/.test(marc_subfield) && marc_term ) {
+            terms[ 'marc-' + marc_subfield ] = marc_term;
+        }
 
         if ( $.isEmptyObject(terms) ) return;
 
@@ -676,11 +684,16 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
                 // Macros loaded on first show of modal
                 break;
             case 'selected_search_targets':
+                var batch_selected_for_search = false;
                 $.each( z3950Servers, function( server_id, server ) {
                     var saved_val = Preferences.user.selected_search_targets[server_id];
 
                     if ( saved_val != null ) server.checked = saved_val;
+
+                    if ( server.checked && /^batch:/.test(server_id) ) batch_selected_for_search = true;
                 } );
+
+                $('#arbitrary-marc-search').toggle( batch_selected_for_search );
                 break;
             case 'selected_save_targets':
                 $.each( state.saveTargets, function( target_id, target ) {
@@ -696,7 +709,7 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
         function _addHandler( sel, event, handler ) {
             $( sel ).on( event, function (e) {
                 e.preventDefault();
-                handler( e, Preferences.user[pref] );
+                handler.call( this, e, Preferences.user[pref] );
                 Preferences.Save( [% USER_INFO.borrowernumber %] );
                 showPreference(pref);
             } );
@@ -706,7 +719,7 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
             $( document ).on( event, sel, function (e) {
                 e.preventDefault();
                 handler.call( this, e, Preferences.user[pref] );
-                Preferences.Save( [% USER_INFO.0.borrowernumber %] );
+                Preferences.Save( [% USER_INFO.borrowernumber %] );
                 showPreference(pref);
             } );
         }
@@ -733,17 +746,15 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
                 } );
                 break;
             case 'selected_save_targets':
-                $( document ).on( 'change', 'input.save-toggle-target', function() {
+                _addLiveHandler( 'input.save-toggle-target', 'change', function() {
                     var target_id = $( this ).data('target-id');
                     Preferences.user.selected_save_targets[target_id] = this.checked;
-                    Preferences.Save( [% USER_INFO.0.borrowernumber %] );
                 } );
                 break;
             case 'selected_search_targets':
-                $( document ).on( 'change', 'input.search-toggle-server', function() {
+                _addLiveHandler( 'input.search-toggle-server', 'change', function() {
                     var server_id = $( this ).closest('li').data('server-id');
                     Preferences.user.selected_search_targets[server_id] = this.checked;
-                    Preferences.Save( [% USER_INFO.borrowernumber %] );
                 } );
                 break;
         }

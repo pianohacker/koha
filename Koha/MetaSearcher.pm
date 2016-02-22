@@ -222,6 +222,8 @@ sub _pqf_query_from_terms {
     my $query;
 
     while ( my ( $index, $value ) = each %$terms ) {
+        next unless ( $_pqf_mapping->{$index} );
+
         $value =~ s/"/\\"/;
 
         my $term = '@attr ' . $_pqf_mapping->{$index} . ' "' . $value . '"';
@@ -272,6 +274,23 @@ sub _batch_db_query_from_terms {
 
             # These are implicitly joined with OR because the arrayref doesn't start with -and
             push @db_terms, \@term;
+        } elsif ( $index =~ /^marc-(\w{3})(\w)?$/ ) {
+            my $column;
+
+            # Scalar reference for literal SQL
+            # Yes, this is MySQL-specific enough to be in danger of being acquired
+            if ( defined $2 ) {
+                $column = \( q{ExtractValue(import_records.marcxml, '//datafield[@tag="} . $1 . q{"]/subfield[@code="} . $2 . q{"])} );
+            } else {
+                $column = \( q{ExtractValue(import_records.marcxml, '//controlfield[@tag="} . $1 . q{"])} );
+            }
+
+            if ( $value =~ /\*/ ) {
+                $value =~ s/\*/%/;
+                $value = { -like => $value };
+            }
+
+            push @db_terms, $column => $value;
         } elsif ( $_batch_db_mapping->{$index} ) {
             push @db_terms, $_batch_db_mapping->{$index} => [ -and => _db_query_get_match_conditions( $index, $value ) ];
         } else {

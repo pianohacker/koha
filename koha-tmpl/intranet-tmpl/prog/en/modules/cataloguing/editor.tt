@@ -173,6 +173,11 @@
                 <label for="advanced-search-by-publication-date">Publication date:</label>
                 <input class="search-box" data-qualifier="date" id="advanced-search-by-publication-date" />
             </li>
+            <li id="arbitrary-marc-search" style="display-none">
+                <label for="advanced-search-by-marc">MARC field/subfield (XXXx):</label>
+                <input class="marc-subfield-input" id="advanced-search-by-marc-subfield" pattern="00[0-9A-Za-z]|([1-9A-Za-z][0-9A-Za-z]{2}|0[1-9A-Za-z][0-9A-Za-z])[0-9A-Za-z]" />
+                <input class="search-box" id="advanced-search-by-marc" />
+            </li>
         </ul>
     </div>
 </form>
