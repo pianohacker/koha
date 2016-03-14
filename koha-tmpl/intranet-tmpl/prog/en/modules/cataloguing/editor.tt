@@ -259,7 +259,18 @@
             <button class="btn btn-small" type="submit" id="create-batch"><i class="icon-plus"></i> <span>Create new batch...</span></button>
             <button class="btn btn-small" type="submit" id="manage-batches"><i class="icon-list"></i> <span>Manage import batches...</span></button>
         </div>
-        <ul id="batches-list"></ul>
+        <table id="batches-table">
+            <thead>
+                <tr>
+                    <th>Batch</th>
+                    <th>Searchable?</th>
+                    <th>Save target?</th>
+                    <th>&nbsp;</th>
+                </tr>
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
     </div>
     <div class="span3">
     </div>

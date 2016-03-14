@@ -30,6 +30,7 @@ define( function() {
             Preferences.user = $.extend( {
                 // Preference defaults
                 enabledBatches: {},
+                enabledSearchBatches: {},
                 fieldWidgets: true,
                 font: 'monospace',
                 fontSize: '1em',

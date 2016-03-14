@@ -666,8 +666,13 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
         switch (pref) {
             case 'enabledBatches':
                 $.each( editable_batches, function( batch_id, batch ) {
-                    $( '#batches-list li[data-batch-id=' + batch_id + '] input' )[0].checked = Preferences.user.enabledBatches[batch_id];
+                    $( '#batches-table tr[data-batch-id=' + batch_id + '] input.is-save-target' )[0].checked = Preferences.user.enabledBatches[batch_id];
                     setSaveTargetEnabled( 'batch:' + batch_id + '/', Preferences.user.enabledBatches[batch_id] || false );
+                } );
+            case 'enabledSearchBatches':
+                $.each( editable_batches, function( batch_id, batch ) {
+                    $( '#batches-table tr[data-batch-id=' + batch_id + '] input.is-searchable' )[0].checked = Preferences.user.enabledSearchBatches[batch_id];
+                    setSearchTargetEnabled( 'batch:' + batch_id + '/', Preferences.user.enabledSearchBatches[batch_id] || false );
                 } );
             case 'fieldWidgets':
                 $( '#set-field-widgets' ).text( value ? _("Show fields verbatim") : _("Show helpers for fixed and coded fields") );
@@ -726,8 +731,8 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
 
         switch (pref) {
             case 'enabledBatches':
-                _addLiveHandler( '#batches-list input', 'change', function() {
-                    Preferences.user.enabledBatches[ $( this ).closest('li').data('batch-id') ] = this.checked;
+                _addLiveHandler( '#batches-table input.is-save-target', 'change', function() {
+                    Preferences.user.enabledBatches[ $( this ).closest('tr').data('batch-id') ] = this.checked;
                 } );
                 break;
             case 'fieldWidgets':
@@ -882,13 +887,15 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
         };
 
         // Build batch UI
-        var $batch_entry = $( '<li data-batch-id="' + batch.batch_id + '"><input type="checkbox" />' + batch.name + '</li>' );
+        var $batch_entry = $( '<tr data-batch-id="' + batch.batch_id + '"><td>' + batch.name + '</td><td><input type="checkbox" class="is-searchable" /></td><td><input type="checkbox" class="is-save-target" /></td></tr>' );
 
-        var $batch_buttons = $('<span class="batch-buttons"></span>').appendTo($batch_entry);
+        var $batch_buttons = $('<td class="batch-buttons"></td>').appendTo($batch_entry);
         var $export_button = $( '<button>' + _("Export...") + '</button>' ).appendTo($batch_buttons).click( function() {
-            $('#batches-list .batch-export').hide();
+            $('#batches-table .batch-export').hide();
             $export_screen.show();
         } );
+
+        timestamp_pattern = '\\d{4}(0\\d|1[012])([012]\\d|3[01])(([01]\\d|2[0-3])[0-5]\\d[0-5]\\d)?'
 
         var $export_screen = $(
             '<form class="batch-export form-horizontal" style="display: none">'
@@ -897,14 +904,14 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
             + '<div class="controls"><input class="batch-control-number-start" type="text"> - <input class="batch-control-number-end" type="text"></div>'
             + '</div>'
             + '<label class="control-label">' + _("Timestamp range (YYYYMMDD or YYYMMDDHHMMSS):") + '</label>'
-            + '<div class="controls"><input class="batch-timestamp-start" type="text"> - <input class="batch-timestamp-end" type="text"></div>'
+            + '<div class="controls"><input class="batch-timestamp-start" type="text" pattern="' + timestamp_pattern + '"> - <input class="batch-timestamp-end" type="text" pattern="' + timestamp_pattern + '"></div>'
             + '</div>'
             + '<div class="control-group">'
             + '<div class="controls"><button class="batch-export-start">' + _("Start export") + '</div>'
             + '</form>'
-        ).appendTo($batch_entry);
+        ).appendTo($batch_buttons);
 
-        $export_screen.find('.batch-export-start').click( function() {
+        $export_screen.submit( function() {
             function getFormVal(name) {
                 return $export_screen.find( '.batch-' + name ).val();
             }
@@ -919,7 +926,7 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
             KohaBackend.StartBatchExport( batch.batch_id, options );
         } );
 
-        $('#batches-list').append( $batch_entry );
+        $('#batches-table tbody').append( $batch_entry );
     }
 
     $(document).ready( function() {
