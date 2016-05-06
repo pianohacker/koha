@@ -115,7 +115,7 @@
     <div class="span3">
         <div id="search-facets">
             <ul>
-                <li>Servers:<ul id="advanced-search-servers"></ul></li>
+                <li>Servers:<ul id="advanced-search-servers" class="search-target-list"></ul></li>
             </ul>
         </div>
     </div>
@@ -195,7 +195,7 @@
     <div class="span3">
         <div id="search-facets">
             <ul>
-                <li>Servers:<ul id="search-serversinfo"></ul></li>
+                <li>Servers:<ul id="search-serversinfo" class="search-target-list"></ul></li>
             </ul>
         </div>
     </div>

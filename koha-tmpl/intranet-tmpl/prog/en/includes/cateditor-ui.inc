@@ -27,6 +27,7 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
         'koha:biblioserver': {
             name: _("Local catalog"),
             recordtype: 'biblio',
+            enabled: true,
             checked: false,
         },
         [%- FOREACH batch = editable_batches -%]
@@ -41,6 +42,7 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
                 name: '[% server.servername %]',
                 recordtype: '[% server.recordtype %]',
                 checked: [% server.checked ? 'true' : 'false' %],
+                enabled: true,
             },
         [%- END -%]
     };
@@ -341,6 +343,22 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
         $( '#save-targets input[data-target-id="' + target_id + '"]' ).closest('li').toggle(enabled);
     }
 
+    function setSearchTargetChecked( server_id, checked ) {
+        if ( z3950Servers[server_id] == null ) return;
+
+        z3950Servers[server_id].checked = checked;
+        $( '.search-target-list li[data-server-id="' + server_id + '"] input' ).prop('checked', checked);
+    }
+
+    function setSearchTargetEnabled( server_id, enabled ) {
+        if ( !enabled ) {
+            setSearchTargetChecked( server_id, false );
+        }
+
+        z3950Servers[server_id].enabled = enabled;
+        $( '.search-target-list li[data-server-id="' + server_id + '"]' ).toggle(enabled);
+    }
+
     function setSource(parts) {
         state.backend = parts[0];
         state.recordID = parts[1];
@@ -440,6 +458,7 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
     function showAdvancedSearch() {
         $('#advanced-search-servers').empty();
         $.each( z3950Servers, function( server_id, server ) {
+            if ( !server.enabled ) return;
             $('#advanced-search-servers').append( '<li data-server-id="' + server_id + '"><label><input class="search-toggle-server" type="checkbox"' + ( server.checked ? ' checked="checked">' : '>' ) + server.name + '</label></li>' );
         } );
         $('#advanced-search-ui').modal('show');
@@ -672,7 +691,7 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
             case 'enabledSearchBatches':
                 $.each( editable_batches, function( batch_id, batch ) {
                     $( '#batches-table tr[data-batch-id=' + batch_id + '] input.is-searchable' )[0].checked = Preferences.user.enabledSearchBatches[batch_id];
-                    setSearchTargetEnabled( 'batch:' + batch_id + '/', Preferences.user.enabledSearchBatches[batch_id] || false );
+                    setSearchTargetEnabled( 'batch:' + batch_id, Preferences.user.enabledSearchBatches[batch_id] || false );
                 } );
             case 'fieldWidgets':
                 $( '#set-field-widgets' ).text( value ? _("Show fields verbatim") : _("Show helpers for fixed and coded fields") );
@@ -733,6 +752,11 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
             case 'enabledBatches':
                 _addLiveHandler( '#batches-table input.is-save-target', 'change', function() {
                     Preferences.user.enabledBatches[ $( this ).closest('tr').data('batch-id') ] = this.checked;
+                } );
+                break;
+            case 'enabledSearchBatches':
+                _addLiveHandler( '#batches-table input.is-searchable', 'change', function() {
+                    Preferences.user.enabledSearchBatches[ $( this ).closest('tr').data('batch-id') ] = this.checked;
                 } );
                 break;
             case 'fieldWidgets':
