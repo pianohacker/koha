@@ -364,6 +364,10 @@ sub json2marc {
         if ( $field->[0] eq 'LDR' ) {
             $marc->leader( $field->[4] );
         }
+        elsif ( $field->[0] lt '010' ) {
+            my $marc_field = MARC::Field->new( $field->[0], $field->[4] );
+            $marc->append_fields($marc_field);
+        }
         else {
             my $marc_field = MARC::Field->new(@$field);
             $marc->append_fields($marc_field);
