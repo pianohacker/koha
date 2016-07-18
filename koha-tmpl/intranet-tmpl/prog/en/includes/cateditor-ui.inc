@@ -1378,6 +1378,10 @@ require( [ 'koha-backend', 'search', 'macros', 'marc-editor', 'marc-record', 'pr
             return false;
         } );
 
+        $(window).on( 'beforeunload', function() {
+            return editor.modified;
+        } );
+
         $.each( backends, function( name ) {
             if ( !this.save ) return; // Not a saving backend
 
