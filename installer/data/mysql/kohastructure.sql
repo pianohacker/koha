@@ -379,7 +379,6 @@ CREATE TABLE `branch_borrower_circ_rules` ( -- includes default circulation rule
   `categorycode` VARCHAR(10) NOT NULL, -- the patron category this rule applies to (categories.categorycode)
   `maxissueqty` int(4) default NULL, -- the maximum number of checkouts this patron category can have at this branch
   `maxonsiteissueqty` int(4) default NULL, -- the maximum number of on-site checkouts this patron category can have at this branch
-  max_holds INT(4) NULL DEFAULT NULL, -- the maximum number of holds a patron may have at a time
   PRIMARY KEY (`categorycode`, `branchcode`),
   CONSTRAINT `branch_borrower_circ_rules_ibfk_1` FOREIGN KEY (`categorycode`) REFERENCES `categories` (`categorycode`)
     ON DELETE CASCADE ON UPDATE CASCADE,
@@ -396,7 +395,6 @@ CREATE TABLE `default_borrower_circ_rules` ( -- default checkout rules found und
   `categorycode` VARCHAR(10) NOT NULL, -- patron category this rul
   `maxissueqty` int(4) default NULL,
   `maxonsiteissueqty` int(4) default NULL,
-  max_holds INT(4) NULL DEFAULT NULL, -- the maximum number of holds a patron may have at a time
   PRIMARY KEY (`categorycode`),
   CONSTRAINT `borrower_borrower_circ_rules_ibfk_1` FOREIGN KEY (`categorycode`) REFERENCES `categories` (`categorycode`)
     ON DELETE CASCADE ON UPDATE CASCADE
@@ -4162,6 +4160,25 @@ CREATE TABLE illrequestattributes (
       FOREIGN KEY (illrequest_id)
       REFERENCES `illrequests` (`illrequest_id`)
       ON UPDATE CASCADE ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+--
+-- Table structure for table `circulation_rules`
+--
+
+DROP TABLE IF EXISTS `circulation_rules`;
+CREATE TABLE `circulation_rules` (
+  `id` int(11) NOT NULL auto_increment,
+  `branchcode` varchar(10) NULL default NULL,
+  `categorycode` varchar(10) NULL default NULL,
+  `itemtype` varchar(10) NULL default NULL,
+  `rule_name` varchar(32) NOT NULL,
+  `rule_value` varchar(32) NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `branchcode` (`branchcode`),
+  KEY `categorycode` (`categorycode`),
+  KEY `itemtype` (`itemtype`),
+  UNIQUE (`branchcode`,`categorycode`,`itemtype`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
