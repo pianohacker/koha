@@ -23,7 +23,7 @@
 
 use strict;
 use JSON 2.53;
-use Locale::PO 0.21;
+use Locale::PO 0.24;
 use File::Basename qw(basename);
 
 my $gettext_context_glue = "\004";
@@ -81,7 +81,7 @@ sub main
             my $qmsgstr = $po->msgstr;
             my $cur = $po->dequote( $qmsgstr );
             my %cur;
-            foreach my $h (split(/\\n/, $cur))
+            foreach my $h (split(/\n/, $cur))
             {
                 next unless length($h);
                 my @h = split(':', $h, 2);
