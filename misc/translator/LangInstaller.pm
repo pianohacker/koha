@@ -688,7 +688,7 @@ sub install_messages {
 
     my $opachtdocs = $self->{context}->config('opachtdocs');
     opendir(my $dh, $opachtdocs);
-    for my $theme ( grep { not /^\.|lib/ } readdir($dh) ) {
+    for my $theme ( grep { not /^\.|lib|xslt/ } readdir($dh) ) {
         mkdir "$opachtdocs/$theme/$self->{lang}/js";
         open my $fh, '>', "$opachtdocs/$theme/$self->{lang}/js/locale_data.js";
         print $fh $js_locale_data;
