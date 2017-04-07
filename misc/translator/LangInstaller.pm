@@ -614,6 +614,7 @@ sub extract_messages {
     push @files_to_scan, @tt_files;
 
     my $xgettext_common_args = "--force-po --from-code=UTF-8 "
+        . "--package-name=Koha --package-version='' "
         . "-k -k__ -k__x -k__n:1,2 -k__nx:1,2 -k__xn:1,2 "
         . "-k__p:1c,2 -k__px:1c,2 -k__np:1c,2,3 -k__npx:1c,2,3 "
         . "-kN__ -kN__n:1,2 -kN__p:1c,2 -kN__np:1c,2,3";
@@ -642,7 +643,7 @@ sub extract_messages {
         die "system call failed: $xgettext_cmd";
     }
 
-    my $msgcat_cmd = "$self->{msgcat} -o $Bin/$self->{domain}.pot $Bin/$self->{domain}-perl.pot $Bin/$self->{domain}-js.pot";
+    my $msgcat_cmd = "$self->{msgcat} --use-first -o $Bin/$self->{domain}.pot $Bin/$self->{domain}-perl.pot $Bin/$self->{domain}-js.pot";
     if (system($msgcat_cmd) != 0) {
         die "system call failed: $msgcat_cmd";
     }
