@@ -26,6 +26,7 @@ use C4::Context;
 use Encode;
 use Locale::Util qw(set_locale);
 use Locale::Messages qw(:locale_h :libintl_h nl_putenv);
+use Koha::Cache::Memory::Lite;
 
 use parent 'Exporter';
 our @EXPORT = qw(
@@ -44,55 +45,61 @@ our @EXPORT = qw(
     N__np
 );
 
-my $textdomain;
+our $textdomain = 'Koha';
 
-BEGIN {
-    $textdomain = 'Koha';
-
-    my $langtag = C4::Languages::getlanguage;
-    my @subtags = split /-/, $langtag;
-    my ($language, $region) = @subtags;
-    if ($region && length $region == 4) {
-        $region = $subtags[2];
-    }
-    my $locale = set_locale(LC_ALL, $language, $region, 'utf-8');
-    unless ($locale) {
-        set_locale(LC_MESSAGES, 'C');
-        Locale::Messages->select_package('gettext_pp');
-        $locale = $language;
-        if ($region) {
-            $locale .= '_' . $region;
+sub init {
+    my $cache = Koha::Cache::Memory::Lite->get_instance();
+    my $cache_key = 'i18n:initialized';
+    unless ($cache->get_from_cache($cache_key)) {
+        my $langtag = C4::Languages::getlanguage;
+        my @subtags = split /-/, $langtag;
+        my ($language, $region) = @subtags;
+        if ($region && length $region == 4) {
+            $region = $subtags[2];
         }
-        nl_putenv("LANGUAGE=$locale");
-        nl_putenv("LANG=$locale");
-        nl_putenv('OUTPUT_CHARSET=utf-8');
-    }
+        my $locale = set_locale(LC_ALL, $language, $region, 'utf-8');
+        unless ($locale) {
+            set_locale(LC_MESSAGES, '');
+            Locale::Messages->select_package('gettext_pp');
+            $locale = $language;
+            if ($region) {
+                $locale .= '_' . $region;
+            }
+            nl_putenv("LANGUAGE=$locale");
+            nl_putenv("LANG=$locale");
+            nl_putenv('OUTPUT_CHARSET=utf-8');
+        }
 
-    my $directory = C4::Context->config('intranetdir') . '/misc/translator/po';
-    textdomain($textdomain);
-    bindtextdomain($textdomain, $directory);
+        my $directory = _base_directory();
+        textdomain($textdomain);
+        bindtextdomain($textdomain, $directory);
+
+        $cache->set_in_cache($cache_key, 1);
+    }
 }
 
 sub __ {
     my ($msgid) = @_;
-    my $text = dgettext($textdomain, $msgid);
-    return __decode($text);
+
+    return _gettext(\&gettext, [ $msgid ]);
 }
 
 sub __x {
     my ($msgid, %vars) = @_;
-    return __expand(__($msgid), %vars);
+
+    return _gettext(\&gettext, [ $msgid ], %vars);
 }
 
 sub __n {
     my ($msgid, $msgid_plural, $count) = @_;
-    my $text = dngettext($textdomain, $msgid, $msgid_plural, $count);
-    return __decode($text);
+
+    return _gettext(\&ngettext, [ $msgid, $msgid_plural, $count ]);
 }
 
 sub __nx {
     my ($msgid, $msgid_plural, $count, %vars) = @_;
-    return __expand(__n($msgid, $msgid_plural, $count), %vars);
+
+    return _gettext(\&ngettext, [ $msgid, $msgid_plural, $count ], %vars);
 }
 
 sub __xn {
@@ -101,24 +108,26 @@ sub __xn {
 
 sub __p {
     my ($msgctxt, $msgid) = @_;
-    my $text = dpgettext($textdomain, $msgctxt, $msgid);
-    return __decode($text);
+
+    return _gettext(\&pgettext, [ $msgctxt, $msgid ]);
 }
 
 sub __px {
     my ($msgctxt, $msgid, %vars) = @_;
-    return __expand(__p($msgctxt, $msgid), %vars);
+
+    return _gettext(\&pgettext, [ $msgctxt, $msgid ], %vars);
 }
 
 sub __np {
     my ($msgctxt, $msgid, $msgid_plural, $count) = @_;
-    my $text = dnpgettext($textdomain, $msgctxt, $msgid, $msgid_plural, $count);
-    return __decode($text);
+
+    return _gettext(\&npgettext, [ $msgctxt, $msgid, $msgid_plural, $count ]);
 }
 
 sub __npx {
     my ($msgctxt, $msgid, $msgid_plural, $count, %vars) = @_;
-    return __expand(__np($msgctxt, $msgid, $msgid_plural, $count), %vars);
+
+    return _gettext(\&npgettext, [ $msgctxt, $msgid, $msgid_plural, $count], %vars);
 }
 
 sub N__ {
@@ -137,17 +146,30 @@ sub N__np {
     return @_;
 }
 
-sub __expand {
+sub _base_directory {
+    return C4::Context->config('intranetdir') . '/misc/translator/po';
+}
+
+sub _gettext {
+    my ($sub, $args, %vars) = @_;
+
+    init();
+
+    my $text = Encode::decode_utf8($sub->(@$args));
+    if (%vars) {
+        $text = _expand($text, %vars);
+    }
+
+    return $text;
+}
+
+sub _expand {
     my ($text, %vars) = @_;
 
     my $re = join '|', map { quotemeta $_ } keys %vars;
     $text =~ s/\{($re)\}/defined $vars{$1} ? $vars{$1} : "{$1}"/ge;
 
     return $text;
-}
-
-sub __decode {
-    return Encode::decode_utf8(shift);
 }
 
 1;

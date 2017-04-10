@@ -1,0 +1,81 @@
+# PO file for tests
+# Copyright (C) 2017 BibLibre
+# This file is distributed under the same license as the Koha package.
+# Julian Maurice <julian.maurice@biblibre.com, 2017.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: Koha\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2017-04-10 14:03+0200\n"
+"PO-Revision-Date: 2017-04-10 14:03+0200\n"
+"Last-Translator: Julian Maurice <julian.maurice@biblibre.com>\n"
+"Language-Team: xx <xx@li.org>\n"
+"Language: xx_XX\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=3; plural=(n==0 ? 0 : n==1 ? 1 : 2);\n"
+
+msgid "test"
+msgstr "test ツ"
+
+msgid "Hello {name}"
+msgstr "Hello {name} ツ"
+
+msgid "Singular"
+msgid_plural "Plural"
+msgstr[0] "Zero ツ"
+msgstr[1] "Singular ツ"
+msgstr[2] "Plural ツ"
+
+msgid "one item"
+msgid_plural "{count} items"
+msgstr[0] "no item ツ"
+msgstr[1] "one item ツ"
+msgstr[2] "{count} items ツ"
+
+msgctxt "biblio"
+msgid "title"
+msgstr "title (biblio) ツ"
+
+msgctxt "patron"
+msgid "title"
+msgstr "title (patron) ツ"
+
+msgctxt "biblio"
+msgid "Remove item {id}"
+msgstr "Remove item {id} (biblio) ツ"
+
+msgctxt "list"
+msgid "Remove item {id}"
+msgstr "Remove item {id} (list) ツ"
+
+msgctxt "ctxt1"
+msgid "singular"
+msgid_plural "plural"
+msgstr[0] "zero (ctxt1) ツ"
+msgstr[1] "singular (ctxt1) ツ"
+msgstr[2] "plural (ctxt1) ツ"
+
+msgctxt "ctxt2"
+msgid "singular"
+msgid_plural "plural"
+msgstr[0] "zero (ctxt2) ツ"
+msgstr[1] "singular (ctxt2) ツ"
+msgstr[2] "plural (ctxt2) ツ"
+
+msgctxt "biblio"
+msgid "one item"
+msgid_plural "{count} items"
+msgstr[0] "no item (biblio) ツ"
+msgstr[1] "one item (biblio) ツ"
+msgstr[2] "{count} items (biblio) ツ"
+
+msgctxt "list"
+msgid "one item"
+msgid_plural "{count} items"
+msgstr[0] "no item (list) ツ"
+msgstr[1] "one item (list) ツ"
+msgstr[2] "{count} items (list) ツ"
