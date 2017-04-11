@@ -626,14 +626,20 @@ sub extract_messages {
         die "system call failed: $xgettext_cmd";
     }
 
+    my @js_dirs = (
+        "$intranetdir/koha-tmpl/intranet-tmpl/prog/js",
+        "$intranetdir/koha-tmpl/intranet-tmpl/prog/en/js",
+        "$intranetdir/koha-tmpl/opac-tmpl/bootstrap/js",
+    );
+
     my @js_files;
     find(sub {
-        if ($File::Find::dir =~ m|/en/| && $_ =~ m/\.js$/) {
+        if ($_ =~ m/\.js$/) {
             my $filename = $File::Find::name;
             $filename =~ s|^$intranetdir/||;
             push @js_files, $filename;
         }
-    }, "$intranetdir/koha-tmpl");
+    }, @js_dirs);
 
     $xgettext_cmd = "$self->{xgettext} -L JavaScript $xgettext_common_args "
         . "-o $Bin/$self->{domain}-js.pot -D $intranetdir";
