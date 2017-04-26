@@ -78,6 +78,7 @@ sub new {
     $self->{msgmerge}        = `which msgmerge`;
     $self->{msgfmt}          = `which msgfmt`;
     $self->{msgcat}          = `which msgcat`;
+    $self->{msginit}         = `which msginit`;
     $self->{xgettext}        = `which xgettext`;
     $self->{sed}             = `which sed`;
     $self->{po2json}         = "$Bin/po2json";
@@ -85,6 +86,7 @@ sub new {
     chomp $self->{msgmerge};
     chomp $self->{msgfmt};
     chomp $self->{msgcat};
+    chomp $self->{msginit};
     chomp $self->{xgettext};
     chomp $self->{sed};
 
@@ -480,40 +482,54 @@ sub create_tmpl {
     }
 }
 
+sub locale_name {
+    my $self = shift;
+
+    my ($language, $region, $country) = split /-/, $self->{lang};
+    $country //= $region;
+    my $locale = $language;
+    if ($country && length($country) == 2) {
+        $locale .= '_' . $country;
+    }
+
+    return $locale;
+}
+
 sub create_messages {
     my $self = shift;
 
-    my ($language, $country) = split /-/, $self->{lang};
-    my $locale = $language;
-    if ($country) {
-        $locale .= '_' . $country;
-    }
-    my $podir = "$self->{path_po}/$locale/LC_MESSAGES";
+    my $pot = "$self->{domain}.pot";
+    my $po = "$self->{path_po}/$self->{lang}-messages.po";
 
-    make_path($podir);
-    say "Create messages ($locale)" if $self->{verbose};
-    system
-        "$self->{cp} $self->{domain}.pot " .
-        "$podir/$self->{domain}.po";
+    unless ( -f $pot ) {
+        $self->extract_messages();
+    }
+
+    say "Create messages ($self->{lang})" if $self->{verbose};
+    my $locale = $self->locale_name();
+    system "$self->{msginit} -i $pot -o $po -l $locale --no-translator";
+
+    # If msginit failed to correctly set Plural-Forms, set a default one
+    system "$self->{sed} --in-place $po "
+        . "--expression='s/Plural-Forms: nplurals=INTEGER; plural=EXPRESSION/Plural-Forms: nplurals=2; plural=(n != 1)/'";
 }
 
 sub update_messages {
     my $self = shift;
 
-    my ($language, $country) = split /-/, $self->{lang};
-    my $locale = $language;
-    if ($country) {
-        $locale .= '_' . $country;
-    }
-    my $podir = "$self->{path_po}/$locale/LC_MESSAGES";
-    my $pofile = "$podir/$self->{domain}.po";
+    my $pot = "$self->{domain}.pot";
+    my $po = "$self->{path_po}/$self->{lang}-messages.po";
 
-    say "Update messages ($locale)" if $self->{verbose};
-    if ( not -f $pofile ) {
-        say "File $pofile does not exist" if $self->{verbose};
+    unless ( -f $pot ) {
+        $self->extract_messages();
+    }
+
+    if ( -f $po ) {
+        say "Update messages ($self->{lang})" if $self->{verbose};
+        system "$self->{msgmerge} -U $po $pot";
+    } else {
         $self->create_messages();
     }
-    system "$self->{msgmerge} -U $pofile $self->{domain}.pot";
 }
 
 sub extract_messages_from_templates {
@@ -524,6 +540,7 @@ sub extract_messages_from_templates {
     my $parser = Template::Parser->new();
 
     foreach my $file (@files) {
+        say "Extract messages from $file" if $self->{verbose};
         my $template = read_file("$intranetdir/$file");
         my $data = $parser->parse($template);
         my $document = PPI::Document->new(\$data->{BLOCK});
@@ -580,6 +597,8 @@ sub extract_messages_from_templates {
 
 sub extract_messages {
     my $self = shift;
+
+    say "Extract messages into POT file" if $self->{verbose};
 
     my $intranetdir = $self->{context}->config('intranetdir');
     my @files_to_scan;
@@ -654,37 +673,27 @@ sub extract_messages {
         die "system call failed: $msgcat_cmd";
     }
 
-    if ( -f "$Bin/$self->{domain}.pot" ) {
-        my $replace_charset_cmd = "$self->{sed} --in-place " .
-            "$Bin/$self->{domain}.pot " .
-            "--expression='s/charset=CHARSET/charset=UTF-8/'";
-        if (system($replace_charset_cmd) != 0) {
-            die "system call failed: $replace_charset_cmd";
-        }
-    } else {
-        say "No messages found" if $self->{verbose};
-        return;
+    my $replace_charset_cmd = "$self->{sed} --in-place " .
+        "$Bin/$self->{domain}.pot " .
+        "--expression='s/charset=CHARSET/charset=UTF-8/'";
+    if (system($replace_charset_cmd) != 0) {
+        die "system call failed: $replace_charset_cmd";
     }
-    return 1;
 }
 
 sub install_messages {
     my ($self) = @_;
 
-    my ($language, $country) = split /-/, $self->{lang};
-    my $locale = $language;
-    if ($country) {
-        $locale .= '_' . $country;
-    }
-    my $podir = "$self->{path_po}/$locale/LC_MESSAGES";
-    my $pofile = "$podir/$self->{domain}.po";
-    my $mofile = "$podir/$self->{domain}.mo";
+    my $locale = $self->locale_name();
+    my $modir = "$self->{path_po}/$locale/LC_MESSAGES";
+    my $pofile = "$self->{path_po}/$self->{lang}-messages.po";
+    my $mofile = "$modir/$self->{domain}.mo";
 
-    say "Install messages ($locale)" if $self->{verbose};
     if ( not -f $pofile ) {
-        say "File $pofile does not exist" if $self->{verbose};
         $self->create_messages();
     }
+    say "Install messages ($locale)" if $self->{verbose};
+    make_path($modir);
     system "$self->{msgfmt} -o $mofile $pofile";
 
     my $js_locale_data = 'var json_locale_data = {"Koha":' . `$self->{po2json} $pofile` . '};';
@@ -717,6 +726,7 @@ sub install {
     $self->install_tmpl($files) unless $self->{pref_only};
     $self->install_prefs();
     $self->install_messages();
+    $self->remove_pot();
 }
 
 
@@ -732,14 +742,13 @@ sub get_all_langs {
 sub update {
     my ($self, $files) = @_;
     my @langs = $self->{lang} ? ($self->{lang}) : $self->get_all_langs();
-    my $extract_ok = $self->extract_messages();
     for my $lang ( @langs ) {
         $self->set_lang( $lang );
         $self->update_tmpl($files) unless $self->{pref_only};
         $self->update_prefs();
-        $self->update_messages() if $extract_ok;
+        $self->update_messages();
     }
-    $self->remove_pot() if $extract_ok;
+    $self->remove_pot();
 }
 
 
@@ -748,10 +757,8 @@ sub create {
     return unless $self->{lang};
     $self->create_tmpl($files) unless $self->{pref_only};
     $self->create_prefs();
-    if ($self->extract_messages()) {
-        $self->create_messages();
-        $self->remove_pot();
-    }
+    $self->create_messages();
+    $self->remove_pot();
 }
 
 
