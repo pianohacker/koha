@@ -135,13 +135,13 @@ __PACKAGE__->belongs_to(
 
 Type: belongs_to
 
-Related object: L<Koha::Schema::Result::Branchcategory>
+Related object: L<Koha::Schema::Result::Category>
 
 =cut
 
 __PACKAGE__->belongs_to(
   "categorycode",
-  "Koha::Schema::Result::Branchcategory",
+  "Koha::Schema::Result::Category",
   { categorycode => "categorycode" },
   {
     is_deferrable => 1,
@@ -172,8 +172,8 @@ __PACKAGE__->belongs_to(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07042 @ 2017-03-06 17:39:41
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:SZuAUJSu+FICBAxyxIcJQA
+# Created by DBIx::Class::Schema::Loader v0.07042 @ 2017-06-28 04:08:15
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:cp5jbv46L3LtPVxSla8dpA
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration
