@@ -1,4 +1,5 @@
 [% USE Branches %]
+[% USE CirculationRules %]
 [% SET footerjs = 1 %]
 [% INCLUDE 'doc-head-open.inc' %]
 <title>Koha &rsaquo; Administration &rsaquo; Circulation and fine rules</title>
@@ -490,6 +491,14 @@
                                 Unlimited
                             [% ELSE %]
                                 [% branch_cat_rule_loo.maxonsiteissueqty %]
+                            [% END %]
+                        </td>
+                        <td>
+                            [% SET rule_value = CirculationRules.Get( branch_cat_rule_loo.branchcode, branch_cat_rule_loo.categorycode, branch_cat_rule_loo.itemtype, 'max_holds' ) %]
+                            [% IF rule_value  %]
+                                [% rule_value %]
+                            [% ELSE %]
+                                Unlimited
                             [% END %]
                         </td>
 
