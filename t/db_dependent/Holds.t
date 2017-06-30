@@ -18,6 +18,7 @@ use Koha::DateUtils qw( dt_from_string output_pref );
 use Koha::Biblios;
 use Koha::Holds;
 use Koha::Patrons;
+use Koha::CirculationRules;
 
 BEGIN {
     use FindBin;
@@ -416,6 +417,7 @@ subtest 'Test max_holds per library/patron category' => sub {
 
     $dbh->do('DELETE FROM reserves');
     $dbh->do('DELETE FROM issuingrules');
+    $dbh->do('DELETE FROM circulation_rules');
 
     ( $bibnum, $title, $bibitemnum ) = create_helper_biblio('TEST');
     ( $item_bibnum, $item_bibitemnum, $itemnumber ) =
@@ -440,20 +442,25 @@ subtest 'Test max_holds per library/patron category' => sub {
     my $ret = CanItemBeReserved( $borrowernumbers[0], $itemnumber );
     is( $ret, 'OK', 'Patron can place hold with no borrower circ rules' );
 
-    my $rule_all = $schema->resultset('DefaultBorrowerCircRule')->new(
+    my $rule_all = Koha::CirculationRules->set_rule(
         {
             categorycode => $category->{categorycode},
-            max_holds    => 3,
+            branchcode   => undef,
+            itemtype     => undef,
+            rule_name    => 'max_holds',
+            rule_value   => 3,
         }
-    )->insert();
+    );
 
-    my $rule_branch = $schema->resultset('BranchBorrowerCircRule')->new(
+    my $rule_branch = Koha::CirculationRules->set_rule(
         {
             branchcode   => $branch_1,
             categorycode => $category->{categorycode},
-            max_holds    => 5,
+            itemtype     => undef,
+            rule_name    => 'max_holds',
+            rule_value   => 5,
         }
-    )->insert();
+    );
 
     $ret = CanItemBeReserved( $borrowernumbers[0], $itemnumber );
     is( $ret, 'OK', 'Patron can place hold with branch/category rule of 5, category rule of 3' );
@@ -464,16 +471,16 @@ subtest 'Test max_holds per library/patron category' => sub {
     is( $ret, 'tooManyReserves', 'Patron cannot place hold with only a category rule of 3' );
 
     $rule_all->delete();
-    $rule_branch->max_holds(3);
-    $rule_branch->insert();
+    $rule_branch->rule_value(3);
+    $rule_branch->store();
 
     $ret = CanItemBeReserved( $borrowernumbers[0], $itemnumber );
     is( $ret, 'tooManyReserves', 'Patron cannot place hold with only a branch/category rule of 3' );
 
-    $rule_branch->max_holds(5);
+    $rule_branch->rule_value(5);
     $rule_branch->update();
-    $rule_branch->max_holds(5);
-    $rule_branch->insert();
+    $rule_branch->rule_value(5);
+    $rule_branch->store();
 
     $ret = CanItemBeReserved( $borrowernumbers[0], $itemnumber );
     is( $ret, 'OK', 'Patron can place hold with branch/category rule of 5, category rule of 5' );

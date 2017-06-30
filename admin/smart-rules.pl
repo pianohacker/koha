@@ -35,6 +35,7 @@ use Koha::RefundLostItemFeeRules;
 use Koha::Libraries;
 use Koha::Patron::Categories;
 use Koha::Patrons;
+use Koha::CirculationRules;
 
 my $input = CGI->new;
 my $dbh = C4::Context->dbh;
@@ -101,6 +102,15 @@ elsif ($op eq 'delete-branch-cat') {
                                         AND categorycode = ?");
         $sth_delete->execute($branch, $categorycode);
     }
+    Koha::CirculationRules->set_rule(
+        {
+            branchcode   => $branch,
+            categorycode => $categorycode,
+            itemtype     => undef,
+            rule_name    => 'max_holds',
+            rule_value   => undef,
+        }
+    );
 }
 elsif ($op eq 'delete-branch-item') {
     my $itemtype  = $input->param('itemtype');
@@ -276,46 +286,64 @@ elsif ($op eq "add-branch-cat") {
                                             FROM default_circ_rules");
             my $sth_insert = $dbh->prepare(q|
                 INSERT INTO default_circ_rules
-                    (maxissueqty, maxonsiteissueqty, max_holds)
-                    VALUES (?, ?, ?)
+                    (maxissueqty, maxonsiteissueqty)
+                    VALUES (?, ?, )
             |);
             my $sth_update = $dbh->prepare(q|
                 UPDATE default_circ_rules
                 SET maxissueqty = ?,
-                    maxonsiteissueqty = ?,
-                    max_holds = ?
+                    maxonsiteissueqty = ?
             |);
 
             $sth_search->execute();
             my $res = $sth_search->fetchrow_hashref();
             if ($res->{total}) {
-                $sth_update->execute( $maxissueqty, $maxonsiteissueqty, $max_holds );
+                $sth_update->execute( $maxissueqty, $maxonsiteissueqty );
             } else {
-                $sth_insert->execute( $maxissueqty, $maxonsiteissueqty, $max_holds );
+                $sth_insert->execute( $maxissueqty, $maxonsiteissueqty );
             }
+
+            Koha::CirculationRules->set_rule(
+                {
+                    branchcode   => undef,
+                    categorycode => undef,
+                    itemtype     => undef,
+                    rule_name    => 'max_holds',
+                    rule_value   => $max_holds,
+                }
+            );
         } else {
             my $sth_search = $dbh->prepare("SELECT count(*) AS total
                                             FROM default_borrower_circ_rules
                                             WHERE categorycode = ?");
             my $sth_insert = $dbh->prepare(q|
                 INSERT INTO default_borrower_circ_rules
-                    (categorycode, maxissueqty, maxonsiteissueqty, max_holds)
+                    (categorycode, maxissueqty, maxonsiteissueqty)
                     VALUES (?, ?, ?, ?)
             |);
             my $sth_update = $dbh->prepare(q|
                 UPDATE default_borrower_circ_rules
                 SET maxissueqty = ?,
-                    maxonsiteissueqty = ?,
-                    max_holds = ?
+                    maxonsiteissueqty = ?
                 WHERE categorycode = ?
             |);
             $sth_search->execute($branch);
             my $res = $sth_search->fetchrow_hashref();
             if ($res->{total}) {
-                $sth_update->execute( $maxissueqty, $maxonsiteissueqty, $categorycode, $max_holds );
+                $sth_update->execute( $maxissueqty, $maxonsiteissueqty, $categorycode );
             } else {
-                $sth_insert->execute( $categorycode, $maxissueqty, $maxonsiteissueqty, $max_holds );
+                $sth_insert->execute( $categorycode, $maxissueqty, $maxonsiteissueqty );
             }
+
+            Koha::CirculationRules->set_rule(
+                {
+                    branchcode   => undef,
+                    categorycode => $categorycode,
+                    itemtype     => undef,
+                    rule_name    => 'max_holds',
+                    rule_value   => $max_holds,
+                }
+            );
         }
     } elsif ($categorycode eq "*") {
         my $sth_search = $dbh->prepare("SELECT count(*) AS total
@@ -346,14 +374,13 @@ elsif ($op eq "add-branch-cat") {
                                         AND   categorycode = ?");
         my $sth_insert = $dbh->prepare(q|
             INSERT INTO branch_borrower_circ_rules
-            (branchcode, categorycode, maxissueqty, maxonsiteissueqty, max_holds)
-            VALUES (?, ?, ?, ?, ?)
+            (branchcode, categorycode, maxissueqty, maxonsiteissueqty)
+            VALUES (?, ?, ?, ?)
         |);
         my $sth_update = $dbh->prepare(q|
             UPDATE branch_borrower_circ_rules
             SET maxissueqty = ?,
                 maxonsiteissueqty = ?
-                max_holds = ?
             WHERE branchcode = ?
             AND categorycode = ?
         |);
@@ -361,10 +388,20 @@ elsif ($op eq "add-branch-cat") {
         $sth_search->execute($branch, $categorycode);
         my $res = $sth_search->fetchrow_hashref();
         if ($res->{total}) {
-            $sth_update->execute($maxissueqty, $maxonsiteissueqty, $max_holds, $branch, $categorycode);
+            $sth_update->execute($maxissueqty, $maxonsiteissueqty, $branch, $categorycode);
         } else {
-            $sth_insert->execute($branch, $categorycode, $maxissueqty, $maxonsiteissueqty, $max_holds);
+            $sth_insert->execute($branch, $categorycode, $maxissueqty, $maxonsiteissueqty);
         }
+
+        Koha::CirculationRules->set_rule(
+            {
+                branchcode   => $branch,
+                categorycode => $categorycode,
+                itemtype     => undef,
+                rule_name    => 'max_holds',
+                rule_value   => $max_holds,
+            }
+        );
     }
 }
 elsif ($op eq "add-branch-item") {
@@ -559,7 +596,6 @@ my @sorted_branch_cat_rules = sort { $a->{'humancategorycode'} cmp $b->{'humanca
 foreach my $entry (@sorted_branch_cat_rules, @sorted_row_loop) {
     $entry->{unlimited_maxissueqty} = 1 unless defined($entry->{maxissueqty});
     $entry->{unlimited_maxonsiteissueqty} = 1 unless defined($entry->{maxonsiteissueqty});
-    $entry->{unlimited_max_holds} = 1 unless defined($entry->{max_holds});
 }
 
 @sorted_row_loop = sort by_category_and_itemtype @row_loop;
