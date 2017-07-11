@@ -221,21 +221,6 @@ __PACKAGE__->has_many(
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
-=head2 branch_borrower_circ_rules
-
-Type: has_many
-
-Related object: L<Koha::Schema::Result::BranchBorrowerCircRule>
-
-=cut
-
-__PACKAGE__->has_many(
-  "branch_borrower_circ_rules",
-  "Koha::Schema::Result::BranchBorrowerCircRule",
-  { "foreign.categorycode" => "self.categorycode" },
-  { cascade_copy => 0, cascade_delete => 0 },
-);
-
 =head2 categories_branches
 
 Type: has_many
@@ -251,39 +236,9 @@ __PACKAGE__->has_many(
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
-=head2 circulation_rules
 
-Type: has_many
-
-Related object: L<Koha::Schema::Result::CirculationRule>
-
-=cut
-
-__PACKAGE__->has_many(
-  "circulation_rules",
-  "Koha::Schema::Result::CirculationRule",
-  { "foreign.categorycode" => "self.categorycode" },
-  { cascade_copy => 0, cascade_delete => 0 },
-);
-
-=head2 default_borrower_circ_rule
-
-Type: might_have
-
-Related object: L<Koha::Schema::Result::DefaultBorrowerCircRule>
-
-=cut
-
-__PACKAGE__->might_have(
-  "default_borrower_circ_rule",
-  "Koha::Schema::Result::DefaultBorrowerCircRule",
-  { "foreign.categorycode" => "self.categorycode" },
-  { cascade_copy => 0, cascade_delete => 0 },
-);
-
-
-# Created by DBIx::Class::Schema::Loader v0.07042 @ 2017-06-28 04:08:15
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:Bb9BvkU4r6/J8rD9z2sDrA
+# Created by DBIx::Class::Schema::Loader v0.07042 @ 2017-07-03 15:35:15
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:Nyb7RzCc6y0W0izWTjksoA
 
 
 # You can replace this text with custom content, and it will be preserved on regeneration

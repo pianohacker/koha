@@ -278,21 +278,6 @@ __PACKAGE__->has_many(
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
-=head2 branch_borrower_circ_rules
-
-Type: has_many
-
-Related object: L<Koha::Schema::Result::BranchBorrowerCircRule>
-
-=cut
-
-__PACKAGE__->has_many(
-  "branch_borrower_circ_rules",
-  "Koha::Schema::Result::BranchBorrowerCircRule",
-  { "foreign.branchcode" => "self.branchcode" },
-  { cascade_copy => 0, cascade_delete => 0 },
-);
-
 =head2 branch_item_rules
 
 Type: has_many
@@ -364,21 +349,6 @@ Related object: L<Koha::Schema::Result::CategoriesBranch>
 __PACKAGE__->has_many(
   "categories_branches",
   "Koha::Schema::Result::CategoriesBranch",
-  { "foreign.branchcode" => "self.branchcode" },
-  { cascade_copy => 0, cascade_delete => 0 },
-);
-
-=head2 circulation_rules
-
-Type: has_many
-
-Related object: L<Koha::Schema::Result::CirculationRule>
-
-=cut
-
-__PACKAGE__->has_many(
-  "circulation_rules",
-  "Koha::Schema::Result::CirculationRule",
   { "foreign.branchcode" => "self.branchcode" },
   { cascade_copy => 0, cascade_delete => 0 },
 );
