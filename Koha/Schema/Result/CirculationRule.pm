@@ -32,21 +32,18 @@ __PACKAGE__->table("circulation_rules");
 =head2 branchcode
 
   data_type: 'varchar'
-  is_foreign_key: 1
   is_nullable: 1
   size: 10
 
 =head2 categorycode
 
   data_type: 'varchar'
-  is_foreign_key: 1
   is_nullable: 1
   size: 10
 
 =head2 itemtype
 
   data_type: 'varchar'
-  is_foreign_key: 1
   is_nullable: 1
   size: 10
 
@@ -68,11 +65,11 @@ __PACKAGE__->add_columns(
   "id",
   { data_type => "integer", is_auto_increment => 1, is_nullable => 0 },
   "branchcode",
-  { data_type => "varchar", is_foreign_key => 1, is_nullable => 1, size => 10 },
+  { data_type => "varchar", is_nullable => 1, size => 10 },
   "categorycode",
-  { data_type => "varchar", is_foreign_key => 1, is_nullable => 1, size => 10 },
+  { data_type => "varchar", is_nullable => 1, size => 10 },
   "itemtype",
-  { data_type => "varchar", is_foreign_key => 1, is_nullable => 1, size => 10 },
+  { data_type => "varchar", is_nullable => 1, size => 10 },
   "rule_name",
   { data_type => "varchar", is_nullable => 0, size => 32 },
   "rule_value",
@@ -109,71 +106,9 @@ __PACKAGE__->set_primary_key("id");
 
 __PACKAGE__->add_unique_constraint("branchcode_2", ["branchcode", "categorycode", "itemtype"]);
 
-=head1 RELATIONS
 
-=head2 branchcode
-
-Type: belongs_to
-
-Related object: L<Koha::Schema::Result::Branch>
-
-=cut
-
-__PACKAGE__->belongs_to(
-  "branchcode",
-  "Koha::Schema::Result::Branch",
-  { branchcode => "branchcode" },
-  {
-    is_deferrable => 1,
-    join_type     => "LEFT",
-    on_delete     => "CASCADE",
-    on_update     => "CASCADE",
-  },
-);
-
-=head2 categorycode
-
-Type: belongs_to
-
-Related object: L<Koha::Schema::Result::Category>
-
-=cut
-
-__PACKAGE__->belongs_to(
-  "categorycode",
-  "Koha::Schema::Result::Category",
-  { categorycode => "categorycode" },
-  {
-    is_deferrable => 1,
-    join_type     => "LEFT",
-    on_delete     => "CASCADE",
-    on_update     => "CASCADE",
-  },
-);
-
-=head2 itemtype
-
-Type: belongs_to
-
-Related object: L<Koha::Schema::Result::Itemtype>
-
-=cut
-
-__PACKAGE__->belongs_to(
-  "itemtype",
-  "Koha::Schema::Result::Itemtype",
-  { itemtype => "itemtype" },
-  {
-    is_deferrable => 1,
-    join_type     => "LEFT",
-    on_delete     => "CASCADE",
-    on_update     => "CASCADE",
-  },
-);
-
-
-# Created by DBIx::Class::Schema::Loader v0.07042 @ 2017-06-28 04:08:15
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:cp5jbv46L3LtPVxSla8dpA
+# Created by DBIx::Class::Schema::Loader v0.07042 @ 2017-07-03 15:35:15
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:ok1AzADM8/wcfU9xS7LgNQ
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

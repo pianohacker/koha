@@ -221,21 +221,6 @@ __PACKAGE__->has_many(
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
-=head2 branch_borrower_circ_rules
-
-Type: has_many
-
-Related object: L<Koha::Schema::Result::BranchBorrowerCircRule>
-
-=cut
-
-__PACKAGE__->has_many(
-  "branch_borrower_circ_rules",
-  "Koha::Schema::Result::BranchBorrowerCircRule",
-  { "foreign.categorycode" => "self.categorycode" },
-  { cascade_copy => 0, cascade_delete => 0 },
-);
-
 =head2 categories_branches
 
 Type: has_many
@@ -247,36 +232,6 @@ Related object: L<Koha::Schema::Result::CategoriesBranch>
 __PACKAGE__->has_many(
   "categories_branches",
   "Koha::Schema::Result::CategoriesBranch",
-  { "foreign.categorycode" => "self.categorycode" },
-  { cascade_copy => 0, cascade_delete => 0 },
-);
-
-=head2 circulation_rules
-
-Type: has_many
-
-Related object: L<Koha::Schema::Result::CirculationRule>
-
-=cut
-
-__PACKAGE__->has_many(
-  "circulation_rules",
-  "Koha::Schema::Result::CirculationRule",
-  { "foreign.categorycode" => "self.categorycode" },
-  { cascade_copy => 0, cascade_delete => 0 },
-);
-
-=head2 default_borrower_circ_rule
-
-Type: might_have
-
-Related object: L<Koha::Schema::Result::DefaultBorrowerCircRule>
-
-=cut
-
-__PACKAGE__->might_have(
-  "default_borrower_circ_rule",
-  "Koha::Schema::Result::DefaultBorrowerCircRule",
   { "foreign.categorycode" => "self.categorycode" },
   { cascade_copy => 0, cascade_delete => 0 },
 );
