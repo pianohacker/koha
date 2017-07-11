@@ -39,6 +39,7 @@ use Koha::Libraries;
 use Koha::Notice::Templates;
 use Koha::Patrons;
 use Koha::Patron::Categories;
+use Koha::CirculationRules;
 
 BEGIN {
     require_ok('C4::Reserves');
@@ -49,6 +50,7 @@ my $database = Koha::Database->new();
 my $schema = $database->schema();
 $schema->storage->txn_begin();
 my $dbh = C4::Context->dbh;
+$dbh->do('DELETE FROM circulation_rules');
 
 my $builder = t::lib::TestBuilder->new;
 
@@ -197,10 +199,6 @@ $requesters{$branch_3} = AddMember(
 # to fill holds from anywhere.
 
 $dbh->do('DELETE FROM issuingrules');
-$dbh->do('DELETE FROM branch_item_rules');
-$dbh->do('DELETE FROM default_branch_item_rules');
-$dbh->do('DELETE FROM default_branch_circ_rules');
-$dbh->do('DELETE FROM default_circ_rules');
 $dbh->do(
     q{INSERT INTO issuingrules (categorycode, branchcode, itemtype, reservesallowed)
       VALUES (?, ?, ?, ?)},
@@ -209,19 +207,29 @@ $dbh->do(
 );
 
 # CPL allows only its own patrons to request its items
-$dbh->do(
-    q{INSERT INTO default_branch_circ_rules (branchcode, holdallowed, returnbranch)
-      VALUES (?, ?, ?)},
-    {},
-    $branch_1, 1, 'homebranch',
+Koha::CirculationRules->set_rules(
+    {
+        branchcode   => $branch_1,
+        categorycode => undef,
+        itemtype     => undef,
+        rules        => {
+            holdallowed  => 1,
+            returnbranch => 'homebranch',
+        }
+    }
 );
 
 # ... while FPL allows anybody to request its items
-$dbh->do(
-    q{INSERT INTO default_branch_circ_rules (branchcode, holdallowed, returnbranch)
-      VALUES (?, ?, ?)},
-    {},
-    $branch_2, 2, 'homebranch',
+Koha::CirculationRules->set_rules(
+    {
+        branchcode   => $branch_2,
+        categorycode => undef,
+        itemtype     => undef,
+        rules        => {
+            holdallowed  => 2,
+            returnbranch => 'homebranch',
+        }
+    }
 );
 
 # helper biblio for the bug 10272 regression test

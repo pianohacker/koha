@@ -136,8 +136,8 @@ elsif ($op eq 'delete-branch-cat') {
                 itemtype     => undef,
                 rules        => {
                     max_holds         => undef,
-                    patron_maxissueqty       => undef,
-                    patron_maxonsiteissueqty => undef,
+                    maxissueqty       => undef,
+                    maxonsiteissueqty => undef,
                 }
             }
         );
@@ -162,9 +162,18 @@ elsif ($op eq 'delete-branch-item') {
                 }
             );
         } else {
-            my $sth_delete = $dbh->prepare("DELETE FROM default_branch_item_rules
-                                            WHERE itemtype = ?");
-            $sth_delete->execute($itemtype);
+            Koha::CirculationRules->set_rules(
+                {
+                    categorycode => undef,
+                    branchcode   => undef,
+                    itemtype     => $itemtype,
+                    rules        => {
+                        holdallowed             => undef,
+                        hold_fulfillment_policy => undef,
+                        returnbranch            => undef,
+                    }
+                }
+            );
         }
     } elsif ($itemtype eq "*") {
         Koha::CirculationRules->set_rules(
@@ -182,10 +191,18 @@ elsif ($op eq 'delete-branch-item') {
             }
         );
     } else {
-        my $sth_delete = $dbh->prepare("DELETE FROM branch_item_rules
-                                        WHERE branchcode = ?
-                                        AND itemtype = ?");
-        $sth_delete->execute($branch, $itemtype);
+        Koha::CirculationRules->set_rules(
+            {
+                categorycode => undef,
+                branchcode   => $branch,
+                itemtype     => $itemtype,
+                rules        => {
+                    holdallowed             => undef,
+                    hold_fulfillment_policy => undef,
+                    returnbranch            => undef,
+                }
+            }
+        );
     }
 }
 # save the values entered
@@ -301,22 +318,6 @@ elsif ($op eq "set-branch-defaults") {
     $max_holds = undef if $max_holds !~ /^\d+/;
 
     if ($branch eq "*") {
-        my $sth_search = $dbh->prepare("SELECT count(*) AS total
-                                        FROM default_circ_rules");
-        my $sth_insert = $dbh->prepare("INSERT INTO default_circ_rules
-                                        (holdallowed, hold_fulfillment_policy, returnbranch)
-                                        VALUES (?, ?, ?)");
-        my $sth_update = $dbh->prepare("UPDATE default_circ_rules
-                                        SET holdallowed = ?, hold_fulfillment_policy = ?, returnbranch = ?");
-
-        $sth_search->execute();
-        my $res = $sth_search->fetchrow_hashref();
-        if ($res->{total}) {
-            $sth_update->execute($holdallowed, $hold_fulfillment_policy, $returnbranch);
-        } else {
-            $sth_insert->execute($holdallowed, $hold_fulfillment_policy, $returnbranch);
-        }
-
         Koha::CirculationRules->set_rules(
             {
                 categorycode => undef,
@@ -332,23 +333,6 @@ elsif ($op eq "set-branch-defaults") {
             }
         );
     } else {
-        my $sth_search = $dbh->prepare("SELECT count(*) AS total
-                                        FROM default_branch_circ_rules
-                                        WHERE branchcode = ?");
-        my $sth_insert = $dbh->prepare("INSERT INTO default_branch_circ_rules
-                                        (branchcode, holdallowed, hold_fulfillment_policy, returnbranch)
-                                        VALUES (?, ?, ?, ?)");
-        my $sth_update = $dbh->prepare("UPDATE default_branch_circ_rules
-                                        SET holdallowed = ?, hold_fulfillment_policy = ?, returnbranch = ?
-                                        WHERE branchcode = ?");
-        $sth_search->execute($branch);
-        my $res = $sth_search->fetchrow_hashref();
-        if ($res->{total}) {
-            $sth_update->execute($holdallowed, $hold_fulfillment_policy, $returnbranch, $branch);
-        } else {
-            $sth_insert->execute($branch, $holdallowed, $hold_fulfillment_policy, $returnbranch);
-        }
-
         Koha::CirculationRules->set_rules(
             {
                 categorycode => undef,
@@ -453,76 +437,58 @@ elsif ($op eq "add-branch-item") {
 
     if ($branch eq "*") {
         if ($itemtype eq "*") {
-            my $sth_search = $dbh->prepare("SELECT count(*) AS total
-                                            FROM default_circ_rules");
-            my $sth_insert = $dbh->prepare("INSERT INTO default_circ_rules
-                                            (holdallowed, hold_fulfillment_policy, returnbranch)
-                                            VALUES (?, ?, ?)");
-            my $sth_update = $dbh->prepare("UPDATE default_circ_rules
-                                            SET holdallowed = ?, hold_fulfillment_policy = ?, returnbranch = ?");
-
-            $sth_search->execute();
-            my $res = $sth_search->fetchrow_hashref();
-            if ($res->{total}) {
-                $sth_update->execute($holdallowed, $hold_fulfillment_policy, $returnbranch);
-            } else {
-                $sth_insert->execute($holdallowed, $hold_fulfillment_policy, $returnbranch);
-            }
+            Koha::CirculationRules->set_rules(
+                {
+                    categorycode => undef,
+                    itemtype     => undef,
+                    branchcode   => undef,
+                    rules        => {
+                        holdallowed             => $holdallowed,
+                        hold_fulfillment_policy => $hold_fulfillment_policy,
+                        returnbranch            => $returnbranch,
+                    }
+                }
+            );
         } else {
-            my $sth_search = $dbh->prepare("SELECT count(*) AS total
-                                            FROM default_branch_item_rules
-                                            WHERE itemtype = ?");
-            my $sth_insert = $dbh->prepare("INSERT INTO default_branch_item_rules
-                                            (itemtype, holdallowed, hold_fulfillment_policy, returnbranch)
-                                            VALUES (?, ?, ?, ?)");
-            my $sth_update = $dbh->prepare("UPDATE default_branch_item_rules
-                                            SET holdallowed = ?, hold_fulfillment_policy = ?, returnbranch = ?
-                                            WHERE itemtype = ?");
-            $sth_search->execute($itemtype);
-            my $res = $sth_search->fetchrow_hashref();
-            if ($res->{total}) {
-                $sth_update->execute($holdallowed, $hold_fulfillment_policy, $returnbranch, $itemtype);
-            } else {
-                $sth_insert->execute($itemtype, $holdallowed, $hold_fulfillment_policy, $returnbranch);
-            }
+            Koha::CirculationRules->set_rules(
+                {
+                    categorycode => undef,
+                    itemtype     => $itemtype,
+                    branchcode   => undef,
+                    rules        => {
+                        holdallowed             => $holdallowed,
+                        hold_fulfillment_policy => $hold_fulfillment_policy,
+                        returnbranch            => $returnbranch,
+                    }
+                }
+            );
         }
     } elsif ($itemtype eq "*") {
-        my $sth_search = $dbh->prepare("SELECT count(*) AS total
-                                        FROM default_branch_circ_rules
-                                        WHERE branchcode = ?");
-        my $sth_insert = $dbh->prepare("INSERT INTO default_branch_circ_rules
-                                        (branchcode, holdallowed, hold_fulfillment_policy, returnbranch)
-                                        VALUES (?, ?, ?, ?)");
-        my $sth_update = $dbh->prepare("UPDATE default_branch_circ_rules
-                                        SET holdallowed = ?, hold_fulfillment_policy = ?, returnbranch = ?
-                                        WHERE branchcode = ?");
-        $sth_search->execute($branch);
-        my $res = $sth_search->fetchrow_hashref();
-        if ($res->{total}) {
-            $sth_update->execute($holdallowed, $hold_fulfillment_policy, $returnbranch, $branch);
-        } else {
-            $sth_insert->execute($branch, $holdallowed, $hold_fulfillment_policy, $returnbranch);
-        }
+            Koha::CirculationRules->set_rules(
+                {
+                    categorycode => undef,
+                    itemtype     => undef,
+                    branchcode   => $branch,
+                    rules        => {
+                        holdallowed             => $holdallowed,
+                        hold_fulfillment_policy => $hold_fulfillment_policy,
+                        returnbranch            => $returnbranch,
+                    }
+                }
+            );
     } else {
-        my $sth_search = $dbh->prepare("SELECT count(*) AS total
-                                        FROM branch_item_rules
-                                        WHERE branchcode = ?
-                                        AND   itemtype = ?");
-        my $sth_insert = $dbh->prepare("INSERT INTO branch_item_rules
-                                        (branchcode, itemtype, holdallowed, hold_fulfillment_policy, returnbranch)
-                                        VALUES (?, ?, ?, ?, ?)");
-        my $sth_update = $dbh->prepare("UPDATE branch_item_rules
-                                        SET holdallowed = ?, hold_fulfillment_policy = ?, returnbranch = ?
-                                        WHERE branchcode = ?
-                                        AND itemtype = ?");
-
-        $sth_search->execute($branch, $itemtype);
-        my $res = $sth_search->fetchrow_hashref();
-        if ($res->{total}) {
-            $sth_update->execute($holdallowed, $hold_fulfillment_policy, $returnbranch, $branch, $itemtype);
-        } else {
-            $sth_insert->execute($branch, $itemtype, $holdallowed, $hold_fulfillment_policy, $returnbranch);
-        }
+        Koha::CirculationRules->set_rules(
+            {
+                categorycode => undef,
+                itemtype     => $itemtype,
+                branchcode   => $branch,
+                rules        => {
+                    holdallowed             => $holdallowed,
+                    hold_fulfillment_policy => $hold_fulfillment_policy,
+                    returnbranch            => $returnbranch,
+                }
+            }
+        );
     }
 }
 elsif ( $op eq 'mod-refund-lost-item-fee-rule' ) {
@@ -605,76 +571,7 @@ while (my $row = $sth2->fetchrow_hashref) {
 
 my @sorted_row_loop = sort by_category_and_itemtype @row_loop;
 
-my $sth_branch_item;
-if ($branch eq "*") {
-    $sth_branch_item = $dbh->prepare("
-        SELECT default_branch_item_rules.*,
-            COALESCE( localization.translation, itemtypes.description ) AS translated_description
-        FROM default_branch_item_rules
-        JOIN itemtypes USING (itemtype)
-        LEFT JOIN localization ON itemtypes.itemtype = localization.code
-            AND localization.entity = 'itemtypes'
-            AND localization.lang = ?
-    ");
-    $sth_branch_item->execute($language);
-} else {
-    $sth_branch_item = $dbh->prepare("
-        SELECT branch_item_rules.*,
-            COALESCE( localization.translation, itemtypes.description ) AS translated_description
-        FROM branch_item_rules
-        JOIN itemtypes USING (itemtype)
-        LEFT JOIN localization ON itemtypes.itemtype = localization.code
-            AND localization.entity = 'itemtypes'
-            AND localization.lang = ?
-        WHERE branch_item_rules.branchcode = ?
-    ");
-    $sth_branch_item->execute($language, $branch);
-}
-
-my @branch_item_rules = ();
-while (my $row = $sth_branch_item->fetchrow_hashref) {
-    push @branch_item_rules, $row;
-}
-my @sorted_branch_item_rules = sort { lc $a->{translated_description} cmp lc $b->{translated_description} } @branch_item_rules;
-
-# note undef holdallowed so that template can deal with them
-foreach my $entry (@sorted_branch_item_rules) {
-    $entry->{holdallowed_any}  = 1 if ( $entry->{holdallowed} == 2 );
-    $entry->{holdallowed_same} = 1 if ( $entry->{holdallowed} == 1 );
-}
-
 $template->param(show_branch_cat_rule_form => 1);
-$template->param(branch_item_rule_loop => \@sorted_branch_item_rules);
-
-my $sth_defaults;
-if ($branch eq "*") {
-    $sth_defaults = $dbh->prepare("
-        SELECT *
-        FROM default_circ_rules
-    ");
-    $sth_defaults->execute();
-} else {
-    $sth_defaults = $dbh->prepare("
-        SELECT *
-        FROM default_branch_circ_rules
-        WHERE branchcode = ?
-    ");
-    $sth_defaults->execute($branch);
-}
-
-my $defaults = $sth_defaults->fetchrow_hashref;
-
-if ($defaults) {
-    $template->param( default_holdallowed_none => 1 ) if ( $defaults->{holdallowed} == 0 );
-    $template->param( default_holdallowed_same => 1 ) if ( $defaults->{holdallowed} == 1 );
-    $template->param( default_holdallowed_any  => 1 ) if ( $defaults->{holdallowed} == 2 );
-    $template->param( default_hold_fulfillment_policy => $defaults->{hold_fulfillment_policy} );
-    $template->param( default_maxissueqty      => $defaults->{maxissueqty} );
-    $template->param( default_maxonsiteissueqty => $defaults->{maxonsiteissueqty} );
-    $template->param( default_returnbranch      => $defaults->{returnbranch} );
-}
-
-$template->param(default_rules => ($defaults ? 1 : 0));
 
 $template->param(
     patron_categories => $patron_categories,
