@@ -18,6 +18,7 @@ use Koha::Database;
 use Koha::DateUtils;
 use Koha::Items;
 use Koha::Holds;
+use Koha::CirculationRules;
 
 use t::lib::TestBuilder;
 use t::lib::Mocks;
@@ -32,6 +33,7 @@ BEGIN {
 my $schema = Koha::Database->schema;
 $schema->storage->txn_begin;
 my $dbh = C4::Context->dbh;
+$dbh->do("DELETE FROM circulation_rules");
 
 my $builder = t::lib::TestBuilder->new;
 
@@ -172,9 +174,7 @@ $schema->txn_begin;
 ### Test holds queue builder does not violate holds policy ###
 
 # Clear out existing rules relating to holdallowed
-$dbh->do("DELETE FROM default_branch_circ_rules");
-$dbh->do("DELETE FROM default_branch_item_rules");
-$dbh->do("DELETE FROM default_circ_rules");
+$dbh->do("DELETE FROM circulation_rules");
 
 t::lib::Mocks::mock_preference('UseTransportCostMatrix', 0);
 
@@ -287,8 +287,16 @@ $sth->execute( $borrower3->{borrowernumber}, $biblionumber, $branchcodes[0], 3 )
 
 my $holds_queue;
 
-$dbh->do("DELETE FROM default_circ_rules");
-$dbh->do("INSERT INTO default_circ_rules ( holdallowed ) VALUES ( 1 )");
+$dbh->do("DELETE FROM circulation_rules");
+Koha::CirculationRules->set_rule(
+    {
+        rule_name    => 'holdallowed',
+        rule_value   => 1,
+        branchcode   => undef,
+        categorycode => undef,
+        itemtype     => undef,
+    }
+);
 C4::HoldsQueue::CreateQueue();
 $holds_queue = $dbh->selectall_arrayref("SELECT * FROM tmp_holdsqueue", { Slice => {} });
 is( @$holds_queue, 2, "Holds queue filling correct number for default holds policy 'from home library'" );
@@ -317,8 +325,16 @@ $holds_queue = $dbh->selectall_arrayref("SELECT * FROM tmp_holdsqueue", { Slice 
 is( scalar( @$holds_queue ), 1, "Holds not filled with items from closed libraries" );
 t::lib::Mocks::mock_preference('HoldsQueueSkipClosed', 0);
 
-$dbh->do("DELETE FROM default_circ_rules");
-$dbh->do("INSERT INTO default_circ_rules ( holdallowed ) VALUES ( 2 )");
+$dbh->do("DELETE FROM circulation_rules");
+Koha::CirculationRules->set_rule(
+    {
+        rule_name    => 'holdallowed',
+        rule_value   => 2,
+        branchcode   => undef,
+        categorycode => undef,
+        itemtype     => undef,
+    }
+);
 C4::HoldsQueue::CreateQueue();
 $holds_queue = $dbh->selectall_arrayref("SELECT * FROM tmp_holdsqueue", { Slice => {} });
 is( @$holds_queue, 3, "Holds queue filling correct number for holds for default holds policy 'from any library'" );
@@ -337,8 +353,16 @@ t::lib::Mocks::mock_preference( 'HoldsQueueSkipClosed', 0 );
 ## Test LocalHoldsPriority
 t::lib::Mocks::mock_preference('LocalHoldsPriority', 1);
 
-$dbh->do("DELETE FROM default_circ_rules");
-$dbh->do("INSERT INTO default_circ_rules ( holdallowed ) VALUES ( 2 )");
+$dbh->do("DELETE FROM circulation_rules");
+Koha::CirculationRules->set_rule(
+    {
+        rule_name    => 'holdallowed',
+        rule_value   => 2,
+        branchcode   => undef,
+        categorycode => undef,
+        itemtype     => undef,
+    }
+);
 $dbh->do("DELETE FROM issues");
 
 # Test homebranch = patron branch
@@ -427,10 +451,6 @@ $dbh->do("DELETE FROM biblioitems");
 $dbh->do("DELETE FROM transport_cost");
 $dbh->do("DELETE FROM tmp_holdsqueue");
 $dbh->do("DELETE FROM hold_fill_targets");
-$dbh->do("DELETE FROM default_branch_circ_rules");
-$dbh->do("DELETE FROM default_branch_item_rules");
-$dbh->do("DELETE FROM default_circ_rules");
-$dbh->do("DELETE FROM branch_item_rules");
 
 $dbh->do("
     INSERT INTO biblio (frameworkcode, author, title, datecreated) VALUES ('', 'Koha test', '$TITLE', '2011-02-01')
@@ -455,10 +475,17 @@ $dbh->do("
     VALUES ($biblionumber, $biblioitemnumber, '$library_B', '$library_B', 0, 0, 0, 0, NULL, '$itemtype')
 ");
 
-$dbh->do("
-    INSERT INTO branch_item_rules ( branchcode, itemtype, holdallowed, returnbranch ) VALUES
-    ( '$library_A', '$itemtype', 2, 'homebranch' ), ( '$library_B', '$itemtype', 1, 'homebranch' );
-");
+Koha::CirculationRules->set_rules(
+    {
+        branchcode   => $library_A,
+        itemtype     => $itemtype,
+        categorycode => undef,
+        rules        => {
+            holdallowed  => 2,
+            returnbranch => 'homebranch',
+        }
+    }
+);
 
 $dbh->do( "UPDATE systempreferences SET value = ? WHERE variable = 'StaticHoldsQueueWeight'",
     undef, join( ',', $library_B, $library_A, $library_C ) );
@@ -483,10 +510,6 @@ $dbh->do("DELETE FROM biblioitems");
 $dbh->do("DELETE FROM transport_cost");
 $dbh->do("DELETE FROM tmp_holdsqueue");
 $dbh->do("DELETE FROM hold_fill_targets");
-$dbh->do("DELETE FROM default_branch_circ_rules");
-$dbh->do("DELETE FROM default_branch_item_rules");
-$dbh->do("DELETE FROM default_circ_rules");
-$dbh->do("DELETE FROM branch_item_rules");
 
 t::lib::Mocks::mock_preference("UseTransportCostMatrix",1);
 
@@ -532,10 +555,6 @@ $dbh->do("DELETE FROM biblioitems");
 $dbh->do("DELETE FROM transport_cost");
 $dbh->do("DELETE FROM tmp_holdsqueue");
 $dbh->do("DELETE FROM hold_fill_targets");
-$dbh->do("DELETE FROM default_branch_circ_rules");
-$dbh->do("DELETE FROM default_branch_item_rules");
-$dbh->do("DELETE FROM default_circ_rules");
-$dbh->do("DELETE FROM branch_item_rules");
 
 $dbh->do("INSERT INTO biblio (frameworkcode, author, title, datecreated) VALUES ('', 'Koha test', '$TITLE', '2011-02-01')");
 
@@ -554,8 +573,18 @@ $dbh->do("
 ");
 
 # With hold_fulfillment_policy = homebranch, hold should only be picked up if pickup branch = homebranch
-$dbh->do("DELETE FROM default_circ_rules");
-$dbh->do("INSERT INTO default_circ_rules ( holdallowed, hold_fulfillment_policy ) VALUES ( 2, 'homebranch' )");
+$dbh->do("DELETE FROM circulation_rules");
+Koha::CirculationRules->set_rules(
+    {
+        branchcode   => undef,
+        itemtype     => undef,
+        categorycode => undef,
+        rules        => {
+            holdallowed             => 2,
+            hold_fulfillment_policy => 'homebranch',
+        }
+    }
+);
 
 # Home branch matches pickup branch
 $reserve_id = AddReserve( $library_A, $borrowernumber, $biblionumber, '', 1 );
@@ -579,8 +608,18 @@ is( @$holds_queue, 0, "Hold where pickup ne home, pickup ne holding not targeted
 Koha::Holds->find( $reserve_id )->cancel;
 
 # With hold_fulfillment_policy = holdingbranch, hold should only be picked up if pickup branch = holdingbranch
-$dbh->do("DELETE FROM default_circ_rules");
-$dbh->do("INSERT INTO default_circ_rules ( holdallowed, hold_fulfillment_policy ) VALUES ( 2, 'holdingbranch' )");
+$dbh->do("DELETE FROM circulation_rules");
+Koha::CirculationRules->set_rules(
+    {
+        branchcode   => undef,
+        itemtype     => undef,
+        categorycode => undef,
+        rules        => {
+            holdallowed             => 2,
+            hold_fulfillment_policy => 'holdingbranch',
+        }
+    }
+);
 
 # Home branch matches pickup branch
 $reserve_id = AddReserve( $library_A, $borrowernumber, $biblionumber, '', 1 );
@@ -604,8 +643,18 @@ is( @$holds_queue, 0, "Hold where pickup ne home, pickup ne holding not targeted
 Koha::Holds->find( $reserve_id )->cancel;
 
 # With hold_fulfillment_policy = any, hold should be pikcup up reguardless of matching home or holding branch
-$dbh->do("DELETE FROM default_circ_rules");
-$dbh->do("INSERT INTO default_circ_rules ( holdallowed, hold_fulfillment_policy ) VALUES ( 2, 'any' )");
+$dbh->do("DELETE FROM circulation_rules");
+Koha::CirculationRules->set_rules(
+    {
+        branchcode   => undef,
+        itemtype     => undef,
+        categorycode => undef,
+        rules        => {
+            holdallowed             => 2,
+            hold_fulfillment_policy => 'any',
+        }
+    }
+);
 
 # Home branch matches pickup branch
 $reserve_id = AddReserve( $library_A, $borrowernumber, $biblionumber, '', 1 );
@@ -644,10 +693,6 @@ $dbh->do("DELETE FROM biblioitems");
 $dbh->do("DELETE FROM transport_cost");
 $dbh->do("DELETE FROM tmp_holdsqueue");
 $dbh->do("DELETE FROM hold_fill_targets");
-$dbh->do("DELETE FROM default_branch_circ_rules");
-$dbh->do("DELETE FROM default_branch_item_rules");
-$dbh->do("DELETE FROM default_circ_rules");
-$dbh->do("DELETE FROM branch_item_rules");
 
 $dbh->do("INSERT INTO biblio (frameworkcode, author, title, datecreated) VALUES ('', 'Koha test', '$TITLE', '2011-02-01')");
 
@@ -666,8 +711,18 @@ $dbh->do("
 ");
 
 # With hold_fulfillment_policy = homebranch, hold should only be picked up if pickup branch = homebranch
-$dbh->do("DELETE FROM default_circ_rules");
-$dbh->do("INSERT INTO default_circ_rules ( holdallowed, hold_fulfillment_policy ) VALUES ( 2, 'any' )");
+$dbh->do("DELETE FROM circulation_rules");
+Koha::CirculationRules->set_rules(
+    {
+        branchcode   => undef,
+        itemtype     => undef,
+        categorycode => undef,
+        rules        => {
+            holdallowed             => 2,
+            hold_fulfillment_policy => 'any',
+        }
+    }
+);
 
 # Home branch matches pickup branch
 $reserve_id = AddReserve( $library_A, $borrowernumber, $biblionumber, '', 1, undef, undef, undef, undef, undef, undef, $wrong_itemtype );
@@ -701,10 +756,6 @@ t::lib::Mocks::mock_preference('LocalHoldsPriorityItemControl', 'homebranch');
 $dbh->do("DELETE FROM tmp_holdsqueue");
 $dbh->do("DELETE FROM hold_fill_targets");
 $dbh->do("DELETE FROM reserves");
-$dbh->do("DELETE FROM default_branch_circ_rules");
-$dbh->do("DELETE FROM default_branch_item_rules");
-$dbh->do("DELETE FROM default_circ_rules");
-$dbh->do("DELETE FROM branch_item_rules");
 
 my $item = Koha::Items->find( { biblionumber => $biblionumber } );
 $item->holdingbranch( $item->homebranch );
