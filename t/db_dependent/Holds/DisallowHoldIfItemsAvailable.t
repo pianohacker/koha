@@ -5,7 +5,7 @@ use Modern::Perl;
 use C4::Context;
 use C4::Items;
 use C4::Circulation;
-use Koha::IssuingRule;
+use Koha::CirculationRules;
 
 use Test::More tests => 6;
 
@@ -92,19 +92,20 @@ my $itemnumber2 =
 
 my $item2 = GetItem( $itemnumber2 );
 
-$dbh->do("DELETE FROM issuingrules");
-my $rule = Koha::IssuingRule->new(
+$dbh->do("DELETE FROM circulation_rules");
+Koha::CirculationRules->set_rules(
     {
         categorycode => '*',
         itemtype     => '*',
         branchcode   => '*',
-        issuelength  => 7,
-        lengthunit   => 8,
-        reservesallowed => 99,
-        onshelfholds => 2,
+        rules        => {
+            issuelength     => 7,
+            lengthunit      => 8,
+            reservesallowed => 99,
+            onshelfholds    => 2,
+        }
     }
 );
-$rule->store();
 
 my $is = IsAvailableForItemLevelRequest( $item1, $borrower1);
 is( $is, 0, "Item cannot be held, 2 items available" );

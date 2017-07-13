@@ -34,6 +34,7 @@ use Koha::Biblios;
 use Koha::Biblioitems;
 use Koha::Items;
 use Koha::Patrons;
+use Koha::CirculationRules;
 
 my $schema  = Koha::Database->new->schema;
 my $builder = t::lib::TestBuilder->new();
@@ -136,11 +137,17 @@ my $itemnumber2 = $item2->{itemnumber};
 
 my $dbh = C4::Context->dbh;
 $dbh->do('DELETE FROM reserves');
-$dbh->do('DELETE FROM issuingrules');
-    $dbh->do(q{
-        INSERT INTO issuingrules (categorycode, branchcode, itemtype, reservesallowed)
-        VALUES (?, ?, ?, ?)
-    }, {}, '*', '*', '*', 1);
+$dbh->do('DELETE FROM circulation_rules');
+Koha::CirculationRules->set_rules(
+    {
+        categorycode => '*',
+        branchcode   => '*',
+        itemtype     => '*',
+        rules        => {
+            reservesallowed => 1
+        }
+    }
+);
 
 my $reserve_id = C4::Reserves::AddReserve($branchcode, $patron_1->borrowernumber,
     $biblionumber, undef, 1, undef, undef, undef, '', $itemnumber);

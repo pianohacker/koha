@@ -25,6 +25,7 @@ use Koha::Biblio;
 use Koha::Item;
 use Koha::Holds;
 use Koha::Hold;
+use Koha::CirculationRules;
 use t::lib::TestBuilder;
 use t::lib::Mocks;
 
@@ -39,7 +40,7 @@ $dbh->{RaiseError} = 1;
 $schema->storage->txn_begin();
 
 $dbh->do('DELETE FROM issues');
-$dbh->do('DELETE FROM issuingrules');
+$dbh->do('DELETE FROM circulation_rules');
 $dbh->do('DELETE FROM borrowers');
 $dbh->do('DELETE FROM items');
 
@@ -93,15 +94,14 @@ for my $i ( 0 .. 5 ) {
     )->store();
 }
 
-$builder->build(
+Koha::CirculationRules->set_rules(
     {
-        source => 'Issuingrule',
-        value => {
-            branchcode => '*',
-            categorycode => '*',
-            itemtype => '*',
-            issuelength => '14',
-            lengthunit => 'days',
+        branchcode   => '*',
+        categorycode => '*',
+        itemtype     => '*',
+        rules        => {
+            issuelength     => '14',
+            lengthunit      => 'days',
             reservesallowed => '99',
         }
     }

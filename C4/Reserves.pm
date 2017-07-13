@@ -44,7 +44,6 @@ use Koha::Hold;
 use Koha::Old::Hold;
 use Koha::Holds;
 use Koha::Libraries;
-use Koha::IssuingRules;
 use Koha::Items;
 use Koha::ItemTypes;
 use Koha::Patrons;
@@ -2072,24 +2071,39 @@ patron category, itemtype, and library.
 sub GetHoldRule {
     my ( $categorycode, $itemtype, $branchcode ) = @_;
 
-    my $dbh = C4::Context->dbh;
-
-    my $sth = $dbh->prepare(
-        q{
-         SELECT categorycode, itemtype, branchcode, reservesallowed, holds_per_record
-           FROM issuingrules
-          WHERE (categorycode in (?,'*') )
-            AND (itemtype IN (?,'*'))
-            AND (branchcode IN (?,'*'))
-       ORDER BY categorycode DESC,
-                itemtype     DESC,
-                branchcode   DESC
+    my $reservesallowed = Koha::CirculationRules->get_effective_rule(
+        {
+            itemtype     => $itemtype,
+            categorycode => $categorycode,
+            branchcode   => $branchcode,
+            rule_name    => 'reservesallowed',
+            order_by     => {
+                -desc => [ 'categorycode', 'itemtype', 'branchcode' ]
+            }
         }
     );
+    return unless $reservesallowed;;
 
-    $sth->execute( $categorycode, $itemtype, $branchcode );
+    my $rules;
+    $rules->{reservesallowed} = $reservesallowed->rule_value;
+    $rules->{itemtype}        = $reservesallowed->itemtype;
+    $rules->{categorycode}    = $reservesallowed->categorycode;
+    $rules->{branchcode}      = $reservesallowed->branchcode;
 
-    return $sth->fetchrow_hashref();
+    my $holds_per_record = Koha::CirculationRules->get_effective_rule(
+        {
+            itemtype     => $itemtype,
+            categorycode => $categorycode,
+            branchcode   => $branchcode,
+            rule_name    => 'holds_per_record',
+            order_by     => {
+                -desc => [ 'categorycode', 'itemtype', 'branchcode' ]
+            }
+        }
+    );
+    $rules->{holds_per_record} = $holds_per_record->rule_value if $holds_per_record;
+
+    return $rules;
 }
 
 =head1 AUTHOR

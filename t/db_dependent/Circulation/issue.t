@@ -34,6 +34,7 @@ use Koha::DateUtils;
 use Koha::Holds;
 use Koha::Library;
 use Koha::Patrons;
+use Koha::CirculationRules;
 
 BEGIN {
     require_ok('C4::Circulation');
@@ -65,7 +66,7 @@ $dbh->do(q|DELETE FROM items|);
 $dbh->do(q|DELETE FROM borrowers|);
 $dbh->do(q|DELETE FROM categories|);
 $dbh->do(q|DELETE FROM accountlines|);
-$dbh->do(q|DELETE FROM issuingrules|);
+$dbh->do(q|DELETE FROM circulation_rules|);
 $dbh->do(q|DELETE FROM reserves|);
 $dbh->do(q|DELETE FROM old_reserves|);
 $dbh->do(q|DELETE FROM statistics|);
@@ -287,10 +288,17 @@ is_deeply(
 
 #With something in DB
 # Add a default rule: No renewal allowed
-$dbh->do(q|
-    INSERT INTO issuingrules( categorycode, itemtype, branchcode, issuelength, renewalsallowed )
-    VALUES ( '*', '*', '*', 10, 0 )
-|);
+Koha::CirculationRules->set_rules(
+    {
+        categorycode => '*',
+        itemtype     => '*',
+        branchcode   => '*',
+        rules        => {
+            issuelength     => 10,
+            renewalsallowed => 0,
+        }
+    }
+);
 @renewcount = C4::Circulation::GetRenewCount();
 is_deeply(
     \@renewcount,
@@ -311,9 +319,16 @@ is_deeply(
 );
 
 # Add a default rule: renewal is allowed
-$dbh->do(q|
-    UPDATE issuingrules SET renewalsallowed = 3
-|);
+Koha::CirculationRules->set_rules(
+    {
+        categorycode => '*',
+        itemtype     => '*',
+        branchcode   => '*',
+        rules        => {
+            renewalsallowed => 3,
+        }
+    }
+);
 @renewcount = C4::Circulation::GetRenewCount($borrower_id1, $item_id1);
 is_deeply(
     \@renewcount,

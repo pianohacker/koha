@@ -359,7 +359,7 @@ subtest 'build_object() tests' => sub {
     my $itemtype = $builder->build( { source => 'Itemtype' } )->{itemtype};
 
     my $issuing_rule = $builder->build_object(
-        {   class => 'Koha::IssuingRules',
+        {   class => 'Koha::CirculationRules',
             value => {
                 categorycode => $categorycode,
                 itemtype     => $itemtype
@@ -367,7 +367,7 @@ subtest 'build_object() tests' => sub {
         }
     );
 
-    is( ref($issuing_rule), 'Koha::IssuingRule', 'Type is correct' );
+    is( ref($issuing_rule), 'Koha::CirculationRule', 'Type is correct' );
     is( $issuing_rule->categorycode,
         $categorycode, 'Category code correctly set' );
     is( $issuing_rule->itemtype, $itemtype, 'Item type correctly set' );
