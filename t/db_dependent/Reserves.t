@@ -198,12 +198,17 @@ $requesters{$branch_3} = AddMember(
 # to request its items, while $branch_2 will allow its items
 # to fill holds from anywhere.
 
-$dbh->do('DELETE FROM issuingrules');
-$dbh->do(
-    q{INSERT INTO issuingrules (categorycode, branchcode, itemtype, reservesallowed)
-      VALUES (?, ?, ?, ?)},
-    {},
-    '*', '*', '*', 25
+$dbh->do('DELETE FROM circulation_rules');
+Koha::CirculationRules->set_rules(
+    {
+        branchcode   => '*',
+        categorycode => '*',
+        itemtype     => '*',
+        rules        => {
+            reservesallowed => 25,
+            holds_per_record => 1,
+        }
+    }
 );
 
 # CPL allows only its own patrons to request its items
@@ -549,24 +554,27 @@ ok( C4::Reserves::IsAvailableForItemLevelRequest($item, $borrower), "Reserving a
 my $itype = C4::Reserves::_get_itype($item);
 my $categorycode = $borrower->{categorycode};
 my $holdingbranch = $item->{holdingbranch};
-my $issuing_rule = Koha::IssuingRules->get_effective_issuing_rule(
+Koha::CirculationRules->set_rules(
     {
         categorycode => $categorycode,
         itemtype     => $itype,
-        branchcode   => $holdingbranch
+        branchcode   => $holdingbranch,
+        rules => {
+            onshelfholds => 1,
+        }
     }
 );
 
-$dbh->do(
-    "UPDATE issuingrules SET onshelfholds = 1 WHERE categorycode = ? AND itemtype= ? and branchcode = ?",
-    undef,
-    $issuing_rule->categorycode, $issuing_rule->itemtype, $issuing_rule->branchcode
-);
 ok( C4::Reserves::OnShelfHoldsAllowed($item, $borrower), "OnShelfHoldsAllowed() allowed" );
-$dbh->do(
-    "UPDATE issuingrules SET onshelfholds = 0 WHERE categorycode = ? AND itemtype= ? and branchcode = ?",
-    undef,
-    $issuing_rule->categorycode, $issuing_rule->itemtype, $issuing_rule->branchcode
+Koha::CirculationRules->set_rules(
+    {
+        categorycode => $categorycode,
+        itemtype     => $itype,
+        branchcode   => $holdingbranch,
+        rules => {
+            onshelfholds => 0,
+        }
+    }
 );
 ok( !C4::Reserves::OnShelfHoldsAllowed($item, $borrower), "OnShelfHoldsAllowed() disallowed" );
 

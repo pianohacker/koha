@@ -43,12 +43,7 @@ $dbh->do(q|DELETE FROM branches|);
 $dbh->do(q|DELETE FROM categories|);
 $dbh->do(q|DELETE FROM accountlines|);
 $dbh->do(q|DELETE FROM itemtypes|);
-$dbh->do(q|DELETE FROM branch_item_rules|);
-$dbh->do(q|DELETE FROM default_branch_circ_rules|);
-$dbh->do(q|DELETE FROM default_circ_rules|);
-$dbh->do(q|DELETE FROM default_branch_item_rules|);
-$dbh->do(q|DELETE FROM issuingrules|);
-Koha::CirculationRules->search()->delete();
+$dbh->do(q|DELETE FROM circulation_rules|);
 
 my $builder = t::lib::TestBuilder->new();
 t::lib::Mocks::mock_preference('item-level_itypes', 1); # Assuming the item type is defined at item level
@@ -423,6 +418,17 @@ subtest '1 BranchBorrowerCircRule exist: 1 CO allowed, 1 OSCO allowed' => sub {
     );
 
     teardown();
+    Koha::CirculationRules->set_rules(
+        {
+            branchcode   => $branch->{branchcode},
+            categorycode => $category->{categorycode},
+            itemtype     => undef,
+            rules        => {
+                maxissueqty       => 1,
+                maxonsiteissueqty => 1,
+            }
+        }
+    );
 
     $issue = C4::Circulation::AddIssue( $patron, $item->{barcode}, dt_from_string(), undef, undef, undef, { onsite_checkout => 1 } );
     like( $issue->issue_id, qr|^\d+$|, 'The issue should have been inserted' );
@@ -470,6 +476,6 @@ $schema->storage->txn_rollback;
 
 sub teardown {
     $dbh->do(q|DELETE FROM issues|);
-    $dbh->do(q|DELETE FROM issuingrules|);
+    $dbh->do(q|DELETE FROM circulation_rules|);
 }
 

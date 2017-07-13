@@ -32,7 +32,7 @@ use Koha::Items;
 use Koha::Biblioitems;
 use Koha::ArticleRequests;
 use Koha::ArticleRequest::Status;
-use Koha::IssuingRules;
+use Koha::CirculationRules;
 use Koha::Subscriptions;
 
 =head1 NAME
@@ -127,10 +127,16 @@ sub article_request_type_for_bib {
     my $borrowertype = $borrower->categorycode;
     my $itemtype     = $self->itemtype();
 
-    my $issuing_rule = Koha::IssuingRules->get_effective_issuing_rule({ categorycode => $borrowertype, itemtype => $itemtype });
+    my $rule = Koha::CirculationRules->get_effective_rule(
+        {
+            rule_name    => 'article_requests',
+            categorycode => $borrowertype,
+            itemtype     => $itemtype,
+        }
+    );
 
-    return q{} unless $issuing_rule;
-    return $issuing_rule->article_requests || q{}
+    return q{} unless $rule;
+    return $rule->rule_value || q{}
 }
 
 =head3 article_request_type_for_items

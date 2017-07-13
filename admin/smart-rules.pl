@@ -27,8 +27,6 @@ use C4::Koha;
 use C4::Debug;
 use Koha::DateUtils;
 use Koha::Database;
-use Koha::IssuingRule;
-use Koha::IssuingRules;
 use Koha::Logger;
 use Koha::RefundLostItemFeeRules;
 use Koha::Libraries;
@@ -77,8 +75,41 @@ if ($op eq 'delete') {
     my $categorycode = $input->param('categorycode');
     $debug and warn "deleting $1 $2 $branch";
 
-    my $sth_Idelete = $dbh->prepare("delete from issuingrules where branchcode=? and categorycode=? and itemtype=?");
-    $sth_Idelete->execute($branch, $categorycode, $itemtype);
+    Koha::CirculationRules->set_rules(
+        {
+            categorycode => $categorycode,
+            branchcode   => $branch,
+            itemtype     => $itemtype,
+            rules        => {
+                restrictedtype                   => undef,
+                rentaldiscount                   => undef,
+                fine                             => undef,
+                finedays                         => undef,
+                maxsuspensiondays                => undef,
+                firstremind                      => undef,
+                chargeperiod                     => undef,
+                chargeperiod_charge_at           => undef,
+                accountsent                      => undef,
+                issuelength                      => undef,
+                lengthunit                       => undef,
+                hardduedate                      => undef,
+                hardduedatecompare               => undef,
+                renewalsallowed                  => undef,
+                renewalperiod                    => undef,
+                norenewalbefore                  => undef,
+                auto_renew                       => undef,
+                no_auto_renewal_after            => undef,
+                no_auto_renewal_after_hard_limit => undef,
+                reservesallowed                  => undef,
+                holds_per_record                 => undef,
+                overduefinescap                  => undef,
+                cap_fine_to_replacement_price    => undef,
+                onshelfholds                     => undef,
+                opacitemholds                    => undef,
+                article_requests                 => undef,
+            }
+        }
+    );
 }
 elsif ($op eq 'delete-branch-cat') {
     my $categorycode  = $input->param('categorycode');
@@ -279,13 +310,6 @@ elsif ($op eq 'add') {
         article_requests              => $article_requests,
     };
 
-    my $issuingrule = Koha::IssuingRules->find({categorycode => $bor, itemtype => $itemtype, branchcode => $br});
-    if ($issuingrule) {
-        $issuingrule->set($params)->store();
-    } else {
-        Koha::IssuingRule->new()->set($params)->store();
-    }
-
     Koha::CirculationRules->set_rules(
         {
             categorycode => $bor,
@@ -294,6 +318,7 @@ elsif ($op eq 'add') {
             rules        => {
                 maxissueqty       => $maxissueqty,
                 maxonsiteissueqty => $maxonsiteissueqty,
+                %$params,
             }
         }
     );
@@ -530,62 +555,16 @@ $template->param(
 
 my $patron_categories = Koha::Patron::Categories->search({}, { order_by => ['description'] });
 
-my @row_loop;
 my $itemtypes = Koha::ItemTypes->search_with_localization;
-
-my $sth2 = $dbh->prepare("
-    SELECT  issuingrules.*,
-            itemtypes.description AS humanitemtype,
-            categories.description AS humancategorycode,
-            COALESCE( localization.translation, itemtypes.description ) AS translated_description
-    FROM issuingrules
-    LEFT JOIN itemtypes
-        ON (itemtypes.itemtype = issuingrules.itemtype)
-    LEFT JOIN categories
-        ON (categories.categorycode = issuingrules.categorycode)
-    LEFT JOIN localization ON issuingrules.itemtype = localization.code
-        AND localization.entity = 'itemtypes'
-        AND localization.lang = ?
-    WHERE issuingrules.branchcode = ?
-");
-$sth2->execute($language, $branch);
-
-while (my $row = $sth2->fetchrow_hashref) {
-    $row->{'current_branch'} ||= $row->{'branchcode'};
-    $row->{humanitemtype} ||= $row->{itemtype};
-    $row->{default_translated_description} = 1 if $row->{humanitemtype} eq '*';
-    $row->{'humancategorycode'} ||= $row->{'categorycode'};
-    $row->{'default_humancategorycode'} = 1 if $row->{'humancategorycode'} eq '*';
-    $row->{'fine'} = sprintf('%.2f', $row->{'fine'});
-    if ($row->{'hardduedate'} && $row->{'hardduedate'} ne '0000-00-00') {
-       my $harddue_dt = eval { dt_from_string( $row->{'hardduedate'} ) };
-       $row->{'hardduedate'} = eval { output_pref( { dt => $harddue_dt, dateonly => 1 } ) } if ( $harddue_dt );
-       $row->{'hardduedatebefore'} = 1 if ($row->{'hardduedatecompare'} == -1);
-       $row->{'hardduedateexact'} = 1 if ($row->{'hardduedatecompare'} ==  0);
-       $row->{'hardduedateafter'} = 1 if ($row->{'hardduedatecompare'} ==  1);
-    } else {
-       $row->{'hardduedate'} = 0;
-    }
-    if ($row->{no_auto_renewal_after_hard_limit}) {
-       my $dt = eval { dt_from_string( $row->{no_auto_renewal_after_hard_limit} ) };
-       $row->{no_auto_renewal_after_hard_limit} = eval { output_pref( { dt => $dt, dateonly => 1 } ) } if $dt;
-    }
-
-    push @row_loop, $row;
-}
-
-my @sorted_row_loop = sort by_category_and_itemtype @row_loop;
 
 $template->param(show_branch_cat_rule_form => 1);
 
 $template->param(
     patron_categories => $patron_categories,
-                        itemtypeloop => $itemtypes,
-                        rules => \@sorted_row_loop,
-                        humanbranch => ($branch ne '*' ? $branch : ''),
-                        current_branch => $branch,
-                        definedbranch => scalar(@sorted_row_loop)>0
-                        );
+    itemtypeloop      => $itemtypes,
+    humanbranch       => ( $branch ne '*' ? $branch : '' ),
+    current_branch    => $branch,
+);
 output_html_with_http_headers $input, $cookie, $template->output;
 
 exit 0;

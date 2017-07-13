@@ -1,14 +1,23 @@
+[% USE KohaDates %]
 [% USE Branches %]
 [% SET footerjs = 1 %]
 [% USE Categories %]
+[% USE ItemTypes %]
 [% USE CirculationRules %]
 
-[% SET branchcode = humanbranch %]
+[% SET branchcode = humanbranch || '*' %]
 
-[% SET categorycodes = ['*'] %]
+[% SET categorycodes = [] %]
 [% FOREACH pc IN patron_categories %]
     [% categorycodes.push( pc.id ) %]
 [% END %]
+[% categorycodes.push('*') %]
+
+[% SET itemtypes = [] %]
+[% FOREACH i IN itemtypeloop %]
+    [% itemtypes.push( i.itemtype ) %]
+[% END %]
+[% itemtypes.push('*') %]
 
 [% INCLUDE 'doc-head-open.inc' %]
 <title>Koha &rsaquo; Administration &rsaquo; Circulation and fine rules</title>
@@ -106,116 +115,148 @@
             </tr>
             </thead>
             <tbody>
-				[% FOREACH rule IN rules %]
-					<tr id="row_[% loop.count %]">
-							<td>[% IF ( rule.default_humancategorycode ) %]
-									<em>All</em>
-								[% ELSE %]
-									[% rule.humancategorycode %]
-								[% END %]
-							</td>
-                            <td>[% IF rule.default_translated_description %]
-									<em>All</em>
-								[% ELSE %]
-									[% rule.translated_description %]
-								[% END %]
-							</td>
-                                                        <td class="actions">
-                                                          <a href="#" class="editrule btn btn-default btn-xs"><i class="fa fa-pencil"></i> Edit</a>
-                                                          <a class="btn btn-default btn-xs delete" href="/cgi-bin/koha/admin/smart-rules.pl?op=delete&amp;itemtype=[% rule.itemtype %]&amp;categorycode=[% rule.categorycode %]&amp;branch=[% rule.current_branch %]"><i class="fa fa-trash"></i> Delete</a>
-                                                        </td>
+                [% SET row_count = 0 %]
+                [% FOREACH c IN categorycodes %]
+                    [% FOREACH i IN itemtypes %]
+                        [% SET maxissueqty = CirculationRules.Get( branchcode, c, i, 'maxissueqty' ) %]
+                        [% SET maxonsiteissueqty = CirculationRules.Get( branchcode, c, i, 'maxonsiteissueqty' ) %]
+                        [% SET issuelength = CirculationRules.Get( branchcode, c, i, 'issuelength' ) %]
+                        [% SET lengthunit = CirculationRules.Get( branchcode, c, i, 'lengthunit' ) %]
+                        [% SET hardduedate = CirculationRules.Get( branchcode, c, i, 'hardduedate' ) %]
+                        [% SET hardduedatecompare = CirculationRules.Get( branchcode, c, i, 'hardduedatecompare' ) %]
+                        [% SET fine = CirculationRules.Get( branchcode, c, i, 'fine' ) %]
+                        [% SET chargeperiod = CirculationRules.Get( branchcode, c, i, 'chargeperiod' ) %]
+                        [% SET chargeperiod_charge_at = CirculationRules.Get( branchcode, c, i, 'chargeperiod_charge_at' ) %]
+                        [% SET firstremind = CirculationRules.Get( branchcode, c, i, 'firstremind' ) %]
+                        [% SET overduefinescap = CirculationRules.Get( branchcode, c, i, 'overduefinescap' ) %]
+                        [% SET cap_fine_to_replacement_price = CirculationRules.Get( branchcode, c, i, 'cap_fine_to_replacement_price' ) %]
+                        [% SET finedays = CirculationRules.Get( branchcode, c, i, 'finedays' ) %]
+                        [% SET maxsuspensiondays = CirculationRules.Get( branchcode, c, i, 'maxsuspensiondays' ) %]
+                        [% SET renewalsallowed = CirculationRules.Get( branchcode, c, i, 'renewalsallowed' ) %]
+                        [% SET renewalperiod = CirculationRules.Get( branchcode, c, i, 'renewalperiod' ) %]
+                        [% SET norenewalbefore = CirculationRules.Get( branchcode, c, i, 'norenewalbefore' ) %]
+                        [% SET auto_renew = CirculationRules.Get( branchcode, c, i, 'auto_renew' ) %]
+                        [% SET no_auto_renewal_after = CirculationRules.Get( branchcode, c, i, 'no_auto_renewal_after' ) %]
+                        [% SET no_auto_renewal_after_hard_limit = CirculationRules.Get( branchcode, c, i, 'no_auto_renewal_after_hard_limit' ) %]
+                        [% SET reservesallowed = CirculationRules.Get( branchcode, c, i, 'reservesallowed' ) %]
+                        [% SET holds_per_record = CirculationRules.Get( branchcode, c, i, 'holds_per_record' ) %]
+                        [% SET onshelfholds = CirculationRules.Get( branchcode, c, i, 'onshelfholds' ) %]
+                        [% SET opacitemholds = CirculationRules.Get( branchcode, c, i, 'opacitemholds' ) %]
+                        [% SET article_requests = CirculationRules.Get( branchcode, c, i, 'article_requests' ) %]
+                        [% SET rentaldiscount = CirculationRules.Get( branchcode, c, i, 'rentaldiscount' ) %]
 
-							<td>
-                                [% SET rule_value = CirculationRules.Get( rule.branchcode, rule.categorycode, rule.itemtype, 'maxissueqty' ) %]
-                                [% IF rule_value  %]
-                                    [% rule_value %]
-                                [% ELSE %]
-                                    Unlimited
-                                [% END %]
-							</td>
-							<td>
-                                [% SET rule_value = CirculationRules.Get( rule.branchcode, rule.categorycode, rule.itemtype, 'maxonsiteissueqty' ) %]
-                                [% IF rule_value  %]
-                                    [% rule_value %]
-                                [% ELSE %]
-                                    Unlimited
-                                [% END %]
-							</td>
-							<td>[% rule.issuelength %]</td>
-							<td>
-							    [% rule.lengthunit %]
-							</td>
-                            <td>
-                              [% IF ( rule.hardduedate ) %]
-                                [% IF ( rule.hardduedatebefore ) %]
-                                  before [% rule.hardduedate %]
-                                  <input type="hidden" name="hardduedatecomparebackup" value="-1" />
-                                [% ELSIF ( rule.hardduedateexact ) %]
-                                  on [% rule.hardduedate %]
-                                  <input type="hidden" name="hardduedatecomparebackup" value="0" />
-                                [% ELSIF ( rule.hardduedateafter ) %]
-                                  after [% rule.hardduedate %]
-                                  <input type="hidden" name="hardduedatecomparebackup" value="1" />
-                                [% END %]
-                              [% ELSE %]
-                                None defined
-                              [% END %]
-                            </td>
-							<td>[% rule.fine %]</td>
-							<td>[% rule.chargeperiod %]</td>
-                <td>[% IF rule.chargeperiod_charge_at %]Start of interval[% ELSE %]End of interval[% END %]</td>
-							<td>[% rule.firstremind %]</td>
-                            <td>[% rule.overduefinescap FILTER format("%.2f") %]</td>
-                            <td>
-                                [% IF rule.cap_fine_to_replacement_price %]
-                                    <input type="checkbox" checked="checked" disabled="disabled" />
-                                [% ELSE %]
-                                    <input type="checkbox" disabled="disabled" />
-                                [% END %]
-                            </td>
-							<td>[% rule.finedays %]</td>
-                            <td>[% rule.maxsuspensiondays %]</td>
-							<td>[% rule.renewalsallowed %]</td>
-                            <td>[% rule.renewalperiod %]</td>
-                            <td>[% rule.norenewalbefore %]</td>
-                            <td>
-                                [% IF ( rule.auto_renew ) %]
-                                Yes
-                                [% ELSE %]
-                                No
-                                [% END %]
-                            </td>
-                            <td>[% rule.no_auto_renewal_after %]</td>
-                            <td>[% rule.no_auto_renewal_after_hard_limit %]</td>
-							<td>[% rule.reservesallowed %]</td>
-                                                        <td>[% rule.holds_per_record %]</td>
-                                                        <td>
-                                                            [% IF rule.onshelfholds == 1 %]
-                                                                Yes
-                                                            [% ELSIF rule.onshelfholds == 2 %]
-                                                                If all unavailable
-                                                            [% ELSE %]
-                                                                If any unavailable
-                                                            [% END %]</td>
-                                                        <td>[% IF rule.opacitemholds == 'F'%]Force[% ELSIF rule.opacitemholds == 'Y'%]Allow[% ELSE %]Don't allow[% END %]</td>
-                                                        <td>
-                                                            [% IF rule.article_requests == 'no' %]
-                                                                No
-                                                            [% ELSIF rule.article_requests == 'yes' %]
-                                                                Yes
-                                                            [% ELSIF rule.article_requests == 'bib_only' %]
-                                                                Record only
-                                                            [% ELSIF rule.article_requests == 'item_only' %]
-                                                                Item only
-                                                            [% END %]
-                                                        </td>
-							<td>[% rule.rentaldiscount %]</td>
-                                                        <td class="actions">
-                                                          <a href="#" class="editrule btn btn-default btn-xs"><i class="fa fa-pencil"></i> Edit</a>
-                                                          <a class="btn btn-default btn-xs delete" href="/cgi-bin/koha/admin/smart-rules.pl?op=delete&amp;itemtype=[% rule.itemtype %]&amp;categorycode=[% rule.categorycode %]&amp;branch=[% rule.current_branch %]"><i class="fa fa-trash"></i> Delete</a>
-                                                        </td>
-
-                	</tr>
+                        [% SET show_rule = maxissueqty || maxonsiteissueqty || issuelength || lengthunit || hardduedate || hardduedatebefore || hardduedateexact || fine || chargeperiod
+                                        || chargeperiod_charge_at || firstremind || overduefinescap || cap_fine_to_replacement_price || finedays || maxsuspensiondays || renewalsallowed
+                                        || renewalsallowed || norenewalbefore || auto_renew || no_auto_renewal_after || no_auto_renewal_after_hard_limit || reservesallowed
+                                        || holds_per_record || onshelfholds || opacitemholds || article_requests || article_requests %]
+                        [% IF show_rule %]
+                            [% SET row_count = row_count + 1 %]
+                            <tr row_countd="row_[% row_count %]">
+                                    <td>
+                                        [% IF c == '*' %]
+                                            <em>All</em>
+                                        [% ELSE %]
+                                            [% Categories.GetName(c) %]
+                                        [% END %]
+                                    </td>
+                                    <td>
+                                        [% IF i == '*' %]
+                                            <em>All</em>
+                                        [% ELSE %]
+                                            [% ItemTypes.GetDescription(i) %]
+                                        [% END %]
+                                    </td>
+                                    <td>
+                                        [% IF maxissueqty  %]
+                                            [% maxissueqty %]
+                                        [% ELSE %]
+                                            Unlimited
+                                        [% END %]
+                                    </td>
+                                    <td>
+                                        [% IF maxonsiteissueqty  %]
+                                            [% maxonsiteissueqty %]
+                                        [% ELSE %]
+                                            Unlimited
+                                        [% END %]
+                                    </td>
+                                    <td>[% issuelength %]</td>
+                                    <td>
+                                        [% lengthunit %]
+                                    </td>
+                                    <td>
+                                      [% IF ( hardduedate ) %]
+                                        [% IF ( hardduedatecompare == '-1' ) %]
+                                          before [% hardduedate | $KohaDates %]
+                                          <input type="hidden" name="hardduedatecomparebackup" value="-1" />
+                                        [% ELSIF ( hardduedatecompare == '0' ) %]
+                                          on [% hardduedate | $KohaDates %]
+                                          <input type="hidden" name="hardduedatecomparebackup" value="0" />
+                                        [% ELSIF ( hardduedatecompare == '1' ) %]
+                                          after [% hardduedate | $KohaDates %]
+                                          <input type="hidden" name="hardduedatecomparebackup" value="1" />
+                                        [% END %]
+                                      [% ELSE %]
+                                        None defined
+                                      [% END %]
+                                    </td>
+                                    <td>[% fine %]</td>
+                                    <td>[% chargeperiod %]</td>
+                                    <td>[% IF chargeperiod_charge_at %]Start of interval[% ELSE %]End of interval[% END %]</td>
+                                    <td>[% firstremind %]</td>
+                                    <td>[% overduefinescap FILTER format("%.2f") %]</td>
+                                    <td>
+                                        [% IF cap_fine_to_replacement_price %]
+                                            <input type="checkbox" checked="checked" disabled="disabled" />
+                                        [% ELSE %]
+                                            <input type="checkbox" disabled="disabled" />
+                                        [% END %]
+                                    </td>
+                                    <td>[% finedays %]</td>
+                                    <td>[% maxsuspensiondays %]</td>
+                                    <td>[% renewalsallowed %]</td>
+                                    <td>[% renewalperiod %]</td>
+                                    <td>[% norenewalbefore %]</td>
+                                    <td>
+                                        [% IF auto_renew %]
+                                            Yes
+                                        [% ELSE %]
+                                            No
+                                        [% END %]
+                                    </td>
+                                    <td>[% no_auto_renewal_after %]</td>
+                                    <td>[% no_auto_renewal_after_hard_limit %]</td>
+                                    <td>[% reservesallowed %]</td>
+                                    <td>[% holds_per_record %]</td>
+                                    <td>
+                                        [% IF onshelfholds == 1 %]
+                                            Yes
+                                        [% ELSIF onshelfholds == 2 %]
+                                            If all unavailable
+                                        [% ELSE %]
+                                            If any unavailable
+                                        [% END %]
+                                    </td>
+                                    <td>[% IF opacitemholds == 'F'%]Force[% ELSIF opacitemholds == 'Y'%]Allow[% ELSE %]Don't allow[% END %]</td>
+                                    <td>
+                                        [% IF article_requests == 'no' %]
+                                            No
+                                        [% ELSIF article_requests == 'yes' %]
+                                            Yes
+                                        [% ELSIF article_requests == 'bib_only' %]
+                                            Record only
+                                        [% ELSIF article_requests == 'item_only' %]
+                                            Item only
+                                        [% END %]
+                                    </td>
+                                    <td>[% rentaldiscount %]</td>
+                                    <td class="actions">
+                                      <a href="#" class="editrule btn btn-default btn-xs"><i class="fa fa-pencil"></i> Edit</a>
+                                      <a class="btn btn-default btn-xs delete" href="/cgi-bin/koha/admin/smart-rules.pl?op=delete&amp;itemtype=[% rule.itemtype %]&amp;categorycode=[% rule.categorycode %]&amp;branch=[% rule.current_branch %]"><i class="fa fa-trash"></i> Delete</a>
+                                    </td>
+                            </tr>
+                        [% END %]
+                    [% END %]
             	[% END %]
                 <tr id="edit_row">
                     <td>
