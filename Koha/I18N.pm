@@ -24,8 +24,7 @@ use C4::Languages;
 use C4::Context;
 
 use Encode;
-use Locale::Util qw(set_locale);
-use Locale::Messages qw(:locale_h :libintl_h nl_putenv);
+use Locale::Messages qw(:locale_h nl_putenv);
 use Koha::Cache::Memory::Lite;
 
 use parent 'Exporter';
@@ -57,18 +56,14 @@ sub init {
         if ($region && length $region == 4) {
             $region = $subtags[2];
         }
-        my $locale = set_locale(LC_ALL, $language, $region, 'utf-8');
-        unless ($locale) {
-            set_locale(LC_MESSAGES, '');
-            Locale::Messages->select_package('gettext_pp');
-            $locale = $language;
-            if ($region) {
-                $locale .= '_' . $region;
-            }
-            nl_putenv("LANGUAGE=$locale");
-            nl_putenv("LANG=$locale");
-            nl_putenv('OUTPUT_CHARSET=utf-8');
+        Locale::Messages->select_package('gettext_pp');
+        my $locale = $language;
+        if ($region) {
+            $locale .= '_' . $region;
         }
+        nl_putenv("LANGUAGE=$locale");
+        nl_putenv("LANG=$locale");
+        nl_putenv('OUTPUT_CHARSET=utf-8');
 
         my $directory = _base_directory();
         textdomain($textdomain);
