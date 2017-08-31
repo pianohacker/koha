@@ -2026,17 +2026,20 @@ sub get_all_subpermissions {
 
 =head2 haspermission
 
-  $flags = ($userid, $flagsrequired);
+  $flags = ( $userid, $flagsrequired[, { no_inherit => 1 } ] );
 
 C<$userid> the userid of the member
 C<$flags> is a hashref of required flags like C<$borrower-&lt;{authflags}> 
+C<no_inherit>, if true, means that this function will not return true if
+$flagsrequired is { module => 'sub_perm' } and the user only has { module => 1 }.
+This is useful for *_restricted permissions.
 
 Returns member's flags or 0 if a permission is not met.
 
 =cut
 
 sub haspermission {
-    my ( $userid, $flagsrequired ) = @_;
+    my ( $userid, $flagsrequired, $options ) = @_;
     my $sth = C4::Context->dbh->prepare("SELECT flags FROM borrowers WHERE userid=?");
     $sth->execute($userid);
     my $row = $sth->fetchrow();
@@ -2047,7 +2050,7 @@ sub haspermission {
         $flags->{'superlibrarian'} = 1;
     }
 
-    return $flags if $flags->{superlibrarian};
+    return $flags if $flags->{superlibrarian} && !$options->{no_inherit};
 
     foreach my $module ( keys %$flagsrequired ) {
         my $subperm = $flagsrequired->{$module};
@@ -2056,7 +2059,8 @@ sub haspermission {
         } else {
             return 0 unless (
                 ( defined $flags->{$module} and
-                    $flags->{$module} == 1 )
+                    $flags->{$module} == 1 and
+                    !$options->{no_inherit} )
                 or
                 ( ref( $flags->{$module} ) and
                     exists $flags->{$module}->{$subperm} and

@@ -32,7 +32,8 @@
     [%- CASE 'overdues_report' -%]<span>Execute overdue items report</span>
     [%- CASE 'override_renewals' -%]<span>Override blocked renewals</span>
     [%- CASE 'self_checkout' -%]<span>Perform self checkout at the OPAC. It should be used for the patron matching the AutoSelfCheckID</span>
-    [%- CASE 'manage_circ_rules' -%]<span>manage circulation rules</span>
+    [%- CASE 'manage_circ_rules' -%]<span>Manage circulation rules</span>
+    [%- CASE 'manage_circ_rules_restricted' -%]<span>Limit circulation rules editing to the user's own library (please note that manage_circ_rules is still required)</span>
     [%- CASE 'parameters_remaining_permissions' -%]<span>Remaining system parameters permissions</span>
     [%- CASE 'edit_borrowers' -%]<span>Add, modify and view patron information</span>
     [%- CASE 'view_borrower_infos_from_any_libraries' -%]<span>View patron infos from any libraries. If not set the logged in user could only access patron infos from its own library or group of libraries.</span>
