@@ -427,7 +427,7 @@ sub TooMany {
         |;
 
         my $rule_itemtype = $maxissueqty_rule->itemtype;
-        if ($rule_itemtype eq "*") {
+        if (!defined $rule_itemtype) {
             # matching rule has the default item type, so count only
             # those existing loans that don't fall under a more
             # specific rule
@@ -436,7 +436,7 @@ sub TooMany {
                                     SELECT itemtype FROM circulation_rules
                                     WHERE branchcode = ?
                                     AND   (categorycode = ? OR categorycode = ?)
-                                    AND   itemtype <> '*'
+                                    AND   itemtype IS NOT NULL
                                     AND   rule_name = 'maxissueqty'
                                   ) ";
             } else { 
@@ -445,7 +445,7 @@ sub TooMany {
                                     SELECT itemtype FROM circulation_rules
                                     WHERE branchcode = ?
                                     AND   (categorycode = ? OR categorycode = ?)
-                                    AND   itemtype <> '*'
+                                    AND   itemtype IS NOT NULL
                                     AND   rule_name = 'maxissueqty'
                                   ) ";
             }
@@ -467,7 +467,7 @@ sub TooMany {
         $count_query .= " AND borrowernumber = ? ";
         push @bind_params, $borrower->{'borrowernumber'};
         my $rule_branch = $maxissueqty_rule->branchcode;
-        if ($rule_branch ne "*") {
+        if (defined $rule_branch) {
             if (C4::Context->preference('CircControl') eq 'PickupLibrary') {
                 $count_query .= " AND issues.branchcode = ? ";
                 push @bind_params, $branch;
@@ -1502,38 +1502,38 @@ sub GetLoanLength {
         },
         {
             categorycode => $categorycode,
-            itemtype     => '*',
+            itemtype     => undef,
             branchcode   => $branchcode,
         },
         {
-            categorycode => '*',
+            categorycode => undef,
             itemtype     => $itemtype,
             branchcode   => $branchcode,
         },
         {
-            categorycode => '*',
-            itemtype     => '*',
+            categorycode => undef,
+            itemtype     => undef,
             branchcode   => $branchcode,
         },
         {
             categorycode => $categorycode,
             itemtype     => $itemtype,
-            branchcode   => '*',
+            branchcode   => undef,
         },
         {
             categorycode => $categorycode,
-            itemtype     => '*',
-            branchcode   => '*',
+            itemtype     => undef,
+            branchcode   => undef,
         },
         {
-            categorycode => '*',
+            categorycode => undef,
             itemtype     => $itemtype,
-            branchcode   => '*',
+            branchcode   => undef,
         },
         {
-            categorycode => '*',
-            itemtype     => '*',
-            branchcode   => '*',
+            categorycode => undef,
+            itemtype     => undef,
+            branchcode   => undef,
         },
     );
 

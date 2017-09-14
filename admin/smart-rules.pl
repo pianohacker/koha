@@ -77,9 +77,9 @@ if ($op eq 'delete') {
 
     Koha::CirculationRules->set_rules(
         {
-            categorycode => $categorycode,
-            branchcode   => $branch,
-            itemtype     => $itemtype,
+            categorycode => $categorycode eq '*' ? undef : $categorycode,
+            branchcode   => $branch eq '*' ? undef : $branch,
+            itemtype     => $itemtype eq '*' ? undef : $itemtype,
             rules        => {
                 restrictedtype                   => undef,
                 rentaldiscount                   => undef,
@@ -117,12 +117,19 @@ elsif ($op eq 'delete-branch-cat') {
         if ($categorycode eq "*") {
             Koha::CirculationRules->set_rules(
                 {
-                    categorycode => undef,
                     branchcode   => undef,
-                    itemtype     => undef,
+                    categorycode => undef,
                     rules        => {
                         patron_maxissueqty             => undef,
                         patron_maxonsiteissueqty       => undef,
+                    }
+                }
+            );
+            Koha::CirculationRules->set_rules(
+                {
+                    branchcode   => undef,
+                    itemtype     => undef,
+                    rules        => {
                         holdallowed             => undef,
                         hold_fulfillment_policy => undef,
                         returnbranch            => undef,
@@ -134,7 +141,6 @@ elsif ($op eq 'delete-branch-cat') {
                 {
                     categorycode => $categorycode,
                     branchcode   => undef,
-                    itemtype     => undef,
                     rules        => {
                         max_holds         => undef,
                         patron_maxissueqty       => undef,
@@ -146,12 +152,18 @@ elsif ($op eq 'delete-branch-cat') {
     } elsif ($categorycode eq "*") {
         Koha::CirculationRules->set_rules(
             {
-                categorycode => undef,
                 branchcode   => $branch,
-                itemtype     => undef,
+                categorycode => undef,
                 rules        => {
-                    patron_maxissueqty             => undef,
-                    patron_maxonsiteissueqty       => undef,
+                    patron_maxissueqty       => undef,
+                    patron_maxonsiteissueqty => undef,
+                }
+            }
+        );
+        Koha::CirculationRules->set_rules(
+            {
+                branchcode   => $branch,
+                rules        => {
                     holdallowed             => undef,
                     hold_fulfillment_policy => undef,
                     returnbranch            => undef,
@@ -163,7 +175,6 @@ elsif ($op eq 'delete-branch-cat') {
             {
                 categorycode => $categorycode,
                 branchcode   => $branch,
-                itemtype     => undef,
                 rules        => {
                     max_holds         => undef,
                     maxissueqty       => undef,
@@ -179,12 +190,9 @@ elsif ($op eq 'delete-branch-item') {
         if ($itemtype eq "*") {
             Koha::CirculationRules->set_rules(
                 {
-                    categorycode => undef,
                     branchcode   => undef,
                     itemtype     => undef,
                     rules        => {
-                        patron_maxissueqty             => undef,
-                        patron_maxonsiteissueqty       => undef,
                         holdallowed             => undef,
                         hold_fulfillment_policy => undef,
                         returnbranch            => undef,
@@ -194,7 +202,6 @@ elsif ($op eq 'delete-branch-item') {
         } else {
             Koha::CirculationRules->set_rules(
                 {
-                    categorycode => undef,
                     branchcode   => undef,
                     itemtype     => $itemtype,
                     rules        => {
@@ -208,12 +215,9 @@ elsif ($op eq 'delete-branch-item') {
     } elsif ($itemtype eq "*") {
         Koha::CirculationRules->set_rules(
             {
-                categorycode => undef,
                 branchcode   => $branch,
                 itemtype     => undef,
                 rules        => {
-                    patron_maxissueqty             => undef,
-                    patron_maxonsiteissueqty       => undef,
                     holdallowed             => undef,
                     hold_fulfillment_policy => undef,
                     returnbranch            => undef,
@@ -223,7 +227,6 @@ elsif ($op eq 'delete-branch-item') {
     } else {
         Koha::CirculationRules->set_rules(
             {
-                categorycode => undef,
                 branchcode   => $branch,
                 itemtype     => $itemtype,
                 rules        => {
@@ -278,12 +281,9 @@ elsif ($op eq 'add') {
     my $article_requests = $input->param('article_requests') || 'no';
     my $overduefinescap = $input->param('overduefinescap') || undef;
     my $cap_fine_to_replacement_price = $input->param('cap_fine_to_replacement_price') eq 'on';
-    $debug and warn "Adding $br, $bor, $itemtype, $fine, $maxissueqty, $maxonsiteissueqty, $cap_fine_to_replacement_price";
+    warn "Adding $br, $bor, $itemtype, $fine, $maxissueqty, $maxonsiteissueqty, $cap_fine_to_replacement_price";
 
     my $params = {
-        branchcode                    => $br,
-        categorycode                  => $bor,
-        itemtype                      => $itemtype,
         fine                          => $fine,
         finedays                      => $finedays,
         maxsuspensiondays             => $maxsuspensiondays,
@@ -312,9 +312,9 @@ elsif ($op eq 'add') {
 
     Koha::CirculationRules->set_rules(
         {
-            categorycode => $bor,
-            itemtype     => $itemtype,
-            branchcode   => $br,
+            categorycode => $bor eq '*' ? undef : $bor,
+            itemtype     => $itemtype eq '*' ? undef : $itemtype,
+            branchcode   => $br eq '*' ? undef : $br,
             rules        => {
                 maxissueqty       => $maxissueqty,
                 maxonsiteissueqty => $maxonsiteissueqty,
@@ -344,30 +344,44 @@ elsif ($op eq "set-branch-defaults") {
     if ($branch eq "*") {
         Koha::CirculationRules->set_rules(
             {
-                categorycode => undef,
                 itemtype     => undef,
                 branchcode   => undef,
                 rules        => {
-                    patron_maxissueqty             => $patron_maxissueqty,
-                    patron_maxonsiteissueqty       => $patron_maxonsiteissueqty,
                     holdallowed             => $holdallowed,
                     hold_fulfillment_policy => $hold_fulfillment_policy,
                     returnbranch            => $returnbranch,
                 }
             }
         );
-    } else {
         Koha::CirculationRules->set_rules(
             {
                 categorycode => undef,
+                branchcode   => undef,
+                rules        => {
+                    patron_maxissueqty             => $patron_maxissueqty,
+                    patron_maxonsiteissueqty       => $patron_maxonsiteissueqty,
+                }
+            }
+        );
+    } else {
+        Koha::CirculationRules->set_rules(
+            {
                 itemtype     => undef,
+                branchcode   => $branch,
+                rules        => {
+                    holdallowed             => $holdallowed,
+                    hold_fulfillment_policy => $hold_fulfillment_policy,
+                    returnbranch            => $returnbranch,
+                }
+            }
+        );
+        Koha::CirculationRules->set_rules(
+            {
+                categorycode => undef,
                 branchcode   => $branch,
                 rules        => {
                     patron_maxissueqty             => $patron_maxissueqty,
                     patron_maxonsiteissueqty       => $patron_maxonsiteissueqty,
-                    holdallowed             => $holdallowed,
-                    hold_fulfillment_policy => $hold_fulfillment_policy,
-                    returnbranch            => $returnbranch,
                 }
             }
         );
@@ -399,7 +413,6 @@ elsif ($op eq "add-branch-cat") {
             Koha::CirculationRules->set_rules(
                 {
                     categorycode => undef,
-                    itemtype     => undef,
                     branchcode   => undef,
                     rules        => {
                         max_holds         => $max_holds,
@@ -411,9 +424,8 @@ elsif ($op eq "add-branch-cat") {
         } else {
             Koha::CirculationRules->set_rules(
                 {
-                    branchcode   => '*',
                     categorycode => $categorycode,
-                    itemtype     => undef,
+                    branchcode   => undef,
                     rules        => {
                         max_holds         => $max_holds,
                         patron_maxissueqty       => $patron_maxissueqty,
@@ -426,7 +438,6 @@ elsif ($op eq "add-branch-cat") {
         Koha::CirculationRules->set_rules(
             {
                 categorycode => undef,
-                itemtype     => undef,
                 branchcode   => $branch,
                 rules        => {
                     max_holds         => $max_holds,
@@ -439,7 +450,6 @@ elsif ($op eq "add-branch-cat") {
         Koha::CirculationRules->set_rules(
             {
                 categorycode => $categorycode,
-                itemtype     => undef,
                 branchcode   => $branch,
                 rules        => {
                     max_holds         => $max_holds,
@@ -463,7 +473,6 @@ elsif ($op eq "add-branch-item") {
         if ($itemtype eq "*") {
             Koha::CirculationRules->set_rules(
                 {
-                    categorycode => undef,
                     itemtype     => undef,
                     branchcode   => undef,
                     rules        => {
@@ -476,7 +485,6 @@ elsif ($op eq "add-branch-item") {
         } else {
             Koha::CirculationRules->set_rules(
                 {
-                    categorycode => undef,
                     itemtype     => $itemtype,
                     branchcode   => undef,
                     rules        => {
@@ -490,7 +498,6 @@ elsif ($op eq "add-branch-item") {
     } elsif ($itemtype eq "*") {
             Koha::CirculationRules->set_rules(
                 {
-                    categorycode => undef,
                     itemtype     => undef,
                     branchcode   => $branch,
                     rules        => {
@@ -503,7 +510,6 @@ elsif ($op eq "add-branch-item") {
     } else {
         Koha::CirculationRules->set_rules(
             {
-                categorycode => undef,
                 itemtype     => $itemtype,
                 branchcode   => $branch,
                 rules        => {
@@ -524,8 +530,6 @@ elsif ( $op eq 'mod-refund-lost-item-fee-rule' ) {
             # only do something for $refund eq '*' if branch-specific
             Koha::CirculationRules->set_rules(
                 {
-                    categorycode => undef,
-                    itemtype     => undef,
                     branchcode   => $branch,
                     rules        => {
                         refund => undef
@@ -536,9 +540,7 @@ elsif ( $op eq 'mod-refund-lost-item-fee-rule' ) {
     } else {
         Koha::CirculationRules->set_rules(
             {
-                categorycode => undef,
-                itemtype     => undef,
-                branchcode   => $branch,
+                branchcode   => undef,
                 rules        => {
                     refund => $refund
                 }
@@ -547,7 +549,7 @@ elsif ( $op eq 'mod-refund-lost-item-fee-rule' ) {
     }
 }
 
-my $refundLostItemFeeRule = Koha::RefundLostItemFeeRules->find({ branchcode => $branch });
+my $refundLostItemFeeRule = Koha::RefundLostItemFeeRules->find({ branchcode => $branch eq '*' ? undef : $branch });
 $template->param(
     refundLostItemFeeRule => $refundLostItemFeeRule,
     defaultRefundRule     => Koha::RefundLostItemFeeRules->_default_rule
@@ -562,7 +564,7 @@ $template->param(show_branch_cat_rule_form => 1);
 $template->param(
     patron_categories => $patron_categories,
     itemtypeloop      => $itemtypes,
-    humanbranch       => ( $branch ne '*' ? $branch : '' ),
+    humanbranch       => ( $branch ne '*' ? $branch : undef ),
     current_branch    => $branch,
 );
 output_html_with_http_headers $input, $cookie, $template->output;

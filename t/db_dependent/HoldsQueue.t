@@ -293,7 +293,6 @@ Koha::CirculationRules->set_rule(
         rule_name    => 'holdallowed',
         rule_value   => 1,
         branchcode   => undef,
-        categorycode => undef,
         itemtype     => undef,
     }
 );
@@ -331,7 +330,6 @@ Koha::CirculationRules->set_rule(
         rule_name    => 'holdallowed',
         rule_value   => 2,
         branchcode   => undef,
-        categorycode => undef,
         itemtype     => undef,
     }
 );
@@ -359,7 +357,6 @@ Koha::CirculationRules->set_rule(
         rule_name    => 'holdallowed',
         rule_value   => 2,
         branchcode   => undef,
-        categorycode => undef,
         itemtype     => undef,
     }
 );
@@ -479,7 +476,6 @@ Koha::CirculationRules->set_rules(
     {
         branchcode   => $library_A,
         itemtype     => $itemtype,
-        categorycode => undef,
         rules        => {
             holdallowed  => 2,
             returnbranch => 'homebranch',
@@ -578,7 +574,6 @@ Koha::CirculationRules->set_rules(
     {
         branchcode   => undef,
         itemtype     => undef,
-        categorycode => undef,
         rules        => {
             holdallowed             => 2,
             hold_fulfillment_policy => 'homebranch',
@@ -613,7 +608,6 @@ Koha::CirculationRules->set_rules(
     {
         branchcode   => undef,
         itemtype     => undef,
-        categorycode => undef,
         rules        => {
             holdallowed             => 2,
             hold_fulfillment_policy => 'holdingbranch',
@@ -648,7 +642,6 @@ Koha::CirculationRules->set_rules(
     {
         branchcode   => undef,
         itemtype     => undef,
-        categorycode => undef,
         rules        => {
             holdallowed             => 2,
             hold_fulfillment_policy => 'any',
@@ -716,7 +709,6 @@ Koha::CirculationRules->set_rules(
     {
         branchcode   => undef,
         itemtype     => undef,
-        categorycode => undef,
         rules        => {
             holdallowed             => 2,
             hold_fulfillment_policy => 'any',

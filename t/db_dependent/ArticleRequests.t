@@ -147,9 +147,9 @@ is( $biblio->article_requests_finished()->count(), 1, 'Canceled request not retu
 
 my $rule = Koha::CirculationRules->set_rule(
     {
-        categorycode => '*',
-        itemtype     => '*',
-        branchcode   => '*',
+        categorycode => undef,
+        itemtype     => undef,
+        branchcode   => undef,
         rule_name    => 'article_requests',
         rule_value   => 'yes',
     }
@@ -162,9 +162,9 @@ $rule->delete();
 
 $rule = Koha::CirculationRules->set_rule(
     {
-        categorycode => '*',
-        itemtype     => '*',
-        branchcode   => '*',
+        categorycode => undef,
+        itemtype     => undef,
+        branchcode   => undef,
         rule_name    => 'article_requests',
         rule_value   => 'bib_only',
     }
@@ -177,9 +177,9 @@ $rule->delete();
 
 $rule = Koha::CirculationRules->set_rule(
     {
-        categorycode => '*',
-        itemtype     => '*',
-        branchcode   => '*',
+        categorycode => undef,
+        itemtype     => undef,
+        branchcode   => undef,
         rule_name    => 'article_requests',
         rule_value   => 'item_only',
     }
@@ -192,9 +192,9 @@ $rule->delete();
 
 $rule = Koha::CirculationRules->set_rule(
     {
-        categorycode => '*',
-        itemtype     => '*',
-        branchcode   => '*',
+        categorycode => undef,
+        itemtype     => undef,
+        branchcode   => undef,
         rule_name    => 'article_requests',
         rule_value   => 'no',
     }

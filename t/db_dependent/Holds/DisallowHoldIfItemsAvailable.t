@@ -95,9 +95,9 @@ my $item2 = GetItem( $itemnumber2 );
 $dbh->do("DELETE FROM circulation_rules");
 Koha::CirculationRules->set_rules(
     {
-        categorycode => '*',
-        itemtype     => '*',
-        branchcode   => '*',
+        categorycode => undef,
+        itemtype     => undef,
+        branchcode   => undef,
         rules        => {
             issuelength     => 7,
             lengthunit      => 8,

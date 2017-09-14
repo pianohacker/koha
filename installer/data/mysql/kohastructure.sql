@@ -4141,7 +4141,10 @@ CREATE TABLE `circulation_rules` (
   KEY `branchcode` (`branchcode`),
   KEY `categorycode` (`categorycode`),
   KEY `itemtype` (`itemtype`),
-  UNIQUE (`branchcode`,`categorycode`,`itemtype`)
+  UNIQUE (`branchcode`,`categorycode`,`itemtype`,`rule_name`),
+  FOREIGN KEY (branchcode) REFERENCES branches (branchcode) ON DELETE CASCADE ON UPDATE CASCADE,
+  FOREIGN KEY (categorycode) REFERENCES categories (categorycode) ON DELETE CASCADE ON UPDATE CASCADE,
+  FOREIGN KEY (itemtype) REFERENCES itemtypes (itemtype) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;

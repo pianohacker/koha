@@ -5,6 +5,9 @@
   "/acquisitions/vendors/{vendor_id}": {
     "$ref": "paths/acquisitions_vendors.json#/~1acquisitions~1vendors~1{vendor_id}"
   },
+  "/circulation-rules/kinds": {
+    "$ref": "paths/circulation-rules.json#/~1circulation-rules~1kinds"
+  },
   "/cities": {
     "$ref": "paths/cities.json#/~1cities"
   },

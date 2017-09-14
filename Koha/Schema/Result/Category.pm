@@ -236,9 +236,24 @@ __PACKAGE__->has_many(
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
+=head2 circulation_rules
 
-# Created by DBIx::Class::Schema::Loader v0.07042 @ 2017-07-03 15:35:15
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:Nyb7RzCc6y0W0izWTjksoA
+Type: has_many
+
+Related object: L<Koha::Schema::Result::CirculationRule>
+
+=cut
+
+__PACKAGE__->has_many(
+  "circulation_rules",
+  "Koha::Schema::Result::CirculationRule",
+  { "foreign.categorycode" => "self.categorycode" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
+
+# Created by DBIx::Class::Schema::Loader v0.07042 @ 2017-09-30 08:26:50
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:fJF/fj7sCECysHEB3pDgyg
 
 
 # You can replace this text with custom content, and it will be preserved on regeneration

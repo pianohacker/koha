@@ -47,17 +47,19 @@ subtest 'Koha::RefundLostItemFeeRule::delete() tests' => sub {
         {
             source => 'CirculationRule',
             value  => {
-                branchcode   => '*',
+                branchcode   => undef,
                 categorycode => undef,
                 itemtype     => undef,
                 rule_name    => 'refund',
             }
         }
     );
+    my $branchcode = $builder->build( { source => 'Branch' } )->{branchcode};
     my $generated_other_rule = $builder->build(
         {
             source => 'CirculationRule',
             value  => {
+                branchcode   => $branchcode,
                 categorycode => undef,
                 itemtype     => undef,
                 rule_name    => 'refund',
@@ -67,7 +69,7 @@ subtest 'Koha::RefundLostItemFeeRule::delete() tests' => sub {
 
     my $default_rule = Koha::CirculationRules->search(
         {
-            branchcode   => '*',
+            branchcode   => undef,
             categorycode => undef,
             itemtype     => undef,
             rule_name    => 'refund',
@@ -109,7 +111,7 @@ subtest 'Koha::RefundLostItemFeeRules::_default_rule() tests' => sub {
         {
             source => 'CirculationRule',
             value  => {
-                branchcode   => '*',
+                branchcode   => undef,
                 categorycode => undef,
                 itemtype     => undef,
                 rule_name    => 'refund',
@@ -117,10 +119,12 @@ subtest 'Koha::RefundLostItemFeeRules::_default_rule() tests' => sub {
             }
         }
     );
+    my $branchcode = $builder->build( { source => 'Branch' } )->{branchcode};
     my $generated_other_rule = $builder->build(
         {
             source => 'CirculationRule',
             value  => {
+                branchcode   => $branchcode,
                 categorycode => undef,
                 itemtype     => undef,
                 rule_name    => 'refund',
@@ -130,7 +134,7 @@ subtest 'Koha::RefundLostItemFeeRules::_default_rule() tests' => sub {
 
     my $default_rule = Koha::CirculationRules->search(
         {
-            branchcode   => '*',
+            branchcode   => undef,
             categorycode => undef,
             itemtype     => undef,
             rule_name    => 'refund',
@@ -146,7 +150,7 @@ subtest 'Koha::RefundLostItemFeeRules::_default_rule() tests' => sub {
     # Re-read from DB, to be sure
     $default_rule = Koha::CirculationRules->search(
         {
-            branchcode   => '*',
+            branchcode   => undef,
             categorycode => undef,
             itemtype     => undef,
             rule_name    => 'refund',
@@ -177,7 +181,7 @@ subtest 'Koha::RefundLostItemFeeRules::_effective_branch_rule() tests' => sub {
         {
             source => 'CirculationRule',
             value  => {
-                branchcode   => '*',
+                branchcode   => undef,
                 categorycode => undef,
                 itemtype     => undef,
                 rule_name    => 'refund',
@@ -185,10 +189,12 @@ subtest 'Koha::RefundLostItemFeeRules::_effective_branch_rule() tests' => sub {
             }
         }
     );
+    my $branchcode = $builder->build( { source => 'Branch' } )->{branchcode};
     my $specific_rule_false = $builder->build(
         {
             source => 'CirculationRule',
             value  => {
+                branchcode   => $branchcode,
                 categorycode => undef,
                 itemtype     => undef,
                 rule_name    => 'refund',
@@ -196,10 +202,12 @@ subtest 'Koha::RefundLostItemFeeRules::_effective_branch_rule() tests' => sub {
             }
         }
     );
+    my $branchcode2 = $builder->build( { source => 'Branch' } )->{branchcode};
     my $specific_rule_true = $builder->build(
         {
             source => 'CirculationRule',
             value  => {
+                branchcode   => $branchcode2,
                 categorycode => undef,
                 itemtype     => undef,
                 rule_name    => 'refund',
@@ -293,7 +301,7 @@ subtest 'Koha::RefundLostItemFeeRules::should_refund() tests' => sub {
         {
             source => 'CirculationRule',
             value  => {
-                branchcode   => '*',
+                branchcode   => undef,
                 categorycode => undef,
                 itemtype     => undef,
                 rule_name    => 'refund',
@@ -301,10 +309,12 @@ subtest 'Koha::RefundLostItemFeeRules::should_refund() tests' => sub {
             }
         }
     );
+    my $branchcode = $builder->build( { source => 'Branch' } )->{branchcode};
     my $specific_rule_false = $builder->build(
         {
             source => 'CirculationRule',
             value  => {
+                branchcode   => $branchcode,
                 categorycode => undef,
                 itemtype     => undef,
                 rule_name    => 'refund',
@@ -312,10 +322,12 @@ subtest 'Koha::RefundLostItemFeeRules::should_refund() tests' => sub {
             }
         }
     );
+    my $branchcode2 = $builder->build( { source => 'Branch' } )->{branchcode};
     my $specific_rule_true = $builder->build(
         {
             source => 'CirculationRule',
             value  => {
+                branchcode   => $branchcode2,
                 categorycode => undef,
                 itemtype     => undef,
                 rule_name    => 'refund',
@@ -324,10 +336,12 @@ subtest 'Koha::RefundLostItemFeeRules::should_refund() tests' => sub {
         }
     );
     # Make sure we have an unused branchcode
+    my $branchcode3 = $builder->build( { source => 'Branch' } )->{branchcode};
     my $specific_rule_dummy = $builder->build(
         {
             source => 'CirculationRule',
             value  => {
+                branchcode   => $branchcode3,
                 categorycode => undef,
                 itemtype     => undef,
                 rule_name    => 'refund',
@@ -363,7 +377,7 @@ subtest 'Koha::RefundLostItemFeeRules::should_refund() tests' => sub {
          1,'No rule for branch, global rule applied (true)');
 
     # Change the default value just to try
-    Koha::CirculationRules->search({ branchcode => '*', rule_name => 'refund' })->next->rule_value(0)->store;
+    Koha::CirculationRules->search({ branchcode => undef, rule_name => 'refund' })->next->rule_value(0)->store;
     t::lib::Mocks::mock_preference( 'RefundLostOnReturnControl', 'ItemHoldingBranch' );
     is( Koha::RefundLostItemFeeRules->should_refund( $params ),
          0,'No rule for branch, global rule applied (false)');
