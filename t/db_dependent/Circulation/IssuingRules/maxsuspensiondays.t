@@ -33,9 +33,9 @@ my $userenv->{branch} = $branchcode;
 Koha::CirculationRules->search->delete;
 Koha::CirculationRules->set_rules(
     {
-        categorycode => '*',
-        itemtype     => '*',
-        branchcode   => '*',
+        categorycode => undef,
+        itemtype     => undef,
+        branchcode   => undef,
         rules        => {
             firstremind => 0,
             finedays    => 2,
@@ -88,9 +88,9 @@ DelDebarment( $debarments->[0]->{borrower_debarment_id} );
 # Test with maxsuspensiondays = 10 days
 Koha::CirculationRules->set_rules(
     {
-        categorycode => '*',
-        itemtype     => '*',
-        branchcode   => '*',
+        categorycode => undef,
+        itemtype     => undef,
+        branchcode   => undef,
         rules        => {
             maxsuspensiondays => 10,
         }

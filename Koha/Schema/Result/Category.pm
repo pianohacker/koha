@@ -236,6 +236,21 @@ __PACKAGE__->has_many(
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
+=head2 circulation_rules
+
+Type: has_many
+
+Related object: L<Koha::Schema::Result::CirculationRule>
+
+=cut
+
+__PACKAGE__->has_many(
+  "circulation_rules",
+  "Koha::Schema::Result::CirculationRule",
+  { "foreign.categorycode" => "self.categorycode" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
 
 # Created by DBIx::Class::Schema::Loader v0.07042 @ 2018-02-16 17:54:53
 # DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:TGAiiFICSjlKNvnfa87kFQ

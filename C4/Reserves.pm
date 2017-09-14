@@ -352,7 +352,7 @@ sub CanItemBeReserved {
         $holds_per_record = $rights->{holds_per_record};
     }
     else {
-        $ruleitemtype = '*';
+        $ruleitemtype = undef;
     }
 
     $item = Koha::Items->find( $itemnumber );
@@ -377,15 +377,15 @@ sub CanItemBeReserved {
       C4::Context->preference('item-level_itypes')
       ? " AND COALESCE( items.itype, biblioitems.itemtype ) = ?"
       : " AND biblioitems.itemtype = ?"
-      if ( $ruleitemtype ne "*" );
+      if defined $ruleitemtype;
 
     my $sthcount = $dbh->prepare($querycount);
 
-    if ( $ruleitemtype eq "*" ) {
-        $sthcount->execute( $borrowernumber, $branchcode );
+    if ( defined $ruleitemtype ) {
+        $sthcount->execute( $borrowernumber, $branchcode, $ruleitemtype );
     }
     else {
-        $sthcount->execute( $borrowernumber, $branchcode, $ruleitemtype );
+        $sthcount->execute( $borrowernumber, $branchcode );
     }
 
     my $reservecount = "0";
@@ -399,19 +399,10 @@ sub CanItemBeReserved {
     }
 
     # Now we need to check hold limits by patron category
-    my $rule = Koha::CirculationRules->find(
+    my $rule = Koha::CirculationRules->get_effective_rule(
         {
-            categorycode => $borrower->{categorycode},
             branchcode   => $borrower->{branchcode},
-            itemtype     => undef,
-            rule_name    => 'max_holds',
-        }
-    );
-    $rule ||= Koha::CirculationRules->find(
-        {
             categorycode => $borrower->{categorycode},
-            branchcode   => undef,,
-            itemtype     => undef,
             rule_name    => 'max_holds',
         }
     );

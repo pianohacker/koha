@@ -68,9 +68,9 @@ subtest 'Test basic functionality' => sub {
 
     Koha::CirculationRules->set_rules(
         {
-            branchcode   => '*',
-            categorycode => '*',
-            itemtype     => '*',
+            branchcode   => undef,
+            categorycode => undef,
+            itemtype     => undef,
             rules        => {
                 fine                          => '1.00',
                 lengthunit                    => 'days',
@@ -106,9 +106,9 @@ subtest 'Test cap_fine_to_replacement_price' => sub {
     plan tests => 1;
     Koha::CirculationRules->set_rules(
         {
-            branchcode   => '*',
-            categorycode => '*',
-            itemtype     => '*',
+            branchcode   => undef,
+            categorycode => undef,
+            itemtype     => undef,
             rules        => {
                 fine                          => '1.00',
                 lengthunit                    => 'days',

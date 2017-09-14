@@ -14,7 +14,10 @@ if( CheckVersion( $DBversion ) ) {
           KEY `categorycode` (`categorycode`),
           KEY `itemtype` (`itemtype`),
           KEY `rule_name` (`rule_name`),
-          UNIQUE (`branchcode`,`categorycode`,`itemtype`,`rule_name`)
+          UNIQUE (`branchcode`,`categorycode`,`itemtype`,`rule_name`),
+          FOREIGN KEY (branchcode) REFERENCES branches (branchcode) ON DELETE CASCADE ON UPDATE CASCADE,
+          FOREIGN KEY (categorycode) REFERENCES categories (categorycode) ON DELETE CASCADE ON UPDATE CASCADE,
+          FOREIGN KEY (itemtype) REFERENCES itemtypes (itemtype) ON DELETE CASCADE ON UPDATE CASCADE
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
     });
 

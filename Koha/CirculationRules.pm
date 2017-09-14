@@ -35,6 +35,128 @@ Koha::CirculationRules - Koha CirculationRule Object set class
 
 =cut
 
+=head3 rule_kinds
+
+This structure describes the possible rules that may be set, and what scopes they can be set at.
+
+Any attempt to set a rule with a nonsensical scope (for instance, setting the C<patron_maxissueqty> for a branchcode and itemtype), is an error.
+
+=cut
+
+our $RULE_KINDS = {
+    refund => {
+        scope => [ 'branchcode' ],
+    },
+
+    patron_maxissueqty => {
+        scope => [ 'branchcode', 'categorycode' ],
+    },
+    patron_maxonsiteissueqty => {
+        scope => [ 'branchcode', 'categorycode' ],
+    },
+    max_holds => {
+        scope => [ 'branchcode', 'categorycode' ],
+    },
+
+    holdallowed => {
+        scope => [ 'branchcode', 'itemtype' ],
+    },
+    hold_fulfillment_policy => {
+        scope => [ 'branchcode', 'itemtype' ],
+    },
+    returnbranch => {
+        scope => [ 'branchcode', 'itemtype' ],
+    },
+
+    article_requests => {
+        scope => [ 'branchcode', 'categorycode', 'itemtype' ],
+    },
+    auto_renew => {
+        scope => [ 'branchcode', 'categorycode', 'itemtype' ],
+    },
+    cap_fine_to_replacement_price => {
+        scope => [ 'branchcode', 'categorycode', 'itemtype' ],
+    },
+    chargeperiod => {
+        scope => [ 'branchcode', 'categorycode', 'itemtype' ],
+    },
+    chargeperiod_charge_at => {
+        scope => [ 'branchcode', 'categorycode', 'itemtype' ],
+    },
+    fine => {
+        scope => [ 'branchcode', 'categorycode', 'itemtype' ],
+    },
+    finedays => {
+        scope => [ 'branchcode', 'categorycode', 'itemtype' ],
+    },
+    firstremind => {
+        scope => [ 'branchcode', 'categorycode', 'itemtype' ],
+    },
+    hardduedate => {
+        scope => [ 'branchcode', 'categorycode', 'itemtype' ],
+    },
+    hardduedatecompare => {
+        scope => [ 'branchcode', 'categorycode', 'itemtype' ],
+    },
+    holds_per_record => {
+        scope => [ 'branchcode', 'categorycode', 'itemtype' ],
+    },
+    issuelength => {
+        scope => [ 'branchcode', 'categorycode', 'itemtype' ],
+    },
+    lengthunit => {
+        scope => [ 'branchcode', 'categorycode', 'itemtype' ],
+    },
+    maxissueqty => {
+        scope => [ 'branchcode', 'categorycode', 'itemtype' ],
+    },
+    maxonsiteissueqty => {
+        scope => [ 'branchcode', 'categorycode', 'itemtype' ],
+    },
+    maxsuspensiondays => {
+        scope => [ 'branchcode', 'categorycode', 'itemtype' ],
+    },
+    no_auto_renewal_after => {
+        scope => [ 'branchcode', 'categorycode', 'itemtype' ],
+    },
+    no_auto_renewal_after_hard_limit => {
+        scope => [ 'branchcode', 'categorycode', 'itemtype' ],
+    },
+    norenewalbefore => {
+        scope => [ 'branchcode', 'categorycode', 'itemtype' ],
+    },
+    onshelfholds => {
+        scope => [ 'branchcode', 'categorycode', 'itemtype' ],
+    },
+    opacitemholds => {
+        scope => [ 'branchcode', 'categorycode', 'itemtype' ],
+    },
+    overduefinescap => {
+        scope => [ 'branchcode', 'categorycode', 'itemtype' ],
+    },
+    renewalperiod => {
+        scope => [ 'branchcode', 'categorycode', 'itemtype' ],
+    },
+    renewalsallowed => {
+        scope => [ 'branchcode', 'categorycode', 'itemtype' ],
+    },
+    rentaldiscount => {
+        scope => [ 'branchcode', 'categorycode', 'itemtype' ],
+    },
+    reservesallowed => {
+        scope => [ 'branchcode', 'categorycode', 'itemtype' ],
+    },
+    # Not included (deprecated?):
+    #   * accountsent
+    #   * chargename
+    #   * reservecharge
+    #   * restrictedtype
+};
+
+sub rule_kinds {
+    return $RULE_KINDS;
+}
+
 =head3 get_effective_rule
 
 =cut
@@ -42,9 +164,9 @@ Koha::CirculationRules - Koha CirculationRule Object set class
 sub get_effective_rule {
     my ( $self, $params ) = @_;
 
-    $params->{categorycode} = '*' if exists($params->{categorycode}) && !defined($params->{categorycode});
-    $params->{branchcode}   = '*' if exists($params->{branchcode})   && !defined($params->{branchcode});
-    $params->{itemtype}     = '*' if exists($params->{itemtype})     && !defined($params->{itemtype});
+    $params->{categorycode} //= undef;
+    $params->{branchcode}   //= undef;
+    $params->{itemtype}     //= undef;
 
     my $rule_name    = $params->{rule_name};
     my $categorycode = $params->{categorycode};
@@ -59,9 +181,9 @@ sub get_effective_rule {
     my $search_params;
     $search_params->{rule_name} = $rule_name;
 
-    $search_params->{categorycode} = defined $categorycode ? { 'in' => [ $categorycode, '*' ] } : undef;
-    $search_params->{itemtype}     = defined $itemtype     ? { 'in' => [ $itemtype,     '*' ] } : undef;
-    $search_params->{branchcode}   = defined $branchcode   ? { 'in' => [ $branchcode,   '*' ] } : undef;
+    $search_params->{categorycode} = defined $categorycode ? [ $categorycode, undef ] : undef;
+    $search_params->{itemtype}     = defined $itemtype     ? [ $itemtype,     undef ] : undef;
+    $search_params->{branchcode}   = defined $branchcode   ? [ $branchcode,   undef ] : undef;
 
     my $rule = $self->search(
         $search_params,
@@ -110,16 +232,25 @@ sub get_effective_rules {
 sub set_rule {
     my ( $self, $params ) = @_;
 
-    croak q{set_rule requires the parameter 'branchcode'!}
-      unless exists $params->{branchcode};
-    croak q{set_rule requires the parameter 'categorycode'!}
-      unless exists $params->{categorycode};
-    croak q{set_rule requires the parameter 'itemtype'!}
-      unless exists $params->{itemtype};
     croak q{set_rule requires the parameter 'rule_name'!}
-      unless exists $params->{rule_name};
+        unless exists $params->{rule_name};
     croak q{set_rule requires the parameter 'rule_value'!}
-      unless exists $params->{rule_value};
+        unless exists $params->{rule_value};
+
+    my $kind_info = $RULE_KINDS->{ $params->{rule_name} };
+    croak "set_rule given unknown rule '$params->{rule_name}'!"
+        unless defined $kind_info;
+
+    # Enforce scope; a rule should be set for its defined scope, no more, no less.
+    foreach my $scope_level ( qw( branchcode categorycode itemtype ) ) {
+        if ( grep /$scope_level/, @{ $kind_info->{scope} } ) {
+            croak "set_rule needs '$scope_level' to set '$params->{rule_name}'!"
+                unless exists $params->{$scope_level};
+        } else {
+            croak "set_rule cannot set '$params->{rule_name}' for a '$scope_level'!"
+                if exists $params->{$scope_level};
+        }
+    }
 
     my $branchcode   = $params->{branchcode};
     my $categorycode = $params->{categorycode};
@@ -170,18 +301,17 @@ sub set_rule {
 sub set_rules {
     my ( $self, $params ) = @_;
 
-    my $branchcode   = $params->{branchcode};
-    my $categorycode = $params->{categorycode};
-    my $itemtype     = $params->{itemtype};
+    my %set_params;
+    $set_params{branchcode} = $params->{branchcode} if exists $params->{branchcode};
+    $set_params{categorycode} = $params->{categorycode} if exists $params->{categorycode};
+    $set_params{itemtype} = $params->{itemtype} if exists $params->{itemtype};
     my $rules        = $params->{rules};
 
     my $rule_objects = [];
     while ( my ( $rule_name, $rule_value ) = each %$rules ) {
         my $rule_object = Koha::CirculationRules->set_rule(
             {
-                branchcode   => $branchcode,
-                categorycode => $categorycode,
-                itemtype     => $itemtype,
+                %set_params,
                 rule_name    => $rule_name,
                 rule_value   => $rule_value,
             }

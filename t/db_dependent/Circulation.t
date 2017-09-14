@@ -18,6 +18,7 @@
 use Modern::Perl;
 
 use Test::More tests => 113;
+use Test::Deep qw( cmp_deeply );
 
 use DateTime;
 
@@ -182,9 +183,9 @@ is(
 $dbh->do('DELETE FROM circulation_rules');
 Koha::CirculationRules->set_rules(
     {
-        categorycode => '*',
-        branchcode   => '*',
-        itemtype     => '*',
+        categorycode => undef,
+        branchcode   => undef,
+        itemtype     => undef,
         rules        => {
             reservesallowed => 25,
             issuelength     => 14,
@@ -343,9 +344,9 @@ C4::Context->dbh->do("DELETE FROM accountlines");
     # Testing of feature to allow the renewal of reserved items if other items on the record can fill all needed holds
     Koha::CirculationRules->set_rule(
         {
-            categorycode => '*',
-            branchcode   => '*',
-            itemtype     => '*',
+            categorycode => undef,
+            branchcode   => undef,
+            itemtype     => undef,
             rule_name    => 'onshelfholds',
             rule_value   => '1',
         }
@@ -564,9 +565,9 @@ C4::Context->dbh->do("DELETE FROM accountlines");
     # Test premature manual renewal
     Koha::CirculationRules->set_rule(
         {
-            categorycode => '*',
-            branchcode   => '*',
-            itemtype     => '*',
+            categorycode => undef,
+            branchcode   => undef,
+            itemtype     => undef,
             rule_name    => 'norenewalbefore',
             rule_value   => '7',
         }
@@ -641,9 +642,9 @@ C4::Context->dbh->do("DELETE FROM accountlines");
 
         Koha::CirculationRules->set_rules(
             {
-                categorycode => '*',
-                branchcode   => '*',
-                itemtype     => '*',
+                categorycode => undef,
+                branchcode   => undef,
+                itemtype     => undef,
                 rules        => {
                     norenewalbefore       => '7',
                     no_auto_renewal_after => '9',
@@ -657,9 +658,9 @@ C4::Context->dbh->do("DELETE FROM accountlines");
 
         Koha::CirculationRules->set_rules(
             {
-                categorycode => '*',
-                branchcode   => '*',
-                itemtype     => '*',
+                categorycode => undef,
+                branchcode   => undef,
+                itemtype     => undef,
                 rules        => {
                     norenewalbefore       => '7',
                     no_auto_renewal_after => '10',
@@ -673,9 +674,9 @@ C4::Context->dbh->do("DELETE FROM accountlines");
 
         Koha::CirculationRules->set_rules(
             {
-                categorycode => '*',
-                branchcode   => '*',
-                itemtype     => '*',
+                categorycode => undef,
+                branchcode   => undef,
+                itemtype     => undef,
                 rules        => {
                     norenewalbefore       => '7',
                     no_auto_renewal_after => '11',
@@ -689,9 +690,9 @@ C4::Context->dbh->do("DELETE FROM accountlines");
 
         Koha::CirculationRules->set_rules(
             {
-                categorycode => '*',
-                branchcode   => '*',
-                itemtype     => '*',
+                categorycode => undef,
+                branchcode   => undef,
+                itemtype     => undef,
                 rules        => {
                     norenewalbefore       => '10',
                     no_auto_renewal_after => '11',
@@ -705,9 +706,9 @@ C4::Context->dbh->do("DELETE FROM accountlines");
 
         Koha::CirculationRules->set_rules(
             {
-                categorycode => '*',
-                branchcode   => '*',
-                itemtype     => '*',
+                categorycode => undef,
+                branchcode   => undef,
+                itemtype     => undef,
                 rules        => {
                     norenewalbefore       => '10',
                     no_auto_renewal_after => undef,
@@ -722,9 +723,9 @@ C4::Context->dbh->do("DELETE FROM accountlines");
 
         Koha::CirculationRules->set_rules(
             {
-                categorycode => '*',
-                branchcode   => '*',
-                itemtype     => '*',
+                categorycode => undef,
+                branchcode   => undef,
+                itemtype     => undef,
                 rules        => {
                     norenewalbefore       => '7',
                     no_auto_renewal_after => '15',
@@ -739,9 +740,9 @@ C4::Context->dbh->do("DELETE FROM accountlines");
 
         Koha::CirculationRules->set_rules(
             {
-                categorycode => '*',
-                branchcode   => '*',
-                itemtype     => '*',
+                categorycode => undef,
+                branchcode   => undef,
+                itemtype     => undef,
                 rules        => {
                     norenewalbefore       => '10',
                     no_auto_renewal_after => undef,
@@ -772,9 +773,9 @@ C4::Context->dbh->do("DELETE FROM accountlines");
 
         Koha::CirculationRules->set_rules(
             {
-                categorycode => '*',
-                branchcode   => '*',
-                itemtype     => '*',
+                categorycode => undef,
+                branchcode   => undef,
+                itemtype     => undef,
                 rules        => {
                     norenewalbefore       => '10',
                     no_auto_renewal_after => '11',
@@ -874,9 +875,9 @@ C4::Context->dbh->do("DELETE FROM accountlines");
         AddIssue( $renewing_borrower, $item_to_auto_renew->{barcode}, $ten_days_ahead, undef, $ten_days_before, undef, { auto_renew => 1 } );
         Koha::CirculationRules->set_rules(
             {
-                categorycode => '*',
-                branchcode   => '*',
-                itemtype     => '*',
+                categorycode => undef,
+                branchcode   => undef,
+                itemtype     => undef,
                 rules        => {
                     norenewalbefore       => '7',
                     no_auto_renewal_after => '',
@@ -889,9 +890,9 @@ C4::Context->dbh->do("DELETE FROM accountlines");
         my $five_days_before = dt_from_string->add( days => -5 );
         Koha::CirculationRules->set_rules(
             {
-                categorycode => '*',
-                branchcode   => '*',
-                itemtype     => '*',
+                categorycode => undef,
+                branchcode   => undef,
+                itemtype     => undef,
                 rules        => {
                     norenewalbefore       => '10',
                     no_auto_renewal_after => '5',
@@ -910,9 +911,9 @@ C4::Context->dbh->do("DELETE FROM accountlines");
         $dbh->do(q{UPDATE circulation_rules SET rule_value = NULL WHERE rule_name = 'no_auto_renewal_after_hard_limit'});
         Koha::CirculationRules->set_rules(
             {
-                categorycode => '*',
-                branchcode   => '*',
-                itemtype     => '*',
+                categorycode => undef,
+                branchcode   => undef,
+                itemtype     => undef,
                 rules        => {
                     norenewalbefore       => '10',
                     no_auto_renewal_after => '15',
@@ -928,9 +929,9 @@ C4::Context->dbh->do("DELETE FROM accountlines");
         my $two_days_ahead = dt_from_string->add( days => 2 );
         Koha::CirculationRules->set_rules(
             {
-                categorycode => '*',
-                branchcode   => '*',
-                itemtype     => '*',
+                categorycode => undef,
+                branchcode   => undef,
+                itemtype     => undef,
                 rules        => {
                     norenewalbefore       => '10',
                     no_auto_renewal_after => '',
@@ -945,9 +946,9 @@ C4::Context->dbh->do("DELETE FROM accountlines");
         );
         Koha::CirculationRules->set_rules(
             {
-                categorycode => '*',
-                branchcode   => '*',
-                itemtype     => '*',
+                categorycode => undef,
+                branchcode   => undef,
+                itemtype     => undef,
                 rules        => {
                     norenewalbefore       => '10',
                     no_auto_renewal_after => '15',
@@ -967,9 +968,9 @@ C4::Context->dbh->do("DELETE FROM accountlines");
     # set policy to forbid renewals
     Koha::CirculationRules->set_rules(
         {
-            categorycode => '*',
-            branchcode   => '*',
-            itemtype     => '*',
+            categorycode => undef,
+            branchcode   => undef,
+            itemtype     => undef,
             rules        => {
                 norenewalbefore => undef,
                 renewalsallowed => 0,
@@ -1196,9 +1197,9 @@ C4::Context->dbh->do("DELETE FROM accountlines");
     $dbh->do('DELETE FROM circulation_rules');
     Koha::CirculationRules->set_rules(
         {
-            categorycode => '*',
-            itemtype     => '*',
-            branchcode   => '*',
+            categorycode => undef,
+            itemtype     => undef,
+            branchcode   => undef,
             rules        => {
                 reservesallowed => 25,
                 issuelength     => 14,
@@ -1265,9 +1266,9 @@ C4::Context->dbh->do("DELETE FROM accountlines");
 
     Koha::CirculationRules->set_rules(
         {
-            categorycode => '*',
-            itemtype     => '*',
-            branchcode   => '*',
+            categorycode => undef,
+            itemtype     => undef,
+            branchcode   => undef,
             rules        => {
                 onshelfholds => 0,
             }
@@ -1279,9 +1280,9 @@ C4::Context->dbh->do("DELETE FROM accountlines");
 
     Koha::CirculationRules->set_rules(
         {
-            categorycode => '*',
-            itemtype     => '*',
-            branchcode   => '*',
+            categorycode => undef,
+            itemtype     => undef,
+            branchcode   => undef,
             rules        => {
                 onshelfholds => 0,
             }
@@ -1293,9 +1294,9 @@ C4::Context->dbh->do("DELETE FROM accountlines");
 
     Koha::CirculationRules->set_rules(
         {
-            categorycode => '*',
-            itemtype     => '*',
-            branchcode   => '*',
+            categorycode => undef,
+            itemtype     => undef,
+            branchcode   => undef,
             rules        => {
                 onshelfholds => 1,
             }
@@ -1307,9 +1308,9 @@ C4::Context->dbh->do("DELETE FROM accountlines");
 
     Koha::CirculationRules->set_rules(
         {
-            categorycode => '*',
-            itemtype     => '*',
-            branchcode   => '*',
+            categorycode => undef,
+            itemtype     => undef,
+            branchcode   => undef,
             rules        => {
                 onshelfholds => 1,
             }
@@ -1811,23 +1812,39 @@ subtest 'CanBookBeIssued + AllowMultipleIssuesOnABiblio' => sub {
 
     t::lib::Mocks::mock_preference('AllowMultipleIssuesOnABiblio', 0);
     ( $error, $question, $alerts ) = CanBookBeIssued( $patron, $item_2->{barcode} );
-    is( keys(%$error) + keys(%$alerts),  0, 'No error or alert should be raised' . str($error, $question, $alerts) );
-    is( $question->{BIBLIO_ALREADY_ISSUED}, 1, 'BIBLIO_ALREADY_ISSUED question flag should be set if AllowMultipleIssuesOnABiblio=0 and issue already exists' . str($error, $question, $alerts) );
+    cmp_deeply(
+        { error => $error, alerts => $alerts },
+        { error => {}, alerts => {} },
+        'No error or alert should be raised'
+    );
+    is( $question->{BIBLIO_ALREADY_ISSUED}, 1, 'BIBLIO_ALREADY_ISSUED question flag should be set if AllowMultipleIssuesOnABiblio=0 and issue already exists' );
 
     t::lib::Mocks::mock_preference('AllowMultipleIssuesOnABiblio', 1);
     ( $error, $question, $alerts ) = CanBookBeIssued( $patron, $item_2->{barcode} );
-    is( keys(%$error) + keys(%$question) + keys(%$alerts),  0, 'No BIBLIO_ALREADY_ISSUED flag should be set if AllowMultipleIssuesOnABiblio=1' . str($error, $question, $alerts) );
+    cmp_deeply(
+        { error => $error, question => $question, alerts => $alerts },
+        { error => {}, question => {}, alerts => {} },
+        'No BIBLIO_ALREADY_ISSUED flag should be set if AllowMultipleIssuesOnABiblio=1'
+    );
 
     # Add a subscription
     Koha::Subscription->new({ biblionumber => $biblionumber })->store;
 
     t::lib::Mocks::mock_preference('AllowMultipleIssuesOnABiblio', 0);
     ( $error, $question, $alerts ) = CanBookBeIssued( $patron, $item_2->{barcode} );
-    is( keys(%$error) + keys(%$question) + keys(%$alerts),  0, 'No BIBLIO_ALREADY_ISSUED flag should be set if it is a subscription' . str($error, $question, $alerts) );
+    cmp_deeply(
+        { error => $error, question => $question, alerts => $alerts },
+        { error => {}, question => {}, alerts => {} },
+        'No BIBLIO_ALREADY_ISSUED flag should be set if it is a subscription'
+    );
 
     t::lib::Mocks::mock_preference('AllowMultipleIssuesOnABiblio', 1);
     ( $error, $question, $alerts ) = CanBookBeIssued( $patron, $item_2->{barcode} );
-    is( keys(%$error) + keys(%$question) + keys(%$alerts),  0, 'No BIBLIO_ALREADY_ISSUED flag should be set if it is a subscription' . str($error, $question, $alerts) );
+    cmp_deeply(
+        { error => $error, question => $question, alerts => $alerts },
+        { error => {}, question => {}, alerts => {} },
+        'No BIBLIO_ALREADY_ISSUED flag should be set if it is a subscription'
+    );
 };
 
 subtest 'AddReturn + CumulativeRestrictionPeriods' => sub {
@@ -1870,9 +1887,9 @@ subtest 'AddReturn + CumulativeRestrictionPeriods' => sub {
     Koha::CirculationRules->search->delete;
     Koha::CirculationRules->set_rules(
         {
-            categorycode => '*',
-            itemtype     => '*',
-            branchcode   => '*',
+            categorycode => undef,
+            itemtype     => undef,
+            branchcode   => undef,
             rules        => {
                 issuelength => 1,
                 firstremind => 1,        # 1 day of grace
@@ -1985,9 +2002,9 @@ subtest 'AddReturn | is_overdue' => sub {
     Koha::CirculationRules->search->delete;
     my $rule = Koha::CirculationRules->set_rules(
         {
-            categorycode => '*',
-            itemtype     => '*',
-            branchcode   => '*',
+            categorycode => undef,
+            itemtype     => undef,
+            branchcode   => undef,
             rules        => {
                 maxissueqty  => 99,
                 issuelength  => 6,

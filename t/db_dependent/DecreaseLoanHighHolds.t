@@ -96,13 +96,14 @@ for my $i ( 0 .. 5 ) {
 
 Koha::CirculationRules->set_rules(
     {
-        branchcode   => '*',
-        categorycode => '*',
-        itemtype     => '*',
+        branchcode   => undef,
+        categorycode => undef,
+        itemtype     => undef,
         rules        => {
             issuelength     => '14',
             lengthunit      => 'days',
             reservesallowed => '99',
+            holds_per_record => '99',
         }
     }
 );

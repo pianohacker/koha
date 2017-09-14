@@ -79,14 +79,11 @@ Koha::CirculationRules->search()->delete();
 Koha::CirculationRules->set_rules(
     {
         branchcode   => $branch->{branchcode},
-        categorycode => '*',
-        itemtype     => '*',
+        categorycode => undef,
+        itemtype     => undef,
         rules        => {
             maxissueqty       => 2,
             maxonsiteissueqty => 1,
-            branchcode        => $branch->{branchcode},
-            categorycode      => '*',
-            itemtype          => '*',
             lengthunit        => 'days',
             issuelength       => 5,
         }
@@ -153,8 +150,8 @@ Koha::CirculationRules->search()->delete();
 Koha::CirculationRules->set_rules(
     {
         branchcode   => $branch->{branchcode},
-        categorycode => '*',
-        itemtype     => '*',
+        categorycode => undef,
+        itemtype     => undef,
         rules        => {
             maxissueqty       => 2,
             maxonsiteissueqty => 1,
