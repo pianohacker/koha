@@ -85,42 +85,102 @@ elsif ($op eq 'delete-branch-cat') {
     my $categorycode  = $input->param('categorycode');
     if ($branch eq "*") {
         if ($categorycode eq "*") {
-            my $sth_delete = $dbh->prepare("DELETE FROM default_circ_rules");
-            $sth_delete->execute();
+            Koha::CirculationRules->set_rules(
+                {
+                    categorycode => undef,
+                    branchcode   => undef,
+                    itemtype     => undef,
+                    rules        => {
+                        patron_maxissueqty             => undef,
+                        patron_maxonsiteissueqty       => undef,
+                        holdallowed             => undef,
+                        hold_fulfillment_policy => undef,
+                        returnbranch            => undef,
+                    }
+                }
+            );
+        } else {
+            Koha::CirculationRules->set_rules(
+                {
+                    categorycode => $categorycode,
+                    branchcode   => undef,
+                    itemtype     => undef,
+                    rules        => {
+                        max_holds         => undef,
+                        patron_maxissueqty       => undef,
+                        patron_maxonsiteissueqty => undef,
+                    }
+                }
+            );
         }
     } elsif ($categorycode eq "*") {
-        my $sth_delete = $dbh->prepare("DELETE FROM default_branch_circ_rules
-                                        WHERE branchcode = ?");
-        $sth_delete->execute($branch);
-    }
-    Koha::CirculationRules->set_rules(
-        {
-            categorycode => $categorycode eq '*' ? undef : $categorycode,
-            branchcode   => $branch eq '*'       ? undef : $branch,
-            itemtype     => undef,
-            rules        => {
-                max_holds         => undef,
-                maxissueqty       => undef,
-                maxonsiteissueqty => undef,
+        Koha::CirculationRules->set_rules(
+            {
+                categorycode => undef,
+                branchcode   => $branch,
+                itemtype     => undef,
+                rules        => {
+                    patron_maxissueqty             => undef,
+                    patron_maxonsiteissueqty       => undef,
+                    holdallowed             => undef,
+                    hold_fulfillment_policy => undef,
+                    returnbranch            => undef,
+                }
             }
-        }
-    );
+        );
+    } else {
+        Koha::CirculationRules->set_rules(
+            {
+                categorycode => $categorycode,
+                branchcode   => $branch,
+                itemtype     => undef,
+                rules        => {
+                    max_holds         => undef,
+                    patron_maxissueqty       => undef,
+                    patron_maxonsiteissueqty => undef,
+                }
+            }
+        );
+    }
 }
 elsif ($op eq 'delete-branch-item') {
     my $itemtype  = $input->param('itemtype');
     if ($branch eq "*") {
         if ($itemtype eq "*") {
-            my $sth_delete = $dbh->prepare("DELETE FROM default_circ_rules");
-            $sth_delete->execute();
+            Koha::CirculationRules->set_rules(
+                {
+                    categorycode => undef,
+                    branchcode   => undef,
+                    itemtype     => undef,
+                    rules        => {
+                        patron_maxissueqty             => undef,
+                        patron_maxonsiteissueqty       => undef,
+                        holdallowed             => undef,
+                        hold_fulfillment_policy => undef,
+                        returnbranch            => undef,
+                    }
+                }
+            );
         } else {
             my $sth_delete = $dbh->prepare("DELETE FROM default_branch_item_rules
                                             WHERE itemtype = ?");
             $sth_delete->execute($itemtype);
         }
     } elsif ($itemtype eq "*") {
-        my $sth_delete = $dbh->prepare("DELETE FROM default_branch_circ_rules
-                                        WHERE branchcode = ?");
-        $sth_delete->execute($branch);
+        Koha::CirculationRules->set_rules(
+            {
+                categorycode => undef,
+                branchcode   => $branch,
+                itemtype     => undef,
+                rules        => {
+                    patron_maxissueqty             => undef,
+                    patron_maxonsiteissueqty       => undef,
+                    holdallowed             => undef,
+                    hold_fulfillment_policy => undef,
+                    returnbranch            => undef,
+                }
+            }
+        );
     } else {
         my $sth_delete = $dbh->prepare("DELETE FROM branch_item_rules
                                         WHERE branchcode = ?
@@ -225,16 +285,16 @@ elsif ($op eq 'add') {
 }
 elsif ($op eq "set-branch-defaults") {
     my $categorycode  = $input->param('categorycode');
-    my $maxissueqty   = $input->param('maxissueqty');
-    my $maxonsiteissueqty = $input->param('maxonsiteissueqty');
+    my $patron_maxissueqty   = $input->param('patron_maxissueqty');
+    my $patron_maxonsiteissueqty = $input->param('patron_maxonsiteissueqty');
     my $holdallowed   = $input->param('holdallowed');
     my $hold_fulfillment_policy = $input->param('hold_fulfillment_policy');
     my $returnbranch  = $input->param('returnbranch');
     my $max_holds = $input->param('max_holds');
-    $maxissueqty =~ s/\s//g;
-    $maxissueqty = undef if $maxissueqty !~ /^\d+/;
-    $maxonsiteissueqty =~ s/\s//g;
-    $maxonsiteissueqty = undef if $maxonsiteissueqty !~ /^\d+/;
+    $patron_maxissueqty =~ s/\s//g;
+    $patron_maxissueqty = undef if $patron_maxissueqty !~ /^\d+/;
+    $patron_maxonsiteissueqty =~ s/\s//g;
+    $patron_maxonsiteissueqty = undef if $patron_maxonsiteissueqty !~ /^\d+/;
     $holdallowed =~ s/\s//g;
     $holdallowed = undef if $holdallowed !~ /^\d+/;
     $max_holds =~ s/\s//g;
@@ -263,8 +323,11 @@ elsif ($op eq "set-branch-defaults") {
                 itemtype     => undef,
                 branchcode   => undef,
                 rules        => {
-                    maxissueqty       => $maxissueqty,
-                    maxonsiteissueqty => $maxonsiteissueqty,
+                    patron_maxissueqty             => $patron_maxissueqty,
+                    patron_maxonsiteissueqty       => $patron_maxonsiteissueqty,
+                    holdallowed             => $holdallowed,
+                    hold_fulfillment_policy => $hold_fulfillment_policy,
+                    returnbranch            => $returnbranch,
                 }
             }
         );
@@ -292,8 +355,11 @@ elsif ($op eq "set-branch-defaults") {
                 itemtype     => undef,
                 branchcode   => $branch,
                 rules        => {
-                    maxissueqty       => $maxissueqty,
-                    maxonsiteissueqty => $maxonsiteissueqty,
+                    patron_maxissueqty             => $patron_maxissueqty,
+                    patron_maxonsiteissueqty       => $patron_maxonsiteissueqty,
+                    holdallowed             => $holdallowed,
+                    hold_fulfillment_policy => $hold_fulfillment_policy,
+                    returnbranch            => $returnbranch,
                 }
             }
         );
@@ -310,13 +376,13 @@ elsif ($op eq "set-branch-defaults") {
 }
 elsif ($op eq "add-branch-cat") {
     my $categorycode  = $input->param('categorycode');
-    my $maxissueqty   = $input->param('maxissueqty');
-    my $maxonsiteissueqty = $input->param('maxonsiteissueqty');
+    my $patron_maxissueqty   = $input->param('patron_maxissueqty');
+    my $patron_maxonsiteissueqty = $input->param('patron_maxonsiteissueqty');
     my $max_holds = $input->param('max_holds');
-    $maxissueqty =~ s/\s//g;
-    $maxissueqty = undef if $maxissueqty !~ /^\d+/;
-    $maxonsiteissueqty =~ s/\s//g;
-    $maxonsiteissueqty = undef if $maxonsiteissueqty !~ /^\d+/;
+    $patron_maxissueqty =~ s/\s//g;
+    $patron_maxissueqty = undef if $patron_maxissueqty !~ /^\d+/;
+    $patron_maxonsiteissueqty =~ s/\s//g;
+    $patron_maxonsiteissueqty = undef if $patron_maxonsiteissueqty !~ /^\d+/;
     $max_holds =~ s/\s//g;
     $max_holds = undef if $max_holds !~ /^\d+/;
 
@@ -329,8 +395,8 @@ elsif ($op eq "add-branch-cat") {
                     branchcode   => undef,
                     rules        => {
                         max_holds         => $max_holds,
-                        maxissueqty       => $maxissueqty,
-                        maxonsiteissueqty => $maxonsiteissueqty,
+                        patron_maxissueqty       => $patron_maxissueqty,
+                        patron_maxonsiteissueqty => $patron_maxonsiteissueqty,
                     }
                 }
             );
@@ -342,8 +408,8 @@ elsif ($op eq "add-branch-cat") {
                     itemtype     => undef,
                     rules        => {
                         max_holds         => $max_holds,
-                        maxissueqty       => $maxissueqty,
-                        maxonsiteissueqty => $maxonsiteissueqty,
+                        patron_maxissueqty       => $patron_maxissueqty,
+                        patron_maxonsiteissueqty => $patron_maxonsiteissueqty,
                     }
                 }
             );
@@ -356,8 +422,8 @@ elsif ($op eq "add-branch-cat") {
                 branchcode   => $branch,
                 rules        => {
                     max_holds         => $max_holds,
-                    maxissueqty       => $maxissueqty,
-                    maxonsiteissueqty => $maxonsiteissueqty,
+                    patron_maxissueqty       => $patron_maxissueqty,
+                    patron_maxonsiteissueqty => $patron_maxonsiteissueqty,
                 }
             }
         );
@@ -369,8 +435,8 @@ elsif ($op eq "add-branch-cat") {
                 branchcode   => $branch,
                 rules        => {
                     max_holds         => $max_holds,
-                    maxissueqty       => $maxissueqty,
-                    maxonsiteissueqty => $maxonsiteissueqty,
+                    patron_maxissueqty       => $patron_maxissueqty,
+                    patron_maxonsiteissueqty => $patron_maxonsiteissueqty,
                 }
             }
         );

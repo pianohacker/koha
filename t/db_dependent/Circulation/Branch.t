@@ -147,8 +147,8 @@ my $borrower_id1 = C4::Members::AddMember(
 
 is_deeply(
     GetBranchBorrowerCircRule(),
-    { maxissueqty => undef, maxonsiteissueqty => undef },
-"Without parameter, GetBranchBorrower returns undef (unilimited) for maxissueqty and maxonsiteissueqty if no rules defined"
+    { patron_maxissueqty => undef, patron_maxonsiteissueqty => undef },
+"Without parameter, GetBranchBorrower returns undef (unilimited) for patron_maxissueqty and patron_maxonsiteissueqty if no rules defined"
 );
 
 Koha::CirculationRules->set_rules(
@@ -157,8 +157,8 @@ Koha::CirculationRules->set_rules(
         categorycode => $samplecat->{categorycode},
         itemtype     => undef,
         rules        => {
-            maxissueqty       => 5,
-            maxonsiteissueqty => 6,
+            patron_maxissueqty       => 5,
+            patron_maxonsiteissueqty => 6,
         }
     }
 );
@@ -175,8 +175,10 @@ Koha::CirculationRules->set_rules(
         categorycode => undef,
         itemtype     => undef,
         rules        => {
-            maxissueqty       => 3,
-            maxonsiteissueqty => 2,
+            patron_maxissueqty       => 3,
+            patron_maxonsiteissueqty => 2,
+            holdallowed       => 1,
+            returnbranch      => 'holdingbranch',
         }
     }
 );
@@ -193,8 +195,10 @@ Koha::CirculationRules->set_rules(
         categorycode => undef,
         itemtype     => undef,
         rules        => {
-            maxissueqty       => 4,
-            maxonsiteissueqty => 5,
+            patron_maxissueqty       => 4,
+            patron_maxonsiteissueqty => 5,
+            holdallowed       => 3,
+            returnbranch      => 'homebranch',
         }
     }
 );
@@ -221,26 +225,26 @@ $sth->execute(
 #Test GetBranchBorrowerCircRule
 is_deeply(
     GetBranchBorrowerCircRule(),
-    { maxissueqty => 4, maxonsiteissueqty => 5 },
-"Without parameter, GetBranchBorrower returns the maxissueqty and maxonsiteissueqty of default_circ_rules"
+    { patron_maxissueqty => 4, patron_maxonsiteissueqty => 5 },
+"Without parameter, GetBranchBorrower returns the patron_maxissueqty and patron_maxonsiteissueqty of default_circ_rules"
 );
 is_deeply(
     GetBranchBorrowerCircRule( $samplebranch2->{branchcode} ),
-    { maxissueqty => 3, maxonsiteissueqty => 2 },
-"Without only the branchcode specified, GetBranchBorrower returns the maxissueqty and maxonsiteissueqty corresponding"
+    { patron_maxissueqty => 3, patron_maxonsiteissueqty => 2 },
+"Without only the branchcode specified, GetBranchBorrower returns the patron_maxissueqty and patron_maxonsiteissueqty corresponding"
 );
 is_deeply(
     GetBranchBorrowerCircRule(
         $samplebranch1->{branchcode},
         $samplecat->{categorycode}
     ),
-    { maxissueqty => 5, maxonsiteissueqty => 6 },
-    "GetBranchBorrower returns the maxissueqty and maxonsiteissueqty of the branch1 and the category1"
+    { patron_maxissueqty => 5, patron_maxonsiteissueqty => 6 },
+    "GetBranchBorrower returns the patron_maxissueqty and patron_maxonsiteissueqty of the branch1 and the category1"
 );
 is_deeply(
     GetBranchBorrowerCircRule( -1, -1 ),
-    { maxissueqty => 4, maxonsiteissueqty => 5 },
-"GetBranchBorrower with wrong parameters returns the maxissueqty and maxonsiteissueqty of default_circ_rules"
+    { patron_maxissueqty => 4, patron_maxonsiteissueqty => 5 },
+"GetBranchBorrower with wrong parameters returns the patron_maxissueqty and patron_maxonsiteissueqty of default_circ_rules"
 );
 
 #Test GetBranchItemRule
