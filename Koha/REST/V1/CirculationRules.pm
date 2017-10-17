@@ -19,7 +19,12 @@ use Modern::Perl;
 
 use Mojo::Base 'Mojolicious::Controller';
 
+use C4::Auth;
+use C4::Context;
+
 use Koha::CirculationRules;
+use Koha::Database;
+use Koha::Exceptions::Authorization;
 
 use Try::Tiny;
 
@@ -30,6 +35,54 @@ sub get_kinds {
         status => 200,
         openapi => Koha::CirculationRules->rule_kinds,
     );
+}
+
+sub get_rules {
+    my $c = shift->openapi->valid_input or return;
+
+    return $c->render(
+        status => 200,
+        openapi => [ Koha::CirculationRules->search ],
+    );
+}
+
+sub save_rules {
+    my $c = shift->openapi->valid_input or return;
+
+    my $schema = Koha::Database->new->schema;
+
+    my $uid = $c->stash( 'koha.user' )->userid;
+    my $restricted_to_library = $uid && haspermission( $uid, { parameters => 'manage_circ_rules_restricted' }, { no_inherit => 1 } ) ? $c->stash( 'koha.user' )->branchcode : "";
+
+    return try {
+        my $rules = $c->req->json;
+
+        $schema->storage->txn_do( sub {
+            foreach my $rule ( @$rules ) {
+                if ( $restricted_to_library && ( !$rule->{branchcode} || $rule->{branchcode} ne $restricted_to_library ) ) {
+                    Koha::Exceptions::Authorization::Restricted->throw(
+                        error => 'User can only modify settings for their branch.'
+                    );
+                }
+
+                Koha::CirculationRules->set_rule( { %$rule, allow_null_out_of_scope => 1 } );
+            }
+        } );
+
+        return $c->render( status => 200, openapi => "" );
+    }
+    catch {
+        if ( $_->isa('Koha::Exceptions::Authorization::Restricted') ) {
+            return $c->render( status  => 403,
+                               openapi => { error => $_->message } );
+        } else {
+            warn $_;
+
+            return $c->render( status => 500,
+                openapi => { error => "Something went wrong, check the logs."} );
+        }
+    };
+
 }
 
 1;

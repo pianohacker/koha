@@ -37,114 +37,153 @@ Koha::CirculationRules - Koha CirculationRule Object set class
 
 =head3 rule_kinds
 
-This structure describes the possible rules that may be set, and what scopes they can be set at.
+This structure describes the possible rules that may be set, what scopes they can be set at and any
+default values.
 
-Any attempt to set a rule with a nonsensical scope (for instance, setting the C<patron_maxissueqty> for a branchcode and itemtype), is an error.
+Any attempt to set a rule with a nonsensical scope (for instance, setting the C<patron_maxissueqty>
+for a branchcode and itemtype), is an error.
+
+These default values correspond to what would be stored in the database if nothing was changed on
+the old circulation rules editor; this is a combination of the default values in the template and
+the issuingrules table.
 
 =cut
 
 our $RULE_KINDS = {
     refund => {
         scope => [ 'branchcode' ],
+        default_value => 1,
     },
 
     patron_maxissueqty => {
         scope => [ 'branchcode', 'categorycode' ],
+        default_value => "",
     },
     patron_maxonsiteissueqty => {
         scope => [ 'branchcode', 'categorycode' ],
+        default_value => "",
     },
     max_holds => {
         scope => [ 'branchcode', 'categorycode' ],
+        default_value => "",
     },
 
     holdallowed => {
         scope => [ 'branchcode', 'itemtype' ],
+        default_value => 2,
     },
     hold_fulfillment_policy => {
         scope => [ 'branchcode', 'itemtype' ],
+        default_value => 'any',
     },
     returnbranch => {
         scope => [ 'branchcode', 'itemtype' ],
+        default_value => 'homebranch',
     },
 
     article_requests => {
         scope => [ 'branchcode', 'categorycode', 'itemtype' ],
+        default_value => 'no',
     },
     auto_renew => {
         scope => [ 'branchcode', 'categorycode', 'itemtype' ],
+        default_value => 0,
     },
     cap_fine_to_replacement_price => {
         scope => [ 'branchcode', 'categorycode', 'itemtype' ],
+        default_value => 0,
     },
     chargeperiod => {
         scope => [ 'branchcode', 'categorycode', 'itemtype' ],
+        default_value => 0,
     },
     chargeperiod_charge_at => {
         scope => [ 'branchcode', 'categorycode', 'itemtype' ],
+        default_value => 0,
     },
     fine => {
         scope => [ 'branchcode', 'categorycode', 'itemtype' ],
+        default_value => 0,
     },
     finedays => {
         scope => [ 'branchcode', 'categorycode', 'itemtype' ],
+        default_value => 0,
     },
     firstremind => {
         scope => [ 'branchcode', 'categorycode', 'itemtype' ],
+        default_value => 0,
     },
     hardduedate => {
         scope => [ 'branchcode', 'categorycode', 'itemtype' ],
+        default_value => "",
     },
     hardduedatecompare => {
         scope => [ 'branchcode', 'categorycode', 'itemtype' ],
+        default_value => -1,
     },
     holds_per_record => {
         scope => [ 'branchcode', 'categorycode', 'itemtype' ],
+        default_value => 1,
     },
     issuelength => {
         scope => [ 'branchcode', 'categorycode', 'itemtype' ],
+        default_value => 0,
     },
     lengthunit => {
         scope => [ 'branchcode', 'categorycode', 'itemtype' ],
+        default_value => 'days',
     },
     maxissueqty => {
         scope => [ 'branchcode', 'categorycode', 'itemtype' ],
+        default_value => "",
     },
     maxonsiteissueqty => {
         scope => [ 'branchcode', 'categorycode', 'itemtype' ],
+        default_value => "",
     },
     maxsuspensiondays => {
         scope => [ 'branchcode', 'categorycode', 'itemtype' ],
+        default_value => "",
     },
     no_auto_renewal_after => {
         scope => [ 'branchcode', 'categorycode', 'itemtype' ],
+        default_value => "",
     },
     no_auto_renewal_after_hard_limit => {
         scope => [ 'branchcode', 'categorycode', 'itemtype' ],
+        default_value => "",
     },
     norenewalbefore => {
         scope => [ 'branchcode', 'categorycode', 'itemtype' ],
+        default_value => "",
     },
     onshelfholds => {
         scope => [ 'branchcode', 'categorycode', 'itemtype' ],
+        default_value => 0,
     },
     opacitemholds => {
         scope => [ 'branchcode', 'categorycode', 'itemtype' ],
+        default_value => "N",
     },
     overduefinescap => {
         scope => [ 'branchcode', 'categorycode', 'itemtype' ],
+        default_value => "",
     },
     renewalperiod => {
         scope => [ 'branchcode', 'categorycode', 'itemtype' ],
+        default_value => 0,
     },
     renewalsallowed => {
         scope => [ 'branchcode', 'categorycode', 'itemtype' ],
+        default_value => 0,
     },
     rentaldiscount => {
         scope => [ 'branchcode', 'categorycode', 'itemtype' ],
+        default_value => 0,
     },
     reservesallowed => {
         scope => [ 'branchcode', 'categorycode', 'itemtype' ],
+        default_value => 0,
     },
     # Not included (deprecated?):
     #   * accountsent
@@ -227,6 +266,25 @@ sub get_effective_rules {
 
 =head3 set_rule
 
+=over 4
+Koha::CirculationRules->set_rule( {
+    branchcode => $branchcode,
+    [ categorycode => $categorycode, ]
+    [ itemtype => $itemtype, ]
+    rule_name => $rule_name,
+    rule_value => $rule_value,
+    [ allow_null_out_of_scope => 1, ]
+} )
+=back
+
+Sets a single circulation rule.
+
+It is an error to specify a C<categorycode> or C<itemtype> unless the given C<rule_name> can be set
+at that scope; i.e., you cannot set a C<patron_maxissueqty> for an itemtype.
+
+If C<allow_null_out_of_scope> is passed, and any excess C<categorycode> or C<itemtype> is set to C<undef>,
+they are ignored.
+
 =cut
 
 sub set_rule {
@@ -248,7 +306,10 @@ sub set_rule {
                 unless exists $params->{$scope_level};
         } else {
             croak "set_rule cannot set '$params->{rule_name}' for a '$scope_level'!"
-                if exists $params->{$scope_level};
+                unless !exists $params->{$scope_level} || (
+                    $params->{allow_null_out_of_scope} &&
+                    !defined $params->{$scope_level}
+                );
         }
     }
 

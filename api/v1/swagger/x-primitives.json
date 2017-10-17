@@ -7,6 +7,10 @@
     "type": "integer",
     "description": "internally assigned user identifier"
   },
+  "branchcode": {
+    "type": "string",
+    "description": "library assigned branch identifier"
+  },
   "cardnumber": {
     "type": ["string", "null"],
     "description": "library assigned user identifier"
