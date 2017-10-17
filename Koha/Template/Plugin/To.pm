@@ -26,7 +26,7 @@ use JSON qw( to_json );
 sub json {
     my ( $self, $value ) = @_;
 
-    my $json = JSON->new->allow_nonref(1);
+    my $json = JSON->new->allow_nonref(1)->convert_blessed(1);
     $json = $json->encode($value);
     $json =~ s/^"|"$//g; # Remove quotes around the strings
     $json =~ s/\\r/\\\\r/g; # Convert newlines to escaped newline characters

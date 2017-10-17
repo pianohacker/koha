@@ -1,0 +1,160 @@
+#toolbar {
+    text-align: center;
+    vertical-align: middle;
+}
+
+#toolbar-left, #toolbar-center, #toolbar-right {
+    display: inline-block;
+}
+
+#toolbar-left {
+    float: left;
+}
+
+#toolbar-left > button {
+    margin-right: 6px;
+}
+
+#toolbar-center {
+    line-height: 1.42857143;
+    padding: 3px;
+}
+
+#toolbar-right {
+    float: right;
+}
+
+#toolbar label input {
+    margin-left: 10px;
+    margin-right: 5px;
+    vertical-align: middle;
+}
+
+#toolbar > button {
+    margin-right: 15px;
+    vertical-align: middle;
+}
+
+.branch-rules {
+    border: 1px solid #333;
+    margin-top: 20px;
+    margin-bottom: 25px;
+    padding: 10px;
+}
+
+.branch-rules h2 {
+    margin-bottom: 20px;
+}
+
+.branch-rules .table {
+    border-right-width: 0;
+    width: auto;
+}
+
+.branch-rules .all-hidden {
+    color: #888;
+    font-style: italic;
+}
+
+.branch-rules .table th {
+    border-right: 1px solid #BCBCBC;
+    max-width: 10em;
+    min-width: 10em;
+    vertical-align: middle;
+}
+
+.branch-rules .table th.add-rule {
+    max-width: 16em;
+}
+
+.branch-rules .table th[scope=row] {
+    min-width: 16em;
+}
+
+.branch-rules .table td {
+    border-right: 1px solid #BCBCBC;
+    padding: 0;
+}
+
+/* This very odd-looking rule causes dropdowns and textboxes to correctly shrink */
+.branch-rules input, .branch-rules select {
+    min-width: 0px;
+    max-width: 100%;
+    text-overflow: ellipsis;
+}
+
+/* Setting these manually isn't the best practice, but for some godforsaken reason the input changes
+ * size after an update without these rules. */
+.branch-rules input {
+    border-color: #BBB;
+    border-radius: 4px;
+    border-style: solid;
+    border-width: 1px !important;
+    max-width: 6em;
+    min-width: 6em;
+    padding: 6px;
+}
+
+.branch-rules input:focus {
+    border-color: #825300;
+    border-width: 2px !important;
+    padding: 5px;
+}
+
+.branch-rules input:valid:focus {
+    border-color: #538200;
+}
+
+select {
+    height: 2em;
+}
+
+.inherited-rule {
+    font-style: italic;
+}
+
+.policy-rule {
+    display: flex;
+    line-height: 30px;
+    justify-content: space-between;
+    padding: 8px;
+}
+
+.policy-rule.changed-rule {
+    background-color: #FFFFCC;
+}
+
+.policy-rule .rule-tools {
+    align-items: center;
+    display: flex;
+    opacity: .4;
+    transition: opacity .15s;
+}
+
+.policy-rule:hover .rule-tools {
+    opacity: 1;
+}
+
+.rule-tools a {
+    margin-left: 8px;
+}
+
+.category-rules {
+    border: 1px solid #666;
+    margin-bottom: 15px;
+    margin-top: 15px;
+    padding: 10px;
+}
+
+.table-scroll-wrapper {
+    width: 100%;
+    overflow-x: auto;
+}
+
+.default-rules, .category-default-rules {
+    border-style: dashed;
+}
+
+.default-rules h2, .category-default-rules h4, th.default {
+    font-style: italic;
+}
