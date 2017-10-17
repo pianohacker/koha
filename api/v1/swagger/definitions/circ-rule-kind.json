@@ -8,6 +8,10 @@
         "type": "string",
         "enum": [ "branchcode", "categorycode", "itemtype" ]
       }
+    },
+    "default_value": {
+      "description": "effective default if no rules are set",
+      "type": [ "string", "null" ]
     }
   },
   "additionalProperties": false,

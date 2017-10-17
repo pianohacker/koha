@@ -12,6 +12,9 @@ use Exception::Class (
         description => 'Unauthorized',
         fields => ['required_permissions']
     },
+    'Koha::Exceptions::Authorization::Restricted' => {
+        description => 'User can only modify settings for their branch'
+    },
 
 );
 

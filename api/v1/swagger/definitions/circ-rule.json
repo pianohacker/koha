@@ -1,0 +1,31 @@
+{
+  "type": "object",
+  "properties": {
+    "id": {
+      "description": "internal identifier of this rule",
+      "type": "integer"
+    },
+    "branchcode": {
+      "type": [ "string", "null" ],
+      "description": "branch that this rule applies to"
+    },
+    "categorycode": {
+      "type": [ "string", "null" ],
+      "description": "category that this rule applies to"
+    },
+    "itemtype": {
+      "type": [ "string", "null" ],
+      "description": "itemtype that this rule applies to"
+    },
+    "rule_name": {
+      "type": "string",
+      "description": "name of the kind of this rule"
+    },
+    "rule_value": {
+      "type": [ "string", "null" ],
+      "description": "value of the rule"
+    }
+  },
+  "additionalProperties": false,
+  "required": [ "branchcode", "rule_name", "rule_value" ]
+}

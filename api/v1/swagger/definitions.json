@@ -1,4 +1,7 @@
 {
+  "circ-rule": {
+    "$ref": "definitions/circ-rule.json"
+  },
   "circ-rule-kind": {
     "$ref": "definitions/circ-rule-kind.json"
   },

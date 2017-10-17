@@ -1,9 +1,93 @@
 {
+  "/circulation-rules": {
+    "get": {
+      "x-mojo-to": "CirculationRules#get_rules",
+      "operationId": "getCirculationRules",
+      "tags": ["circulation-rules"],
+      "produces": [
+        "application/json"
+      ],
+      "responses": {
+        "200": {
+          "description": "A list of defined rules",
+          "schema": {
+            "type": "array",
+            "items": {
+              "$ref": "../definitions.json#/circ-rule"
+            }
+          }
+        },
+        "403": {
+          "description": "Access forbidden",
+          "schema": {
+            "$ref": "../definitions.json#/error"
+          }
+        },
+        "500": {
+          "description": "Internal error",
+          "schema": {
+            "$ref": "../definitions.json#/error"
+          }
+        }
+      }
+    },
+    "post": {
+      "x-mojo-to": "CirculationRules#save_rules",
+      "operationId": "saveCirculationRules",
+      "tags": ["circulation-rules"],
+      "produces": [
+        "application/json"
+      ],
+      "parameters": [{
+        "name": "body",
+        "in": "body",
+        "description": "A JSON object containing rules to set; null for a rule_value means to delete the rule",
+        "required": true,
+        "schema": {
+          "type": "array",
+          "items": {
+            "$ref": "../definitions.json#/circ-rule"
+          }
+        }
+      }],
+      "responses": {
+        "200": {
+          "description": "Rules saved",
+          "schema": {
+            "type": "string"
+          }
+        },
+        "401": {
+          "description": "Authentication required",
+          "schema": {
+            "$ref": "../definitions.json#/error"
+          }
+        },
+        "403": {
+          "description": "Access forbidden",
+          "schema": {
+            "$ref": "../definitions.json#/error"
+          }
+        },
+        "500": {
+          "description": "Internal error",
+          "schema": {
+            "$ref": "../definitions.json#/error"
+          }
+        }
+      },
+      "x-koha-authorization": {
+        "permissions": {
+          "parameters": "manage_circ_rules"
+        }
+      }
+    }
+  },
   "/circulation-rules/kinds": {
     "get": {
-      "x-mojo-controller": "Koha::REST::V1::CirculationRules",
-      "operationId": "get_kinds",
-      "tags": ["cities"],
+      "x-mojo-to": "CirculationRules#get_kinds",
+      "operationId": "getCirculationRuleKinds",
+      "tags": ["circulation-rules"],
       "produces": [
         "application/json"
       ],
