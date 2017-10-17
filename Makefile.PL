@@ -1729,7 +1729,24 @@ sub postamble {
 		$env .= join("\n", map { "export __${_}__ := $config{$_}" } keys %config);
 	}
 
-    return "$env\n";
+    my $js_build_targets = <<'JS';
+.PHONY: js-build js-deps js-watch
+YARN=node_modules/.bin/yarn
+
+$(YARN):
+	npm install yarn
+
+js-deps: $(YARN)
+	$(YARN) install
+
+js-build: $(YARN) js-deps
+	$(YARN) build
+
+js-watch: $(YARN) js-deps
+	$(YARN) watch
+JS
+
+    return "$env\n$js_build_targets\n";
 }
 
 
