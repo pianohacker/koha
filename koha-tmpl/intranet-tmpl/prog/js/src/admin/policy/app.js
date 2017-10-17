@@ -212,7 +212,7 @@ export default class PolicyApp extends React.Component {
         }
 
         return <section>
-            <h1>{__( "Circulation, fine and hold policy" )}</h1>
+            <h1>{__( "Circulation, fines and holds rules" )}</h1>
             <PolicyAppToolbar
                 branch={this.state.branch}
                 group={this.state.kindGroup}

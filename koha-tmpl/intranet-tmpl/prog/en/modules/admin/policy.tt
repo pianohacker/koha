@@ -9,12 +9,12 @@
 [% INCLUDE 'doc-head-close.inc' %]
 <link rel="stylesheet" href="[% interface %]/[% theme %]/css/admin/policy.css" />
 </head>
-<body id="admin_smart-rules" class="admin">
+<body id="admin_policy" class="admin">
 [% INCLUDE 'header.inc' %]
 [% INCLUDE 'calendar.inc' %]
 [% INCLUDE 'prefs-admin-search.inc' %]
 
-<div id="breadcrumbs"><a href="/cgi-bin/koha/mainpage.pl">Home</a> &rsaquo; <a href="/cgi-bin/koha/admin/admin-home.pl">Administration</a> &rsaquo; Policy</div>
+<div id="breadcrumbs"><a href="/cgi-bin/koha/mainpage.pl">Home</a> &rsaquo; <a href="/cgi-bin/koha/admin/admin-home.pl">Administration</a> &rsaquo; Circulation, fines and holds rules</div>
 
 <div id="doc3" class="yui-t1">
 
