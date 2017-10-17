@@ -36,23 +36,28 @@ gulp.task( "watch", () => {
 
 let vendorBuilt = false;
 
-gulp.task( "build", () => {
+function getBundler() {
     let bundler = browserify( {
-        debug: true
-    } )
-        .transform( "babelify", { presets: [ "es2015", "react" ], plugins: [ "transform-class-properties" ] } );
+        debug: !process.env.PRODUCTION,
+    } );
 
+    if ( process.env.DESCRIPTION ) {
+        bundler.transform( "uglifyify" );
+    }
+
+    return bundler;
+}
+
+gulp.task( "build", () => {
     if ( !vendorBuilt ) {
-        browserify( {
-            require: VENDOR_DEPENDENCIES,
-            debug: true,
-        } )
+        getBundler().require( VENDOR_DEPENDENCIES )
             .bundle()
             .on( "error", gutil.log )
             .pipe( source( "vendor.js" ) )
             .pipe( gulp.dest( BASE + "/built/" ) );
     }
 
+    let bundler = getBundler().transform( "babelify", { presets: [ "es2015", "react" ], plugins: [ "transform-class-properties" ] } );
 
     return gulp.src( BUILT_FILES )
         .pipe( tap( file => {
