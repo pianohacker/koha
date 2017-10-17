@@ -18,6 +18,7 @@
     "promise-polyfill": "^6.0.2",
     "react": "^16.0.0",
     "react-dom": "^16.0.0",
+    "uglifyify": "^4.0.4",
     "vinyl-source-stream": "^1.1.0",
     "whatwg-fetch": "^2.0.3"
   },
