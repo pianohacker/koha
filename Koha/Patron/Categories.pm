@@ -39,7 +39,7 @@ Koha::Patron::Categories - Koha Patron Category Object set class
 
 sub search_limited {
     my ( $self, $params, $attributes ) = @_;
-    my $branch_limit = C4::Context->userenv ? C4::Context->userenv->{"branch"} : "";
+    my $branch_limit = ( $attributes->{branch_limit} ) // ( C4::Context->userenv ? C4::Context->userenv->{"branch"} : "" );
     if ( $branch_limit ) {
         $params->{'categories_branches.branchcode'} = [ $branch_limit, undef ];
         $attributes->{join} = 'categories_branches';

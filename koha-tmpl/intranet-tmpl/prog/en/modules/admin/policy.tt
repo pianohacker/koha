@@ -1,0 +1,64 @@
+[% USE Branches %]
+[% USE Categories %]
+[% USE ItemTypes %]
+[% USE Koha %]
+[% USE To %]
+
+[% INCLUDE 'doc-head-open.inc' %]
+<title>Koha &rsaquo; Administration &rsaquo; Policy</title>
+[% INCLUDE 'doc-head-close.inc' %]
+<link rel="stylesheet" href="[% interface %]/[% theme %]/css/admin/policy.css" />
+</head>
+<body id="admin_smart-rules" class="admin">
+[% INCLUDE 'header.inc' %]
+[% INCLUDE 'calendar.inc' %]
+[% INCLUDE 'prefs-admin-search.inc' %]
+
+<div id="breadcrumbs"><a href="/cgi-bin/koha/mainpage.pl">Home</a> &rsaquo; <a href="/cgi-bin/koha/admin/admin-home.pl">Administration</a> &rsaquo; Policy</div>
+
+<div id="doc3" class="yui-t1">
+
+<div id="bd">
+    <div id="yui-main">
+    <div class="yui-b">
+        <div id="react-base">
+            <h1>Loading, please wait...</h1>
+        </div>
+    </div>
+
+</div>
+<div class="yui-b">
+[% INCLUDE 'admin-menu.inc' %]
+</div>
+</div>
+
+<script>
+    var restricted_to_library = "[% restricted_to_library %]";
+
+    Koha.Preferences = {
+        "dateformat": "[% Koha.Preference( 'dateformat' ) %]",
+    };
+
+    Koha.BRANCHES = {
+        [% FOREACH branch IN Branches.all( unfiltered => 1 ) %]
+            "[% branch.branchcode %]": [% To.json( branch ) %],
+        [% END %]
+    };
+    // TODO: Account for branch category limits
+    Koha.PATRON_CATEGORIES = {
+        [% FOREACH category IN Categories.all( branch_limit => '' ) %]
+            "[% category.categorycode %]": [% To.json( category ) %],
+        [% END %]
+    };
+    Koha.ITEM_TYPES = {
+        [% FOREACH itemtype IN ItemTypes.Get() %]
+            "[% itemtype.itemtype %]": [% To.json( itemtype ) %],
+        [% END %]
+    };
+</script>
+<script src="[% interface %]/lib/jquery/plugins/jquery.fixFloat.js"></script>
+<link rel="stylesheet" type="text/css" href="[% interface %]/[% theme %]/css/humanmsg.css" />
+<script src="[% interface %]/lib/jquery/plugins/humanmsg.js" type="text/javascript"></script>
+<script src="[% interface %]/[% theme %]/js/built/vendor.js"></script>
+<script src="[% interface %]/[% theme %]/js/built/admin/policy/entry.js"></script>
+[% INCLUDE 'intranet-bottom.inc' %]
