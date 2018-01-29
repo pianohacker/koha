@@ -245,7 +245,7 @@ elsif ($op eq 'add') {
     my $fine = $input->param('fine');
     my $finedays     = $input->param('finedays');
     my $maxsuspensiondays = $input->param('maxsuspensiondays');
-    $maxsuspensiondays = undef if $maxsuspensiondays eq q||;
+    $maxsuspensiondays = '' if $maxsuspensiondays eq q||;
     my $firstremind  = $input->param('firstremind');
     my $chargeperiod = $input->param('chargeperiod');
     my $chargeperiod_charge_at = $input->param('chargeperiod_charge_at');
@@ -254,20 +254,20 @@ elsif ($op eq 'add') {
     my $renewalsallowed  = $input->param('renewalsallowed');
     my $renewalperiod    = $input->param('renewalperiod');
     my $norenewalbefore  = $input->param('norenewalbefore');
-    $norenewalbefore = undef if $norenewalbefore =~ /^\s*$/;
+    $norenewalbefore = '' if $norenewalbefore =~ /^\s*$/;
     my $auto_renew = $input->param('auto_renew') eq 'yes' ? 1 : 0;
     my $no_auto_renewal_after = $input->param('no_auto_renewal_after');
-    $no_auto_renewal_after = undef if $no_auto_renewal_after =~ /^\s*$/;
-    my $no_auto_renewal_after_hard_limit = $input->param('no_auto_renewal_after_hard_limit') || undef;
+    $no_auto_renewal_after = '' if $no_auto_renewal_after =~ /^\s*$/;
+    my $no_auto_renewal_after_hard_limit = $input->param('no_auto_renewal_after_hard_limit') || '';
     $no_auto_renewal_after_hard_limit = eval { dt_from_string( $input->param('no_auto_renewal_after_hard_limit') ) } if ( $no_auto_renewal_after_hard_limit );
     $no_auto_renewal_after_hard_limit = output_pref( { dt => $no_auto_renewal_after_hard_limit, dateonly => 1, dateformat => 'iso' } ) if ( $no_auto_renewal_after_hard_limit );
     my $reservesallowed  = $input->param('reservesallowed');
     my $holds_per_record  = $input->param('holds_per_record');
     my $onshelfholds     = $input->param('onshelfholds') || 0;
     $maxissueqty =~ s/\s//g;
-    $maxissueqty = undef if $maxissueqty !~ /^\d+/;
+    $maxissueqty = '' if $maxissueqty !~ /^\d+/;
     $maxonsiteissueqty =~ s/\s//g;
-    $maxonsiteissueqty = undef if $maxonsiteissueqty !~ /^\d+/;
+    $maxonsiteissueqty = '' if $maxonsiteissueqty !~ /^\d+/;
     my $issuelength  = $input->param('issuelength');
     $issuelength = $issuelength eq q{} ? undef : $issuelength;
     my $lengthunit  = $input->param('lengthunit');
@@ -278,7 +278,7 @@ elsif ($op eq 'add') {
     my $rentaldiscount = $input->param('rentaldiscount');
     my $opacitemholds = $input->param('opacitemholds') || 0;
     my $article_requests = $input->param('article_requests') || 'no';
-    my $overduefinescap = $input->param('overduefinescap') || undef;
+    my $overduefinescap = $input->param('overduefinescap') || '';
     my $cap_fine_to_replacement_price = $input->param('cap_fine_to_replacement_price') eq 'on';
     warn "Adding $br, $bor, $itemtype, $fine, $maxissueqty, $maxonsiteissueqty, $cap_fine_to_replacement_price";
 
@@ -307,6 +307,8 @@ elsif ($op eq 'add') {
         overduefinescap               => $overduefinescap,
         cap_fine_to_replacement_price => $cap_fine_to_replacement_price,
         article_requests              => $article_requests,
+        maxissueqty                   => $maxissueqty,
+        maxonsiteissueqty             => $maxonsiteissueqty,
     };
 
     Koha::CirculationRules->set_rules(
@@ -315,8 +317,6 @@ elsif ($op eq 'add') {
             itemtype     => $itemtype eq '*' ? undef : $itemtype,
             branchcode   => $br eq '*' ? undef : $br,
             rules        => {
-                maxissueqty       => $maxissueqty,
-                maxonsiteissueqty => $maxonsiteissueqty,
                 %$params,
             }
         }

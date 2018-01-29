@@ -171,14 +171,14 @@
                                       <a class="btn btn-default btn-xs delete" href="/cgi-bin/koha/admin/smart-rules.pl?op=delete&amp;itemtype=[% rule.itemtype || '*' %]&amp;categorycode=[% rule.categorycode || '*' %]&amp;branch=[% current_branch %]"><i class="fa fa-trash"></i> Delete</a>
                                     </td>
                                     <td>
-                                        [% IF maxissueqty  %]
+                                        [% IF maxissueqty.defined && maxissueqty != '' %]
                                             [% maxissueqty %]
                                         [% ELSE %]
                                             Unlimited
                                         [% END %]
                                     </td>
                                     <td>
-                                        [% IF maxonsiteissueqty  %]
+                                        [% IF maxonsiteissueqty.defined && maxonsiteissueqty != ''  %]
                                             [% maxonsiteissueqty %]
                                         [% ELSE %]
                                             Unlimited

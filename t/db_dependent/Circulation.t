@@ -817,7 +817,17 @@ C4::Context->dbh->do("DELETE FROM accountlines");
             }
         });
 
-        $dbh->do('UPDATE issuingrules SET norenewalbefore = 10, no_auto_renewal_after = 11');
+        Koha::CirculationRules->set_rules(
+            {
+                categorycode => undef,
+                branchcode   => undef,
+                itemtype     => undef,
+                rules        => {
+                    norenewalbefore       => 10,
+                    no_auto_renewal_after => 11,
+                }
+            }
+        );
 
         my $ten_days_before = dt_from_string->add( days => -10 );
         my $ten_days_ahead = dt_from_string->add( days => 10 );
@@ -2221,26 +2231,24 @@ subtest 'CanBookBeIssued | is_overdue' => sub {
     plan tests => 3;
 
     # Set a simple circ policy
-    $dbh->do('DELETE FROM issuingrules');
-    $dbh->do(
-    q{INSERT INTO issuingrules (categorycode, branchcode, itemtype, reservesallowed,
-                                    maxissueqty, issuelength, lengthunit,
-                                    renewalsallowed, renewalperiod,
-                                    norenewalbefore, auto_renew,
-                                    fine, chargeperiod)
-          VALUES (?, ?, ?, ?,
-                  ?, ?, ?,
-                  ?, ?,
-                  ?, ?,
-                  ?, ?
-                 )
-        },
-        {},
-        '*',   '*', '*', 25,
-        1,     14,  'days',
-        1,     7,
-        undef, 0,
-        .10,   1
+    Koha::CirculationRules->set_rules(
+        {
+            categorycode => undef,
+            branchcode   => undef,
+            itemtype     => undef,
+            rules        => {
+                reservesallowed => 25,
+                maxissueqty     => 1,
+                issuelength     => 14,
+                lengthunit      => 'days',
+                renewalsallowed => 1,
+                renewalperiod   => 7,
+                norenewalbefore => undef,
+                auto_renew      => 0,
+                fine            => .10,
+                chargeperiod    => 1,
+            }
+        }
     );
 
     my $five_days_go = output_pref({ dt => dt_from_string->add( days => 5 ), dateonly => 1});

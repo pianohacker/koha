@@ -405,7 +405,7 @@ sub TooMany {
     # if a rule is found and has a loan limit set, count
     # how many loans the patron already has that meet that
     # rule
-    if (defined($maxissueqty_rule) and defined($maxissueqty_rule->rule_value)) {
+    if (defined($maxissueqty_rule) and $maxissueqty_rule->rule_value ne '') {
         my @bind_params;
         my $count_query = q|
             SELECT COUNT(*) AS total, COALESCE(SUM(onsite_checkout), 0) AS onsite_checkouts
@@ -471,7 +471,7 @@ sub TooMany {
         my $max_checkouts_allowed = $maxissueqty_rule ? $maxissueqty_rule->rule_value : 0;
         my $max_onsite_checkouts_allowed = $maxonsiteissueqty_rule ? $maxonsiteissueqty_rule->rule_value : 0;
 
-        if ( $onsite_checkout and defined $max_onsite_checkouts_allowed ) {
+        if ( $onsite_checkout and $max_onsite_checkouts_allowed ne '' ) {
             if ( $onsite_checkout_count >= $max_onsite_checkouts_allowed )  {
                 return {
                     reason => 'TOO_MANY_ONSITE_CHECKOUTS',
@@ -2279,7 +2279,7 @@ sub _debar_user_on_return {
             # If the max suspension days is < than the suspension days
             # the suspension days is limited to this maximum period.
             my $max_sd = $issuing_rule->{maxsuspensiondays};
-            if ( defined $max_sd ) {
+            if ( defined $max_sd && $max_sd ne '' ) {
                 $max_sd = DateTime::Duration->new( days => $max_sd );
                 $suspension_days = $max_sd
                   if DateTime::Duration->compare( $max_sd, $suspension_days ) < 0;

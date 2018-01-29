@@ -128,8 +128,16 @@ AddReturn( $item1->{barcode} );
 
         my $hold_allowed_from_home_library = 1;
         my $hold_allowed_from_any_libraries = 2;
-        my $sth_delete_rules = $dbh->prepare(q|DELETE FROM default_circ_rules|);
-        my $sth_insert_rule = $dbh->prepare(q|INSERT INTO default_circ_rules(singleton, maxissueqty, maxonsiteissueqty, holdallowed, hold_fulfillment_policy, returnbranch) VALUES ('singleton', NULL, NULL, ?, 'any', 'homebranch');|);
+        Koha::CirculationRules->set_rules(
+            {
+                branchcode   => undef,
+                itemtype     => undef,
+                rules        => {
+                    hold_fulfillment_policy => 'any',
+                    returnbranch            => 'homebranch',
+                }
+            }
+        );
 
         subtest 'Item is available at a different library' => sub {
             plan tests => 4;
@@ -145,8 +153,14 @@ AddReturn( $item1->{barcode} );
             #FIXME: ReservesControlBranch is not checked in these subs we are testing
 
             {
-                $sth_delete_rules->execute;
-                $sth_insert_rule->execute( $hold_allowed_from_home_library );
+                Koha::CirculationRules->set_rule(
+                    {
+                        branchcode   => undef,
+                        itemtype     => undef,
+                        rule_name    => 'holdallowed',
+                        rule_value   => $hold_allowed_from_home_library,
+                    }
+                );
 
                 t::lib::Mocks::mock_preference('ReservesControlBranch', 'ItemHomeLibrary');
                 $is = IsAvailableForItemLevelRequest( $item1, $borrower1);
@@ -158,8 +172,14 @@ AddReturn( $item1->{barcode} );
             }
 
             {
-                $sth_delete_rules->execute;
-                $sth_insert_rule->execute( $hold_allowed_from_any_libraries );
+                Koha::CirculationRules->set_rule(
+                    {
+                        branchcode   => undef,
+                        itemtype     => undef,
+                        rule_name    => 'holdallowed',
+                        rule_value   => $hold_allowed_from_any_libraries,
+                    }
+                );
 
                 t::lib::Mocks::mock_preference('ReservesControlBranch', 'ItemHomeLibrary');
                 $is = IsAvailableForItemLevelRequest( $item1, $borrower1);
@@ -185,8 +205,14 @@ AddReturn( $item1->{barcode} );
             #ReservesControlBranch is not checked in these subs we are testing?
 
             {
-                $sth_delete_rules->execute;
-                $sth_insert_rule->execute( $hold_allowed_from_home_library );
+                Koha::CirculationRules->set_rule(
+                    {
+                        branchcode   => undef,
+                        itemtype     => undef,
+                        rule_name    => 'holdallowed',
+                        rule_value   => $hold_allowed_from_home_library,
+                    }
+                );
 
                 t::lib::Mocks::mock_preference('ReservesControlBranch', 'ItemHomeLibrary');
                 $is = IsAvailableForItemLevelRequest( $item1, $borrower1);
@@ -198,8 +224,14 @@ AddReturn( $item1->{barcode} );
             }
 
             {
-                $sth_delete_rules->execute;
-                $sth_insert_rule->execute( $hold_allowed_from_any_libraries );
+                Koha::CirculationRules->set_rule(
+                    {
+                        branchcode   => undef,
+                        itemtype     => undef,
+                        rule_name    => 'holdallowed',
+                        rule_value   => $hold_allowed_from_any_libraries,
+                    }
+                );
 
                 t::lib::Mocks::mock_preference('ReservesControlBranch', 'ItemHomeLibrary');
                 $is = IsAvailableForItemLevelRequest( $item1, $borrower1);
