@@ -231,9 +231,9 @@ elsif ($op eq "set-branch-defaults") {
     my $returnbranch  = $input->param('returnbranch');
     my $max_holds = $input->param('max_holds');
     $patron_maxissueqty =~ s/\s//g;
-    $patron_maxissueqty = undef if $patron_maxissueqty !~ /^\d+/;
+    $patron_maxissueqty = '' if $patron_maxissueqty !~ /^\d+/;
     $patron_maxonsiteissueqty =~ s/\s//g;
-    $patron_maxonsiteissueqty = undef if $patron_maxonsiteissueqty !~ /^\d+/;
+    $patron_maxonsiteissueqty = '' if $patron_maxonsiteissueqty !~ /^\d+/;
     $holdallowed =~ s/\s//g;
     $holdallowed = undef if $holdallowed !~ /^\d+/;
     $max_holds =~ s/\s//g;
@@ -313,9 +313,9 @@ elsif ($op eq "add-branch-cat") {
     my $patron_maxonsiteissueqty = $input->param('patron_maxonsiteissueqty');
     my $max_holds = $input->param('max_holds');
     $patron_maxissueqty =~ s/\s//g;
-    $patron_maxissueqty = undef if $patron_maxissueqty !~ /^\d+/;
+    $patron_maxissueqty = '' if $patron_maxissueqty !~ /^\d+/;
     $patron_maxonsiteissueqty =~ s/\s//g;
-    $patron_maxonsiteissueqty = undef if $patron_maxonsiteissueqty !~ /^\d+/;
+    $patron_maxonsiteissueqty = '' if $patron_maxonsiteissueqty !~ /^\d+/;
     $max_holds =~ s/\s//g;
     $max_holds = '' if $max_holds !~ /^\d+/;
 
