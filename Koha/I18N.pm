@@ -24,7 +24,7 @@ use C4::Languages;
 use C4::Context;
 
 use Encode;
-use Locale::Messages qw(:locale_h nl_putenv);
+use Locale::Messages qw(:locale_h nl_putenv setlocale LC_MESSAGES);
 use Koha::Cache::Memory::Lite;
 
 use parent 'Exporter';
@@ -50,24 +50,34 @@ sub init {
     my $cache = Koha::Cache::Memory::Lite->get_instance();
     my $cache_key = 'i18n:initialized';
     unless ($cache->get_from_cache($cache_key)) {
-        my $langtag = C4::Languages::getlanguage;
-        my @subtags = split /-/, $langtag;
-        my ($language, $region) = @subtags;
-        if ($region && length $region == 4) {
-            $region = $subtags[2];
-        }
         Locale::Messages->select_package('gettext_pp');
-        my $locale = $language;
-        if ($region) {
-            $locale .= '_' . $region;
-        }
-        nl_putenv("LANGUAGE=$locale");
-        nl_putenv("LANG=$locale");
-        nl_putenv('OUTPUT_CHARSET=utf-8');
+        my @system_locales = grep { chomp; not (/^C/ || $_ eq 'POSIX') } qx/locale -a/;
+        if (@system_locales) {
+            # LANG needs to be set to a valid locale,
+            # otherwise LANGUAGE is ignored
+            nl_putenv('LANG=' . $system_locales[0]);
+            setlocale(LC_MESSAGES, '');
 
-        my $directory = _base_directory();
-        textdomain($textdomain);
-        bindtextdomain($textdomain, $directory);
+            my $langtag = C4::Languages::getlanguage;
+            my @subtags = split /-/, $langtag;
+            my ($language, $region) = @subtags;
+            if ($region && length $region == 4) {
+                $region = $subtags[2];
+            }
+            my $locale = $language;
+            if ($region) {
+                $locale .= '_' . $region;
+            }
+
+            nl_putenv("LANGUAGE=$locale");
+            nl_putenv('OUTPUT_CHARSET=UTF-8');
+
+            my $directory = _base_directory();
+            textdomain($textdomain);
+            bindtextdomain($textdomain, $directory);
+        } else {
+            warn "No locale installed. Localization cannot work and is therefore disabled";
+        }
 
         $cache->set_in_cache($cache_key, 1);
     }
