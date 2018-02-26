@@ -30,8 +30,6 @@ use Koha::DateUtils;
 use Koha::Patron::Categories;
 use Koha::Patron::Category;
 use Koha::ItemTypes;
-use Koha::IssuingRule;
-use Koha::IssuingRules;
 
 #Setting variables
 my $input = new CGI;
@@ -250,16 +248,17 @@ if ( $step == 5 ) {
             branchcode      => $branchcode,
             categorycode    => $categorycode,
             itemtype        => $itemtype,
-            maxissueqty     => $maxissueqty,
-            renewalsallowed => $renewalsallowed,
-            renewalperiod   => $renewalperiod,
-            issuelength     => $issuelength,
-            lengthunit      => $lengthunit,
-            onshelfholds    => $onshelfholds,
+            rules => {
+                maxissueqty     => $maxissueqty,
+                renewalsallowed => $renewalsallowed,
+                renewalperiod   => $renewalperiod,
+                issuelength     => $issuelength,
+                lengthunit      => $lengthunit,
+                onshelfholds    => $onshelfholds,
+            }
         };
 
-        my $issuingrule = Koha::IssuingRule->new($params);
-        eval { $issuingrule->store; };
+        eval { Koha::CirculationRules->set_rules( $params ) };
 
         unless ($@) {
             push @messages, { code => 'success_on_insert_circ_rule' };
@@ -269,7 +268,7 @@ if ( $step == 5 ) {
         }
     }
 
-    $step++ if Koha::IssuingRules->count;
+    $step++ if Koha::CirculationRules->count;
 }
 
 my $libraries = Koha::Libraries->search( {}, { order_by => ['branchcode'] }, );

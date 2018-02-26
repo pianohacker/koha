@@ -52,7 +52,7 @@ use C4::Reserves;
 use C4::Acquisition;
 use C4::Serials;    # uses getsubscriptionfrom biblionumber
 use C4::Koha;
-use Koha::IssuingRules;
+use Koha::CirculationRules;
 use Koha::Items;
 use Koha::ItemTypes;
 use Koha::Patrons;
@@ -180,7 +180,7 @@ for my $itm (@items) {
         && !$itemtypes->{$itm->{'itype'}}->{notforloan}
         && $itm->{'itemnumber'};
 
-    $allow_onshelf_holds = Koha::IssuingRules->get_onshelfholds_policy( { item => $item, patron => $patron } )
+    $allow_onshelf_holds = Koha::CirculationRules->get_onshelfholds_policy( { item => $item, patron => $patron } )
       unless $allow_onshelf_holds;
 }
 

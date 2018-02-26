@@ -269,20 +269,17 @@ my $hold = $builder->build({
     }
 });
 
-$dbh->do("DELETE FROM issuingrules");
-$rule = Koha::IssuingRule->new(
+Koha::CirculationRules->set_rules(
     {
-        categorycode => '*',
-        itemtype     => '*',
-        branchcode   => '*',
-        maxissueqty  => 99,
-        issuelength  => 7,
-        lengthunit   => 8,
-        reservesallowed => 99,
-        onshelfholds => 0,
+        categorycode => undef,
+        itemtype     => undef,
+        branchcode   => undef,
+        rules        => {
+            maxissueqty     => 99,
+            onshelfholds    => 2,
+        }
     }
 );
-$rule->store();
 
 $is = IsAvailableForItemLevelRequest( $item3, $borrower1);
 is( $is, 1, "Item can be held, items in transit are not available" );

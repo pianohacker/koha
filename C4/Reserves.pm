@@ -1133,7 +1133,7 @@ sub IsAvailableForItemLevelRequest {
         $item->{withdrawn}        ||
         ($item->{damaged} && !C4::Context->preference('AllowHoldsOnDamagedItems'));
 
-    my $on_shelf_holds = Koha::IssuingRules->get_onshelfholds_policy( { item => $item_object, patron => $patron } );
+    my $on_shelf_holds = Koha::CirculationRules->get_onshelfholds_policy( { item => $item_object, patron => $patron } );
 
     if ( $on_shelf_holds == 1 ) {
         return 1;
