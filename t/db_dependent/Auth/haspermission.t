@@ -20,7 +20,7 @@
 # along with Koha; if not, see <http://www.gnu.org/licenses>.
 
 use Modern::Perl;
-use Test::More tests => 13;
+use Test::More tests => 14;
 
 use Koha::Database;
 use t::lib::TestBuilder;
@@ -103,6 +103,20 @@ $r = haspermission( $borr2->{userid}, {
     tools => 'batch_upload_patron_images',
 });
 is( ref($r), 'HASH', 'Borrower2/tools granular two upload subperms' );
+
+subtest 'no_inherit' => sub {
+    $r = haspermission( $borr1->{userid}, { circulate => 'override_renewals' }, { no_inherit => 1 } );
+    is( $r, 0, 'checking specific permission when only has superlibrarian should fail' );
+
+    $r = haspermission( $borr2->{userid}, { parameters => 'parameters_remaining_permissions' }, { no_inherit => 1 } );
+    is( $r, 0, 'checking specific permission when doesn\'t even have module permission should fail' );
+
+    $r = haspermission( $borr2->{userid}, { circulate => 'override_renewals' }, { no_inherit => 1 } );
+    is( $r, 0, 'checking specific permission when only has module permission should fail' );
+
+    $r = haspermission( $borr2->{userid}, { tools => 'upload_local_cover_images' }, { no_inherit => 1 } );
+    is( ref($r), 'HASH', 'checking specific permission when user has specifically that should succeed' );
+};
 
 # End
 $schema->storage->txn_rollback;
